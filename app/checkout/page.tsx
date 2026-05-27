@@ -1,17 +1,29 @@
-import { CheckoutFlow } from "@/components/checkout/CheckoutFlow";
-import type { Metadata } from "next";
+import { Header } from "@/components/boty/header";
+import { Footer } from "@/components/boty/footer";
+import { BotyCheckoutFlow } from "@/components/boty/checkout-flow";
 
-export const metadata: Metadata = {
-  title: "Checkout",
+export const metadata = {
+  title: "Checkout — Print MX",
 };
 
 export default function CheckoutPage() {
   return (
-    <section className="px-4 pb-16 md:px-6">
-      <div className="mx-auto max-w-6xl">
-        <h1 className="text-3xl font-bold mb-8">Checkout</h1>
-        <CheckoutFlow />
+    <main className="min-h-screen">
+      <Header />
+      <div className="pt-28 pb-20">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h1 className="font-serif text-4xl md:text-5xl text-foreground mb-4">
+              Checkout
+            </h1>
+            <p className="text-muted-foreground">
+              Completa tu dirección y confirma tu pedido borrador
+            </p>
+          </div>
+          <BotyCheckoutFlow />
+        </div>
       </div>
-    </section>
+      <Footer />
+    </main>
   );
 }

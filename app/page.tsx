@@ -1,17 +1,25 @@
-import { FeaturedStrip } from "@/components/shop/FeaturedStrip";
-import { HeroParallax } from "@/components/shop/HeroParallax";
-import { HomeCta } from "@/components/shop/HomeCta";
-import { fetchCatalogProducts } from "@/lib/api";
+import { Header } from "@/components/boty/header";
+import { Hero } from "@/components/boty/hero";
+import { TrustBadges } from "@/components/boty/trust-badges";
+import { FeatureSection } from "@/components/boty/feature-section";
+import { ProductGrid } from "@/components/boty/product-grid";
+import { Testimonials } from "@/components/boty/testimonials";
+import { CTABanner } from "@/components/boty/cta-banner";
+import { Newsletter } from "@/components/boty/newsletter";
+import { Footer } from "@/components/boty/footer";
 
-export default async function HomePage() {
-  const response = await fetchCatalogProducts();
-  const featured = response?.data.slice(0, 3) ?? [];
-
+export default function HomePage() {
   return (
-    <>
-      <HeroParallax />
-      {featured.length > 0 && <FeaturedStrip products={featured} />}
-      <HomeCta />
-    </>
+    <main>
+      <Header />
+      <Hero />
+      <TrustBadges />
+      <ProductGrid />
+      <FeatureSection />
+      <Testimonials />
+      <CTABanner />
+      <Newsletter />
+      <Footer />
+    </main>
   );
 }

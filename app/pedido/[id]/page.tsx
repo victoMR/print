@@ -1,20 +1,21 @@
-import { OrderStatusView } from "@/components/checkout/OrderStatusView";
-import type { Metadata } from "next";
+import { Header } from "@/components/boty/header";
+import { Footer } from "@/components/boty/footer";
+import { OrderStatus } from "@/components/boty/order-status";
 
-type PageProps = {
+type PedidoPageProps = {
   params: Promise<{ id: string }>;
 };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export default async function PedidoPage({ params }: PedidoPageProps) {
   const { id } = await params;
-  return { title: `Pedido ${id.slice(0, 8)}…` };
-}
 
-export default async function PedidoPage({ params }: PageProps) {
-  const { id } = await params;
   return (
-    <section className="px-4 pb-16 md:px-6">
-      <OrderStatusView internalOrderId={id} />
-    </section>
+    <main className="min-h-screen">
+      <Header />
+      <div className="pt-28 pb-20 px-6">
+        <OrderStatus internalOrderId={id} />
+      </div>
+      <Footer />
+    </main>
   );
 }

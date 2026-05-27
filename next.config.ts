@@ -3,6 +3,13 @@ import type { NextConfig } from "next";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      { source: "/catalogo", destination: "/shop", permanent: true },
+      { source: "/producto/:slug", destination: "/product/:slug", permanent: true },
+      { source: "/carrito", destination: "/checkout", permanent: false },
+    ];
+  },
   async rewrites() {
     return [
       {

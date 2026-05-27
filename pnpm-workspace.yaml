@@ -3,7 +3,7 @@ packages:
 
 # Permite scripts de postinstall necesarios (p. ej. binarios nativos de sharp para next/image)
 allowBuilds:
-  esbuild: true
-  msgpackr-extract: true
-  sharp: true
-  unrs-resolver: true
+  esbuild: set this to true or false
+  msgpackr-extract: set this to true or false
+  sharp: set this to true or false
+  unrs-resolver: set this to true or false

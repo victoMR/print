@@ -16,7 +16,11 @@ const STORAGE_KEY = "print-mx-cart";
 type CartContextValue = {
   items: CartItem[];
   count: number;
+  itemCount: number;
+  subtotal: number;
   hydrated: boolean;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
   removeItem: (syncVariantId: number) => void;
   updateQuantity: (syncVariantId: number, quantity: number) => void;
@@ -40,6 +44,7 @@ function loadStoredItems(): CartItem[] {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     setItems(loadStoredItems());
@@ -64,6 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
         return [...prev, { ...item, quantity }];
       });
+      setIsOpen(true);
     },
     [],
   );
@@ -89,9 +95,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [items],
   );
 
+  const subtotal = useMemo(
+    () =>
+      items.reduce(
+        (sum, item) => sum + Number.parseFloat(item.retailPriceMxn) * item.quantity,
+        0,
+      ),
+    [items],
+  );
+
   const value = useMemo(
-    () => ({ items, count, hydrated, addItem, removeItem, updateQuantity, clearCart }),
-    [items, count, hydrated, addItem, removeItem, updateQuantity, clearCart],
+    () => ({
+      items,
+      count,
+      itemCount: count,
+      subtotal,
+      hydrated,
+      isOpen,
+      setIsOpen,
+      addItem,
+      removeItem,
+      updateQuantity,
+      clearCart,
+    }),
+    [
+      items,
+      count,
+      subtotal,
+      hydrated,
+      isOpen,
+      addItem,
+      removeItem,
+      updateQuantity,
+      clearCart,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

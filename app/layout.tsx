@@ -1,31 +1,29 @@
-import { SiteShell } from "@/components/layout/SiteShell";
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { DM_Sans, Playfair_Display } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { CartProvider } from "@/lib/cart-context";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
   subsets: ["latin"],
+  variable: "--font-dm-sans",
+  weight: ["300", "400", "500", "600"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
+  variable: "--font-playfair",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "Print MX — Impresión bajo demanda",
-    template: "%s · Print MX",
-  },
-  description:
-    "Tienda POD en México: playeras, sudaderas y merch con fulfillment desde Tijuana. Precios en MXN, IVA incluido.",
-  keywords: ["print on demand", "México", "playeras", "merch", "POD"],
-  openGraph: {
-    locale: "es_MX",
-    type: "website",
-    siteName: "Print MX",
-  },
+  title: "Print MX — Tienda POD",
+  description: "Productos personalizados impresos bajo demanda con envío a todo México.",
+  keywords: ["print", "printful", "México", "POD", "tienda"],
+};
+
+export const viewport: Viewport = {
+  themeColor: "#FAFAFA",
 };
 
 export default function RootLayout({
@@ -34,12 +32,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col font-sans">
-        <SiteShell>{children}</SiteShell>
+    <html lang="es">
+      <body
+        className={`${dmSans.variable} ${playfairDisplay.variable} font-sans antialiased`}
+      >
+        <CartProvider>{children}</CartProvider>
+        <Analytics />
       </body>
     </html>
   );
