@@ -1,0 +1,9 @@
+packages:
+  - 'packages/*'
+
+# Permite scripts de postinstall necesarios (p. ej. binarios nativos de sharp para next/image)
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: true
+  sharp: true
+  unrs-resolver: true

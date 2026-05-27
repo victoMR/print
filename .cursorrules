@@ -1,0 +1,515 @@
+# CLAUDE.md — Printful API Integration (México)
+
+> Rules file for AI coding agents (Claude Code, Cursor, Windsurf, Cline).
+> Save as `CLAUDE.md` or `.cursorrules` at the project root.
+> Read this BEFORE writing any code. Re-read on context loss.
+
+---
+
+## Project Context
+
+Tienda custom Node.js que vende productos POD vía Printful. Fulfillment desde Tijuana, México. Pedidos automatizados, catálogo sincronizado, cotización de envío en tiempo real.
+
+**Stack obligatorio:** Node.js 20+, TypeScript, Express, Axios, PostgreSQL, BullMQ, Zod, Pino.
+**Idioma del código:** English. **Comentarios y mensajes al usuario final:** Español.
+
+---
+
+## Golden Rules (read first, follow always)
+
+1. **NEVER hardcode tokens.** Always `process.env.PRINTFUL_TOKEN`. If missing, throw at boot.
+2. **NEVER bill the customer before confirming the Printful order.** Charge happens AFTER `POST /orders/{id}/confirm` succeeds.
+3. **ALWAYS create orders as `draft` first**, validate, then confirm. Never use `?confirm=1` on first call unless explicitly told to.
+4. **ALWAYS use `variant_id`, NEVER `product_id`** when creating products or orders. They are different things.
+5. **ALWAYS attach an `external_id`** to every Sync Product, Sync Variant, and Order. Use your internal UUID.
+6. **ALWAYS validate request payloads with Zod** before calling Printful. Reject early.
+7. **ALWAYS catch + log** every Printful call with `printful_order_id`, `internal_order_id`, `event_type`, `status_code`.
+8. **NEVER skip the rate limiter.** Global cap is 120 req/min; some endpoints are stricter.
+9. **NEVER trust Printful prices as MXN.** Printful returns USD/EUR. Convert with Banxico FX before showing to customer.
+10. **NEVER assume Printful invoices in Mexico.** Printful is a B2B supplier in USD. CFDI 4.0 must be issued by us via a PAC.
+
+---
+
+## Authentication
+
+- Use **Private Token** (not OAuth Public App — this is a single-store custom shop).
+- Token type: prefer **Store-level**. Use Account-level only if multi-store.
+- Store tokens in `.env`, load via `dotenv` at app start.
+- Validate token at boot: `GET /store` — if 401, fail fast.
+- Private tokens **DO NOT auto-refresh**. Add a cron job that warns 30 days before expiration.
+
+```typescript
+// src/lib/printful.ts — the ONE Axios instance, used everywhere
+import axios from 'axios';
+import axiosRetry from 'axios-retry';
+
+if (!process.env.PRINTFUL_TOKEN) {
+  throw new Error('PRINTFUL_TOKEN is required');
+}
+
+export const printful = axios.create({
+  baseURL: 'https://api.printful.com',
+  timeout: 30_000,
+  headers: {
+    Authorization: `Bearer ${process.env.PRINTFUL_TOKEN}`,
+    'X-PF-Language': 'es_ES',
+    'Content-Type': 'application/json',
+    ...(process.env.PRINTFUL_STORE_ID && { 'X-PF-Store-Id': process.env.PRINTFUL_STORE_ID }),
+  },
+});
+
+axiosRetry(printful, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (err) =>
+    err.response?.status === 429 ||
+    (err.response?.status ?? 0) >= 500,
+});
+```
+
+Use **only** this client. No raw `fetch` calls to Printful anywhere else.
+
+---
+
+## File Structure (enforce strictly)
+
+```
+src/
+├── lib/
+│   ├── printful.ts          # Axios client (single source)
+│   ├── banxico.ts           # FX rates
+│   └── logger.ts            # Pino
+├── services/
+│   ├── catalog.service.ts   # Sync products CRUD
+│   ├── orders.service.ts    # Order lifecycle
+│   ├── shipping.service.ts  # Rate quotes
+│   ├── webhooks.service.ts  # Event handlers
+│   └── invoicing.service.ts # CFDI via PAC
+├── routes/
+│   ├── checkout.routes.ts
+│   ├── catalog.routes.ts
+│   └── webhooks.routes.ts
+├── jobs/
+│   ├── syncCatalog.job.ts   # Daily cron
+│   ├── retryFailed.job.ts
+│   └── tokenExpiry.job.ts
+├── schemas/                 # Zod schemas (NEVER inline)
+│   ├── order.schema.ts
+│   └── webhook.schema.ts
+├── db/
+│   ├── schema.sql
+│   └── migrations/
+└── types/
+    └── printful.types.ts    # Type definitions
+```
+
+**Rule:** if you need a new file, place it in the correct folder. Never put services in `routes/` or vice versa.
+
+---
+
+## Endpoint Reference (use these EXACT paths)
+
+| Action | Method | Path | Rate Limit |
+|---|---|---|---|
+| Validate auth | GET | `/store` | normal |
+| List catalog products | GET | `/products?category_id={ids}` | 30/60s unauth |
+| Catalog product detail | GET | `/products/{id}` | 30/60s unauth |
+| Catalog variant | GET | `/products/variant/{id}` | 30/60s unauth |
+| Size guide | GET | `/products/{id}/sizes?unit=cm` | 30/60s unauth |
+| Categories | GET | `/categories` | 30/60s unauth |
+| List my products | GET | `/store/products` | 120/min |
+| Create Sync Product | POST | `/store/products` | 120/min |
+| Modify Sync Product | PUT | `/store/products/{id}` | **10/60s** |
+| Delete Sync Product | DELETE | `/store/products/{id}` | 120/min |
+| Create order | POST | `/orders` | 120/min |
+| Get order | GET | `/orders/{id}` | 120/min |
+| Confirm order | POST | `/orders/{id}/confirm` | 120/min |
+| Cancel order | DELETE | `/orders/{id}` | 120/min |
+| Estimate order costs | POST | `/orders/estimate-costs` | 120/min |
+| Shipping rates | POST | `/shipping/rates` | 120/min |
+| Tax rates | POST | `/tax/rates` | 120/min |
+| Get webhooks | GET | `/webhooks` | 120/min |
+| Set webhooks | POST | `/webhooks` | 120/min |
+| Disable webhooks | DELETE | `/webhooks` | 120/min |
+
+**Reference by external ID:** prefix with `@`. Example: `GET /orders/@internal-order-uuid-1234`.
+
+---
+
+## Order Lifecycle (memorize this state machine)
+
+```
+Customer checkout
+      │
+      ▼
+[Quote shipping]   ── POST /shipping/rates
+      │
+      ▼
+[Estimate costs]   ── POST /orders/estimate-costs
+      │
+      ▼
+[Show total to customer in MXN]
+      │
+      ▼
+[Customer confirms]
+      │
+      ▼
+[Create as DRAFT]  ── POST /orders   (DO NOT confirm yet)
+      │
+      ▼
+[Validate locally] (stock, address, totals)
+      │
+      ▼
+[Charge customer] (Stripe/Conekta/etc.)
+      │
+      ▼
+[Confirm order]   ── POST /orders/{id}/confirm
+      │
+      ▼
+[Wait for webhooks]
+      │
+      ├─→ order_updated   → update local status
+      ├─→ package_shipped → notify customer + tracking
+      ├─→ order_failed    → refund + alert ops
+      └─→ order_canceled  → refund
+```
+
+**Cancelable states:** `draft`, `pending`, `onhold`. Once `inprocess` → cannot cancel.
+
+---
+
+## Sync Product Rules
+
+- Max **100 sync variants** per sync product. Split into multiple if needed.
+- Every variant needs: `variant_id` (from catalog), `retail_price` (string), `files[]`, `external_id`.
+- Print files: pass `url` (Printful downloads it) or `id` (already in File Library).
+- Filenames in files must end with `.png`, `.jpg`, or `.pdf`. Use 300 DPI minimum.
+- For inside labels: use `template_type: "native"`. Custom labels are deprecated (April 2020).
+- **NEVER** try to sync jewelry. Not supported via API.
+- `PUT /store/products/{id}` capped at **10 req/60s**. Batch changes locally before pushing.
+
+```typescript
+// Schema for creating a sync product
+import { z } from 'zod';
+
+export const SyncProductInput = z.object({
+  external_id: z.string().min(1),
+  name: z.string().min(1).max(255),
+  thumbnail: z.string().url(),
+  variants: z.array(z.object({
+    external_id: z.string(),
+    variant_id: z.number().int().positive(),    // FROM CATALOG, not product_id
+    retail_price: z.string().regex(/^\d+\.\d{2}$/),
+    sku: z.string().optional(),
+    files: z.array(z.object({
+      type: z.enum(['default', 'back', 'sleeve_left', 'sleeve_right', 'label_inside']),
+      url: z.string().url(),
+    })).min(1),
+  })).max(100),
+});
+```
+
+---
+
+## Order Creation Rules
+
+```typescript
+// schemas/order.schema.ts
+export const OrderInput = z.object({
+  external_id: z.string().min(1),
+  shipping: z.enum(['STANDARD', 'EXPRESS', 'PRINTFUL_FAST']).default('STANDARD'),
+  recipient: z.object({
+    name: z.string().min(1),
+    address1: z.string().min(1),
+    address2: z.string().optional(),
+    city: z.string().min(1),
+    state_code: z.string().length(3),    // MX: 'JAL', 'CMX', 'NLE', etc.
+    country_code: z.literal('MX'),       // hardcoded for this project
+    zip: z.string().regex(/^\d{5}$/),    // MX postal codes are 5 digits
+    phone: z.string().min(10),
+    email: z.string().email(),
+    tax_number: z.string().optional(),   // ← RFC del cliente final si pidió factura
+  }),
+  items: z.array(z.object({
+    sync_variant_id: z.number().int().positive(),
+    quantity: z.number().int().positive(),
+    retail_price: z.string(),
+  })).min(1),
+  retail_costs: z.object({
+    currency: z.literal('MXN'),
+    subtotal: z.string(),
+    shipping: z.string(),
+    tax: z.string(),
+    total: z.string(),
+  }),
+});
+```
+
+**Mexican state codes (ISO 3166-2:MX):** AGU, BCN, BCS, CAM, CHP, CHH, CMX, COA, COL, DUR, GUA, GRO, HID, JAL, MEX, MIC, MOR, NAY, NLE, OAX, PUE, QUE, ROO, SLP, SIN, SON, TAB, TAM, TLA, VER, YUC, ZAC.
+
+**Rule:** when implementing the address form, validate `state_code` against this set.
+
+---
+
+## Webhooks
+
+### Setup (run once during deployment)
+```typescript
+await printful.post('/webhooks', {
+  url: `${process.env.APP_URL}/webhooks/printful/${process.env.WEBHOOK_SECRET}`,
+  types: [
+    'order_created',
+    'order_updated',
+    'order_failed',
+    'order_canceled',
+    'order_put_hold',
+    'order_remove_hold',
+    'order_refunded',
+    'package_shipped',
+    'package_returned',
+    'stock_updated',
+  ],
+});
+```
+
+### Receiver pattern (ALWAYS respond 200 fast, process async)
+```typescript
+// routes/webhooks.routes.ts
+router.post('/webhooks/printful/:secret', async (req, res) => {
+  if (req.params.secret !== process.env.WEBHOOK_SECRET) {
+    return res.status(404).end();   // Don't leak that the path exists
+  }
+
+  res.status(200).send('OK');        // ← respond FIRST
+
+  await webhookQueue.add('printful-event', {
+    type: req.body.type,
+    data: req.body.data,
+    receivedAt: Date.now(),
+  });
+});
+```
+
+### Security note
+Printful does **NOT** HMAC-sign webhooks. Mitigations:
+1. Secret in URL path (above).
+2. For sensitive actions (refunds, status changes), **re-fetch** via `GET /orders/{id}` to confirm — don't trust webhook payload blindly.
+
+---
+
+## Mexico-Specific Rules
+
+### Currency
+- Printful prices: **always USD/EUR**, never MXN.
+- Use `lib/banxico.ts` to fetch daily FIX rate.
+- Cache FX for 4 hours.
+- Add a buffer of **5%** when setting retail MXN prices to cushion FX swings.
+
+### Taxes & Invoicing
+- Customer-facing prices include **16% IVA** (Mexico VAT).
+- We charge IVA, we declare it. Printful does NOT withhold it.
+- CFDI 4.0 must be issued via a PAC (Facturama, SW Sapien, Konfio).
+- If customer provides RFC, pass it in `recipient.tax_number` AND store it locally for CFDI generation.
+
+### Shipping & Delivery Times
+- Fulfillment center: **Tijuana, MX** (since 2018).
+- **Every package to MX clears customs** (Printful manages it, but adds 2-5 days).
+- Realistic timeline to show customer: **5-14 days** total.
+  - Production: `avg_fulfillment_time` from catalog (typically 2-7 days)
+  - Shipping within MX: 3-7 days
+- For US-bound orders from Tijuana, Printful routes via San Diego (no extra customs for end customer).
+
+### Returns
+- Printful only accepts returns for **defects/damage**, NOT customer remorse.
+- Build our own return policy on top.
+
+---
+
+## Error Handling Pattern
+
+```typescript
+// services/printful.helper.ts
+export async function callPrintful<T>(
+  fn: () => Promise<{ data: { code: number; result: T } }>,
+  context: { operation: string; internalId?: string },
+): Promise<T> {
+  try {
+    const { data } = await fn();
+    if (data.code !== 200) {
+      throw new PrintfulError(`Unexpected code: ${data.code}`, data);
+    }
+    logger.info({ ...context, status: 'ok' });
+    return data.result;
+  } catch (err: any) {
+    const status = err.response?.status;
+    const printfulError = err.response?.data?.error;
+
+    logger.error({
+      ...context,
+      status,
+      reason: printfulError?.reason,
+      message: printfulError?.message,
+    });
+
+    if (status === 401) throw new AuthError('Printful token invalid or expired');
+    if (status === 429) throw new RateLimitError('Printful rate limit hit');
+    if (status === 404) throw new NotFoundError(context.operation);
+    if (status >= 500) throw new PrintfulServerError(printfulError?.message);
+
+    throw err;
+  }
+}
+```
+
+**Rule:** every service method must use `callPrintful()`. No bare `printful.get/post` calls in services.
+
+---
+
+## Database Schema (PostgreSQL)
+
+```sql
+-- migrations/001_init.sql
+CREATE TABLE printful_products (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  internal_sku VARCHAR(50) UNIQUE NOT NULL,
+  printful_sync_product_id INT NOT NULL,
+  printful_sync_variant_id INT NOT NULL UNIQUE,
+  printful_catalog_variant_id INT NOT NULL,
+  retail_price_mxn DECIMAL(10,2) NOT NULL,
+  printful_cost_usd DECIMAL(10,2) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'active',
+  last_synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_pf_products_status ON printful_products(status);
+
+CREATE TABLE printful_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  internal_order_id VARCHAR(50) UNIQUE NOT NULL,
+  printful_order_id INT UNIQUE,
+  customer_rfc VARCHAR(13),
+  status VARCHAR(20) NOT NULL DEFAULT 'draft',
+  total_mxn DECIMAL(10,2) NOT NULL,
+  shipping_method VARCHAR(20),
+  tracking_number VARCHAR(100),
+  tracking_url TEXT,
+  carrier VARCHAR(50),
+  shipped_at TIMESTAMPTZ,
+  cfdi_uuid VARCHAR(36),                -- CFDI folio fiscal
+  cfdi_xml_url TEXT,
+  raw_payload JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_pf_orders_status ON printful_orders(status);
+CREATE INDEX idx_pf_orders_printful_id ON printful_orders(printful_order_id);
+
+CREATE TABLE webhook_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type VARCHAR(50) NOT NULL,
+  printful_order_id INT,
+  payload JSONB NOT NULL,
+  processed_at TIMESTAMPTZ,
+  error TEXT,
+  received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_webhook_events_type ON webhook_events(event_type);
+CREATE INDEX idx_webhook_events_unprocessed ON webhook_events(processed_at) WHERE processed_at IS NULL;
+```
+
+---
+
+## Environment Variables
+
+```bash
+# .env.example — copy to .env, never commit .env
+NODE_ENV=development
+APP_URL=https://api.tu-tienda.mx
+
+# Printful
+PRINTFUL_TOKEN=                          # Required. From developers.printful.com/tokens
+PRINTFUL_STORE_ID=                       # Only if account-level token
+
+# Webhook security
+WEBHOOK_SECRET=                          # Long random string, in URL path
+
+# Banxico (FX rates)
+BANXICO_API_TOKEN=
+
+# Database
+DATABASE_URL=postgres://user:pass@host:5432/dbname
+
+# Redis (BullMQ)
+REDIS_URL=redis://localhost:6379
+
+# CFDI / PAC
+PAC_PROVIDER=facturama                   # or sw_sapien, konfio
+PAC_API_KEY=
+PAC_RFC_EMISOR=                          # Your business RFC
+
+# Payment processor
+STRIPE_SECRET_KEY=
+# or
+CONEKTA_PRIVATE_KEY=
+```
+
+---
+
+## Hard Constraints (NEVER do these)
+
+| Don't do | Do instead |
+|---|---|
+| Hardcode `Authorization: Bearer pk_...` | `process.env.PRINTFUL_TOKEN` |
+| Use `product_id` to create orders | Always `variant_id` |
+| Confirm orders directly with `?confirm=1` on creation | Create draft → validate → confirm |
+| Charge customer before Printful confirms | Charge AFTER `POST /orders/{id}/confirm` 200 |
+| Show USD prices to MX customers | Convert via Banxico, add 5% buffer, show MXN |
+| Trust webhook payload for refunds | Re-fetch `GET /orders/{id}` to verify |
+| Hit `PUT /store/products` in a loop | Batch + respect 10 req/60s cap |
+| Try to sell jewelry | Not supported via API |
+| Use custom inside labels | Use `template_type: "native"` |
+| Make raw `axios`/`fetch` calls to Printful | Use the `printful` instance from `lib/printful.ts` |
+| Inline Zod schemas in routes | Put them in `schemas/` |
+| Skip the `external_id` field | Every resource must have one |
+
+---
+
+## Common Pitfalls (saw these in dev)
+
+1. **`variant_id` vs `product_id` confusion** → orders fail or wrong items shipped. Always double-check from catalog response.
+2. **State code length mismatch** → Printful expects 3-char ISO codes (`JAL`, `CMX`), not 2-char (`MX-JAL`) and not full names.
+3. **Decimal as number instead of string** → Printful wants `"29.99"` not `29.99`. Coerce with `.toFixed(2)`.
+4. **Timezone bugs in timestamps** → Printful returns UNIX seconds (not ms). Multiply by 1000 for JS `Date`.
+5. **Forgetting `X-PF-Store-Id`** with account-level token → 401 or wrong store hit. Use store-level token if possible.
+6. **Webhook spam** → don't make multiple subscriptions for the same URL. `POST /webhooks` REPLACES the config, doesn't append.
+7. **Catalog cache staleness** → cache TTL max 24h. Discontinued variants will start failing if cache is older.
+
+---
+
+## Testing Rules
+
+- **Unit tests:** mock the `printful` Axios instance with `nock` or `msw`.
+- **Integration tests:** point to Printful's actual API but use a **dedicated test store** with test products. Never run integration tests against production store.
+- **Webhook tests:** use Printful's Webhook Simulator (in the developer dashboard) or simulate locally with stored payload fixtures.
+- **Mock RFC for tests:** `XAXX010101000` (generic Mexican RFC for testing).
+
+---
+
+## Useful Links
+
+- **API docs:** https://developers.printful.com/docs/
+- **Developer Portal:** https://developers.printful.com
+- **Postman collection:** download from API docs page
+- **Help Center (Mexico):** search "Mexico" at help.printful.com
+- **ISO 3166-2:MX codes:** Wikipedia "ISO 3166-2:MX"
+- **Banxico FIX rate API:** https://www.banxico.org.mx/SieAPIRest/
+
+---
+
+## When in doubt
+
+1. Re-read this file.
+2. Check the official docs (link above).
+3. If the docs are ambiguous, **ask the user before implementing**.
+4. Never invent endpoints or fields not documented here.
+5. Prefer explicit + verbose code over clever one-liners — this codebase will be maintained by other devs.

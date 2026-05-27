@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f6fb;
+  --foreground: #0f172a;
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+  --glass-blur: 18px;
+  --accent: #6366f1;
+  --accent-2: #ec4899;
+  --gradient-hero: linear-gradient(
+    135deg,
+    #e0e7ff 0%,
+    #fce7f3 40%,
+    #cffafe 100%
+  );
+  --mesh-1: rgba(99, 102, 241, 0.35);
+  --mesh-2: rgba(236, 72, 153, 0.28);
+  --mesh-3: rgba(34, 211, 238, 0.25);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #030712;
+    --foreground: #f1f5f9;
+    --glass-bg: rgba(15, 23, 42, 0.45);
+    --glass-bg-strong: rgba(15, 23, 42, 0.62);
+    --glass-border: rgba(148, 163, 184, 0.15);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    --gradient-hero: linear-gradient(
+      135deg,
+      #0f172a 0%,
+      #1e1b4b 45%,
+      #312e81 100%
+    );
+    --mesh-1: rgba(99, 102, 241, 0.22);
+    --mesh-2: rgba(236, 72, 153, 0.18);
+    --mesh-3: rgba(34, 211, 238, 0.12);
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(calc(var(--glass-blur) + 6px));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 6px));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.mesh-bg {
+  background: var(--gradient-hero);
+}
+
+.mesh-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.mesh-orb--1 {
+  background: var(--mesh-1);
+}
+.mesh-orb--2 {
+  background: var(--mesh-2);
+}
+.mesh-orb--3 {
+  background: var(--mesh-3);
+}
