@@ -110,7 +110,7 @@ export function FeatureSection() {
               playsInline
               className="absolute inset-0 w-full h-full object-cover"
             >
-              <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/c4baaf67-b900-4b90-af2a-daf25a5a4b78-5un5eTbj9Z67qEtEdsQwlYrte9dZM9.mp4" type="video/mp4" />
+              <source src="https://www.pexels.com/es-es/download/video/36570934/" type="video/mp4" />
             </video>
             {/* Overlay Card */}
             <div className="absolute bottom-8 left-8 right-8 bg-white p-6 shadow-lg rounded-xl">
@@ -139,7 +139,7 @@ export function FeatureSection() {
           >
             {/* Background Image */}
             <Image
-              src="/images/products/0ed61900-dd29-4dd2-bc2d-abc2db54c352.png"
+              src="https://images.pexels.com/photos/5560606/pexels-photo-5560606.jpeg"
               alt="Natural ingredients"
               fill
               className="object-cover"
@@ -186,7 +186,7 @@ export function FeatureSection() {
               playsInline
               className="absolute inset-0 w-full h-full object-cover scale-[1.02]"
             >
-              <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/a0b7c364-afa9-4afa-9716-45718578cc01-Ih8UaqQr1bl8aoNlbRha4FgaQ65eXX.mp4" type="video/mp4" />
+              <source src="https://www.pexels.com/es-es/download/video/8738397/" type="video/mp4" />
             </video>
             {/* Overlay for text readability */}
             <div className="absolute inset-0 bg-transparent" />
@@ -222,7 +222,7 @@ export function FeatureSection() {
               playsInline
               className="absolute inset-0 w-full h-full object-cover"
             >
-              <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/0c826034-d4f2-4d4f-8e99-50e94e4ce63f-dG1CBOjR36xFPTbhcROrHbomGXtlTQ.mp4" type="video/mp4" />
+              <source src="https://www.pexels.com/es-es/download/video/5670882/" type="video/mp4" />
             </video>
           </div>
 
@@ -235,7 +235,7 @@ export function FeatureSection() {
             style={{ transitionDelay: '100ms' }}
           >
             <span className={`text-sm tracking-[0.3em] uppercase text-primary mb-4 block ${headerVisible ? 'animate-blur-in opacity-0' : 'opacity-0'}`} style={headerVisible ? { animationDelay: '0.2s', animationFillMode: 'forwards' } : {}}>
-              Por Qué Print MX
+              Por Qué Mr. Paps
             </span>
             <h2 className={`font-serif text-4xl leading-tight text-foreground mb-6 text-balance md:text-7xl ${headerVisible ? 'animate-blur-in opacity-0' : 'opacity-0'}`} style={headerVisible ? { animationDelay: '0.4s', animationFillMode: 'forwards' } : {}}>
               Tu ropa, tu estilo.

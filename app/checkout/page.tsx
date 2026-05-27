@@ -3,7 +3,7 @@ import { Footer } from "@/components/boty/footer";
 import { BotyCheckoutFlow } from "@/components/boty/checkout-flow";
 
 export const metadata = {
-  title: "Checkout — Print MX",
+  title: "Checkout — Mr. Paps",
 };
 
 export default function CheckoutPage() {

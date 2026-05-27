@@ -33,7 +33,7 @@ const testimonials = [
     name: "María K.",
     location: "Puebla",
     rating: 5,
-    text: "Lancé mi línea de ropa gracias a Print MX. Sin inventario, sin riesgo. ¡Increíble servicio!",
+    text: "Lancé mi línea de ropa gracias a Mr. Paps. Sin inventario, sin riesgo. ¡Increíble servicio!",
     product: "Sudadera Clásica"
   },
   {

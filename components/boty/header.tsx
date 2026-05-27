@@ -48,7 +48,7 @@ export function Header() {
           </div>
 
           <Link href="/" className="absolute left-1/2 -translate-x-1/2">
-            <h1 className="font-serif text-3xl tracking-wider text-foreground">Print MX</h1>
+            <h1 className="font-serif text-3xl tracking-wider text-foreground">Mr. Paps</h1>
           </Link>
 
           <div className="flex items-center gap-4">

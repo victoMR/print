@@ -20,7 +20,7 @@ export function GlassNav() {
           href="/"
           className="text-lg font-semibold tracking-tight bg-gradient-to-r from-indigo-500 to-pink-500 bg-clip-text text-transparent"
         >
-          Print MX
+          Mr. Paps
         </Link>
         <nav className="flex items-center gap-1 md:gap-2">
           {links.map(({ href, label }) => (

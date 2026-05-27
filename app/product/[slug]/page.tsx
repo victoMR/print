@@ -11,8 +11,8 @@ type ProductPageProps = {
 export async function generateMetadata({ params }: ProductPageProps) {
   const { slug } = await params;
   const res = await fetchCatalogProduct(slug);
-  if (!res?.data) return { title: "Producto — Print MX" };
-  return { title: `${res.data.name} — Print MX` };
+  if (!res?.data) return { title: "Producto — Mr. Paps" };
+  return { title: `${res.data.name} — Mr. Paps` };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {

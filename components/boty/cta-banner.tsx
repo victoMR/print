@@ -40,10 +40,10 @@ export function CTABanner() {
         >
           {/* Background Image */}
           <Image
-            src="/images/bf965cf4-e728-4e72-ab1b-16b1cd8f1822.png"
+            src="https://images.pexels.com/photos/33650427/pexels-photo-33650427.jpeg"
             alt="Natural ingredients"
             fill
-            className="object-cover"
+            className="object-cover object-center lg:object-[center_72%]"
           />
           
           <div className="relative z-10 text-left max-w-2xl">

@@ -81,7 +81,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
           <div className="flex flex-col">
             <div className="mb-8">
               <span className="text-sm tracking-[0.3em] uppercase text-primary mb-2 block">
-                Print MX
+                Mr. Paps
               </span>
               <h1 className="font-serif text-4xl md:text-5xl text-foreground mb-3">
                 {product.name}

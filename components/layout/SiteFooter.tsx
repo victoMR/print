@@ -7,7 +7,7 @@ export function SiteFooter() {
       <GlassCard className="mx-auto max-w-6xl px-6 py-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="font-semibold text-foreground">Print MX</p>
+            <p className="font-semibold text-foreground">Mr. Paps</p>
             <p className="mt-1 max-w-sm text-sm text-foreground/65">
               Impresión bajo demanda desde Tijuana. Precios en MXN con IVA.
               Envío 5–14 días a todo México.
@@ -22,7 +22,7 @@ export function SiteFooter() {
           </div>
         </div>
         <p className="mt-6 border-t border-foreground/10 pt-6 text-center text-xs text-foreground/45">
-          © {new Date().getFullYear()} Print MX. Todos los precios incluyen 16% IVA.
+          © {new Date().getFullYear()} Mr. Paps. Todos los precios incluyen 16% IVA.
         </p>
       </GlassCard>
     </footer>

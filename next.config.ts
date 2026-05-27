@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "images.pexels.com" },
       { protocol: "https", hostname: "files.cdn.printful.com" },
       { protocol: "https", hostname: "img.printful.com" },
       { protocol: "https", hostname: "**.printful.com" },

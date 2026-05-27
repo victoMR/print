@@ -17,7 +17,7 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Print MX — Tienda POD",
+  title: "Mr. Paps — Tienda POD",
   description: "Productos personalizados impresos bajo demanda con envío a todo México.",
   keywords: ["print", "printful", "México", "POD", "tienda"],
 };

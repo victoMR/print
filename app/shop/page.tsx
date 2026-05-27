@@ -4,7 +4,7 @@ import { ShopPageContent } from "@/components/boty/shop-page-content";
 import { fetchCatalogProducts } from "@/lib/api";
 
 export const metadata = {
-  title: "Shop — Print MX",
+  title: "Shop — Mr. Paps",
 };
 
 export default async function ShopPage() {

@@ -22,7 +22,7 @@ export function Newsletter() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="font-serif text-4xl leading-tight text-primary-foreground mb-4 text-balance md:text-7xl">
-            Únete a Print MX
+            Únete a Mr. Paps
           </h2>
           <p className="text-lg text-primary-foreground/80 mb-10">
             Suscríbete para descuentos exclusivos, nuevos diseños y acceso anticipado a colecciones.
@@ -31,7 +31,7 @@ export function Newsletter() {
           {isSubscribed ? (
             <div className="inline-flex items-center gap-3 bg-primary-foreground/10 backdrop-blur-sm rounded-full px-8 py-4">
               <Check className="w-5 h-5 text-primary-foreground" />
-              <span className="text-primary-foreground">¡Bienvenido a Print MX!</span>
+              <span className="text-primary-foreground">¡Bienvenido a Mr. Paps!</span>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
