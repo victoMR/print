@@ -188,11 +188,11 @@ export function ProductGrid() {
   }, []);
 
   return (
-    <section className="py-24 bg-card">
+    <section className="py-24 bg-primary">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div ref={headerRef} className="text-center mb-16">
           <span
-            className={`text-sm tracking-[0.3em] uppercase text-primary mb-4 block ${headerVisible ? "animate-blur-in opacity-0" : "opacity-0"}`}
+            className={`text-sm tracking-[0.3em] uppercase text-white/90 mb-4 block ${headerVisible ? "animate-blur-in opacity-0" : "opacity-0"}`}
             style={
               headerVisible
                 ? { animationDelay: "0.2s", animationFillMode: "forwards" }
@@ -202,7 +202,7 @@ export function ProductGrid() {
             Nuestra Colección
           </span>
           <h2
-            className={`font-serif leading-tight text-foreground mb-4 text-balance text-7xl ${headerVisible ? "animate-blur-in opacity-0" : "opacity-0"}`}
+            className={`font-serif leading-tight text-white mb-4 text-balance text-7xl ${headerVisible ? "animate-blur-in opacity-0" : "opacity-0"}`}
             style={
               headerVisible
                 ? { animationDelay: "0.4s", animationFillMode: "forwards" }
@@ -212,7 +212,7 @@ export function ProductGrid() {
             Tu estilo, tu regla
           </h2>
           <p
-            className={`text-lg text-muted-foreground max-w-md mx-auto ${headerVisible ? "animate-blur-in opacity-0" : "opacity-0"}`}
+            className={`text-lg text-white/80 max-w-md mx-auto ${headerVisible ? "animate-blur-in opacity-0" : "opacity-0"}`}
             style={
               headerVisible
                 ? { animationDelay: "0.6s", animationFillMode: "forwards" }
@@ -224,9 +224,9 @@ export function ProductGrid() {
         </div>
 
         <div className="flex justify-center mb-12">
-          <div className="inline-flex bg-background rounded-full p-1 gap-1 relative">
+          <div className="inline-flex bg-white/10 rounded-full p-1 gap-1 relative">
             <div
-              className="absolute top-1 bottom-1 bg-foreground rounded-full transition-all duration-300 ease-out shadow-sm"
+              className="absolute top-1 bottom-1 bg-white rounded-full transition-all duration-300 ease-out shadow-sm"
               style={{
                 left:
                   selectedCategory === "camisetas"
@@ -244,8 +244,8 @@ export function ProductGrid() {
                 onClick={() => handleCategoryChange(category.value)}
                 className={`relative z-10 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
                   selectedCategory === category.value
-                    ? "text-background"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-primary"
+                    : "text-white/70 hover:text-white"
                 }`}
               >
                 {category.label}
@@ -264,7 +264,7 @@ export function ProductGrid() {
               }`}
               style={{ transitionDelay: isTransitioning ? "0ms" : `${index * 80}ms` }}
             >
-              <div className="bg-background rounded-3xl overflow-hidden boty-shadow boty-transition group-hover:scale-[1.02]">
+              <div className="bg-white rounded-3xl overflow-hidden boty-shadow boty-transition border-2 border-transparent group-hover:border-white/50 group-hover:scale-[1.02]">
                 <div className="relative aspect-square bg-muted overflow-hidden">
                   <Image
                     src={product.image || "/placeholder.svg"}
@@ -275,11 +275,11 @@ export function ProductGrid() {
                   />
                   {product.badge && (
                     <span
-                      className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs tracking-wide bg-white text-black ${
+                      className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs tracking-wide font-medium ${
                         product.badge === "Oferta"
-                          ? "bg-destructive/10 text-destructive"
+                          ? "bg-destructive text-destructive-foreground shadow-sm"
                           : product.badge === "Nuevo"
-                            ? "bg-primary/10 text-primary"
+                            ? "bg-primary text-primary-foreground shadow-sm"
                             : "bg-accent text-accent-foreground"
                       }`}
                     >
@@ -287,10 +287,10 @@ export function ProductGrid() {
                     </span>
                   )}
                   <span
-                    className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 boty-transition boty-shadow"
+                    className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 boty-transition boty-shadow"
                     aria-hidden
                   >
-                    <ShoppingBag className="w-4 h-4 text-foreground" />
+                    <ShoppingBag className="w-4 h-4 text-black" />
                   </span>
                 </div>
 
@@ -314,7 +314,7 @@ export function ProductGrid() {
         <div className="text-center mt-12">
           <Link
             href="/shop"
-            className="inline-flex items-center justify-center gap-2 bg-transparent border border-foreground/20 text-foreground px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-foreground/5"
+            className="inline-flex items-center justify-center gap-2 bg-transparent border border-white/20 text-white px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-white/10"
           >
             Ver Todos los Productos
           </Link>
