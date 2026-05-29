@@ -26,7 +26,7 @@ export function CheckoutFlow() {
   const [busy, setBusy] = useState(false);
 
   const cartItems = items.map((i) => ({
-    syncVariantId: i.syncVariantId,
+    variantId: i.variantId,
     quantity: i.quantity,
     retailPriceMxn: i.retailPriceMxn,
   }));

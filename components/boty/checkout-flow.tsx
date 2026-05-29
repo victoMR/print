@@ -26,6 +26,7 @@ export function BotyCheckoutFlow() {
   });
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [shippingMethod, setShippingMethod] = useState("STANDARD");
+  const [saveAccount, setSaveAccount] = useState(false);
   const [totals, setTotals] = useState({
     subtotal: "0.00",
     shipping: "0.00",
@@ -36,7 +37,7 @@ export function BotyCheckoutFlow() {
   const [busy, setBusy] = useState(false);
 
   const cartItems = items.map((i) => ({
-    syncVariantId: i.syncVariantId,
+    variantId: i.variantId,
     quantity: i.quantity,
     retailPriceMxn: i.retailPriceMxn,
   }));
@@ -83,7 +84,7 @@ export function BotyCheckoutFlow() {
         },
       });
       if (res.data.rates.length === 0) {
-        setError("Printful no devolvió opciones de envío para esta dirección.");
+        setError("No hay opciones de envío para esta dirección.");
         return;
       }
       setRates(res.data.rates);
@@ -119,6 +120,7 @@ export function BotyCheckoutFlow() {
         shippingMethod,
         recipient,
         retailCosts: { currency: "MXN", ...totals },
+        saveAccount,
       });
       clearCart();
       router.push(`/pedido/${res.data.internalOrderId}`);
@@ -154,7 +156,7 @@ export function BotyCheckoutFlow() {
           <h2 className="font-serif text-xl mb-4">Tu pedido</h2>
           <ul className="space-y-4">
             {items.map((item) => (
-              <li key={item.syncVariantId} className="flex justify-between text-sm">
+              <li key={item.variantId} className="flex justify-between text-sm">
                 <div>
                   <p className="font-medium">{item.productName}</p>
                   <p className="text-muted-foreground">
@@ -196,6 +198,17 @@ export function BotyCheckoutFlow() {
               </select>
             </label>
             <Field label="C.P. (5 dígitos)" value={recipient.zip} onChange={(v) => setRecipient({ ...recipient, zip: v })} required pattern="\d{5}" />
+            <label className="flex items-start gap-2 text-sm mt-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={saveAccount}
+                onChange={(e) => setSaveAccount(e.target.checked)}
+                className="mt-1"
+              />
+              <span>
+                Guardar mis datos para pedidos futuros (sin contraseña por ahora; usamos tu correo).
+              </span>
+            </label>
             <button
               type="submit"
               disabled={busy}
@@ -262,10 +275,10 @@ export function BotyCheckoutFlow() {
               disabled={busy}
               className="w-full bg-primary text-primary-foreground py-4 rounded-full font-medium hover:bg-primary/90 boty-transition disabled:opacity-60"
             >
-              {busy ? "Creando borrador…" : "Crear pedido borrador"}
+              {busy ? "Registrando pedido…" : "Confirmar pedido"}
             </button>
             <p className="mt-4 text-xs text-muted-foreground">
-              No se cobrará aún. El pedido queda en estado draft en Printful hasta integrar pago.
+              No se cobrará en línea aún. Te contactaremos para confirmar pago y producción.
             </p>
           </>
         )}

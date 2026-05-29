@@ -1,36 +1,49 @@
-# Base de datos — Supabase
+# Base de datos — Supabase (Mr. Paps)
 
-La persistencia del backend usa **Supabase** (`@supabase/supabase-js`) con la **service role key** (solo servidor).
+El backend usa **Supabase** con `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (solo servidor).
 
-## Variables
+## Migración actual (obligatoria)
+
+Ejecuta en **SQL Editor** de Supabase el archivo:
+
+**[`supabase/migrations/003_mrpaps_core.sql`](../../../supabase/migrations/003_mrpaps_core.sql)**  
+**[`supabase/migrations/004_mrpaps_admin_auth.sql`](../../../supabase/migrations/004_mrpaps_admin_auth.sql)** (rol + password_hash)
+
+Crea tablas con prefijo `mrpaps_*`:
+
+| Tabla | Uso |
+|-------|-----|
+| `mrpaps_users` | Cuentas opcionales (email, teléfono, RFC) |
+| `mrpaps_addresses` | Direcciones guardadas por usuario |
+| `mrpaps_designs` | Archivos de diseño |
+| `mrpaps_products` | Catálogo |
+| `mrpaps_product_variants` | Variantes + **inventario** (stock) |
+| `mrpaps_orders` | Pedidos (estados: pedido → impreso → enviado) |
+| `mrpaps_order_items` | Líneas del pedido |
+| `mrpaps_order_status_events` | Historial de cambios de estado |
+
+Incluye datos de ejemplo (camiseta clásica + 5 variantes) si la tabla de productos está vacía.
+
+Las migraciones `001_init.sql` / `002_*` (Printful) son **legacy**; ya no las usa el flujo v1.
+
+## Variables API
 
 ```bash
-SUPABASE_URL=https://pqnyzlvwlkwvhgpcchxm.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=   # Project Settings → API → service_role
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+ADMIN_JWT_SECRET=              # mín. 32 caracteres; firma sesiones admin
+
+# Crear primer admin (una vez, local):
+# ADMIN_SEED_EMAIL=admin@mrpaps.mx ADMIN_SEED_PASSWORD='...' pnpm --filter @print/api seed:admin
 ```
 
-## Aplicar migración inicial
+El panel `/admin` usa login (JWT); **no** expone `SUPABASE_SERVICE_ROLE_KEY` ni contraseñas al navegador.
 
-### Opción A — Supabase Dashboard (recomendado)
+## Repositorios Mr. Paps
 
-1. Abre [Supabase Dashboard](https://supabase.com/dashboard) → tu proyecto.
-2. Ve a **SQL Editor** → **New query**.
-3. Pega el contenido de [`../../../supabase/migrations/001_init.sql`](../../../supabase/migrations/001_init.sql).
-4. Ejecuta **Run**. Debes ver las tablas `printful_products`, `printful_orders` y `webhook_events` en **Table Editor**.
-
-### Opción B — Supabase CLI
-
-```bash
-supabase link --project-ref pqnyzlvwlkwvhgpcchxm
-supabase db push
-```
-
-## Repositorios
-
-| Archivo | Tabla | Uso |
-|---------|-------|-----|
-| `orders.repository.ts` | `printful_orders` | Pedidos draft/confirmados |
-| `webhook-events.repository.ts` | `webhook_events` | Auditoría de webhooks Printful |
-| `products.repository.ts` | `printful_products` | Catálogo sync local |
-
-La copia en `migrations/001_init.sql` se mantiene como referencia; la fuente canónica para Supabase es `supabase/migrations/001_init.sql`.
+| Archivo | Tablas |
+|---------|--------|
+| `mrpaps-products.repository.ts` | productos, variantes, stock |
+| `mrpaps-orders.repository.ts` | pedidos, ítems, estados |
+| `mrpaps-designs.repository.ts` | diseños |
+| `mrpaps-users.repository.ts` | usuarios y direcciones |

@@ -14,7 +14,7 @@ export type CatalogProductDetail = {
   description: string;
   thumbnail: string;
   variants: Array<{
-    syncVariantId: number;
+    variantId: string;
     size: string;
     color: string;
     retailPriceMxn: string;
@@ -57,6 +57,7 @@ export type EstimateResponse = {
 export type CreateOrderResponse = {
   data: {
     internalOrderId: string;
+    orderNumber?: string;
     status: string;
     paymentClientSecret: string | null;
   };
@@ -65,12 +66,30 @@ export type CreateOrderResponse = {
 export type OrderStatusResponse = {
   data: {
     internalOrderId: string;
-    status: string;
+    orderNumber?: string;
+    status: MrpapsOrderStatus;
     totalMxn: string;
     trackingNumber: string | null;
     trackingUrl: string | null;
+    carrier?: string | null;
     shippedAt: string | null;
+    printedAt?: string | null;
+    items?: Array<{
+      productName: string;
+      variantLabel: string;
+      quantity: number;
+      unitPriceMxn: string;
+    }>;
   };
+};
+
+export type MrpapsOrderStatus = "pedido" | "impreso" | "enviado" | "cancelado";
+
+export const ORDER_STATUS_LABELS: Record<MrpapsOrderStatus, string> = {
+  pedido: "Pedido recibido",
+  impreso: "Impreso",
+  enviado: "Enviado",
+  cancelado: "Cancelado",
 };
 
 export type CheckoutAddress = {
@@ -90,7 +109,7 @@ export type CheckoutRecipient = CheckoutAddress & {
 };
 
 export type CartItem = {
-  syncVariantId: number;
+  variantId: string;
   productSlug: string;
   productName: string;
   variantLabel: string;
@@ -99,70 +118,78 @@ export type CartItem = {
   thumbnail: string;
 };
 
-export type PrintfulCatalogProduct = {
-  id: number;
-  title: string;
-  type: string;
-  brand: string;
-  model: string;
-  image: string;
-  variant_count: number;
+export type AdminOrderSummary = {
+  publicId: string;
+  orderNumber: string;
+  status: MrpapsOrderStatus;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  totalMxn: string;
+  shippingLabel: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+  carrier: string | null;
+  orderedAt: string;
+  printedAt: string | null;
+  shippedAt: string | null;
+  itemCount: number;
+  items: Array<{
+    productName: string;
+    variantLabel: string;
+    sku: string;
+    quantity: number;
+    unitPriceMxn: string;
+  }>;
 };
 
-export type PrintfulSyncProduct = {
-  id: number;
-  external_id: string;
+export type AdminInventoryRow = {
+  variantId: string;
+  sku: string;
+  productId: string;
+  productName: string;
+  productSlug: string;
+  size: string;
+  color: string;
+  retailPriceMxn: string;
+  stockQuantity: number;
+  lowStockThreshold: number;
+  isLowStock: boolean;
+  status: string;
+  designId: string | null;
+};
+
+export type AdminDesign = {
+  id: string;
   name: string;
-  variants: number;
-  synced: number;
-  thumbnail_url: string;
+  description: string | null;
+  fileUrl: string;
+  thumbnailUrl: string | null;
+  tags: string[];
+  createdAt: string;
 };
 
-export type SyncProductPayload = {
-  externalId: string;
+export type AdminProductSummary = {
+  id: string;
+  slug: string;
   name: string;
-  thumbnail: string;
-  variants: Array<{
-    externalId: string;
-    variantId: number;
-    retailPrice: string;
-    sku?: string;
-    files: Array<{
-      type: "default" | "back" | "sleeve_left" | "sleeve_right" | "label_inside";
-      url: string;
-    }>;
-  }>;
+  description: string;
+  thumbnailUrl: string;
+  status: string;
+  variantCount: number;
 };
 
-export type StoreProductDetailData = {
-  sync_product: {
-    id: number;
-    external_id: string;
-    name?: string;
-    /** URL miniatura (API ya unifica desde thumbnail / thumbnail_url de Printful) */
-    thumbnail?: string;
-    thumbnail_url?: string;
-  };
-  sync_variants: Array<{
-    id: number;
-    external_id: string;
-    variant_id: number;
-    retail_price: string;
-  }>;
+export type AdminProductVariant = {
+  id: string;
+  sku: string;
+  size: string;
+  color: string;
+  retailPriceMxn: string;
+  stockQuantity: number;
+  status: string;
+  designId: string | null;
 };
 
-export type StoreProductDetailResponse = { data: StoreProductDetailData };
-
-export type SyncProductUpdatePayload = {
-  name?: string;
-  thumbnail?: string;
-  variants?: Array<{
-    syncVariantId: number;
-    externalId?: string;
-    retailPrice?: string;
-    files?: Array<{
-      type: "default" | "back" | "sleeve_left" | "sleeve_right" | "label_inside";
-      url: string;
-    }>;
-  }>;
+export type AdminProductDetail = AdminProductSummary & {
+  variants: AdminProductVariant[];
 };

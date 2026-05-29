@@ -23,7 +23,14 @@ Guía rápida para agentes de IA y desarrolladores. **Leer primero:** [`.cursorr
 | Frontend | Raíz (`app/`, `components/`) | `print` |
 | Backend | `packages/api/` | `@print/api` |
 
-**Persistencia:** Supabase (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). Migración inicial en `supabase/migrations/001_init.sql`; ver `packages/api/src/db/README.md`.
+**Persistencia:** Supabase (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). Migración Mr. Paps: `supabase/migrations/003_mrpaps_core.sql`; ver `packages/api/src/db/README.md`.
+
+## Admin
+
+Frontend admin: login en `/admin` (JWT en sessionStorage, no expone claves de Supabase).
+
+- Panel: `/admin` — email + contraseña de usuario con `role = admin`
+- Endpoints: `POST /api/v1/admin/auth/login`, `GET /api/v1/admin/auth/me`, luego `/admin/orders`, etc.
 
 ## Contratos API (resumen)
 

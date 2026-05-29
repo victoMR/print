@@ -14,19 +14,17 @@ async function validatePrintfulToken(): Promise<void> {
 async function validateSupabase(): Promise<void> {
   const { supabase } = await import('./lib/supabase.js');
 
-  const { error } = await supabase.from('printful_orders').select('id').limit(1);
+  const { error } = await supabase.from('mrpaps_orders').select('id').limit(1);
   if (error) {
-    throw new Error(`Supabase connection failed: ${error.message}`);
+    throw new Error(
+      `Supabase: tabla mrpaps_orders no disponible. Ejecuta supabase/migrations/003_mrpaps_core.sql — ${error.message}`,
+    );
   }
 
-  logger.info('Supabase connection OK');
+  logger.info('Supabase connection OK (mrpaps_*)');
 }
 
 async function main(): Promise<void> {
-  if (!process.env.PRINTFUL_TOKEN) {
-    throw new Error('PRINTFUL_TOKEN is required');
-  }
-
   if (!process.env.SUPABASE_URL) {
     throw new Error('SUPABASE_URL is required');
   }
@@ -35,8 +33,18 @@ async function main(): Promise<void> {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
   }
 
-  await validatePrintfulToken();
+  if (!process.env.ADMIN_JWT_SECRET || process.env.ADMIN_JWT_SECRET.length < 32) {
+    throw new Error('ADMIN_JWT_SECRET is required (mínimo 32 caracteres)');
+  }
+
   await validateSupabase();
+
+  if (process.env.PRINTFUL_TOKEN) {
+    await validatePrintfulToken();
+    logger.info('Printful token OK (opcional; rutas legacy)');
+  } else {
+    logger.warn('PRINTFUL_TOKEN no definido — modo Mr. Paps (solo Supabase)');
+  }
 
   const { connectRedis } = await import('./lib/queue.js');
   const redisOk = await connectRedis();
@@ -52,7 +60,7 @@ async function main(): Promise<void> {
   }
 
   app.listen(port, () => {
-    logger.info({ port }, 'API Printful escuchando');
+    logger.info({ port }, 'API Mr. Paps escuchando');
   });
 }
 

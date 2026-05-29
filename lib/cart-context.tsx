@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
-const STORAGE_KEY = "print-mx-cart";
+const STORAGE_KEY = "mrpaps-cart-v2";
 
 type CartContextValue = {
   items: CartItem[];
@@ -22,8 +22,8 @@ type CartContextValue = {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (syncVariantId: number) => void;
-  updateQuantity: (syncVariantId: number, quantity: number) => void;
+  removeItem: (variantId: string) => void;
+  updateQuantity: (variantId: string, quantity: number) => void;
   clearCart: () => void;
 };
 
@@ -35,7 +35,8 @@ function loadStoredItems(): CartItem[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CartItem[];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((i) => typeof i.variantId === "string" && i.variantId.length > 0);
   } catch {
     return [];
   }
@@ -59,10 +60,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = useCallback(
     (item: Omit<CartItem, "quantity">, quantity = 1) => {
       setItems((prev) => {
-        const existing = prev.find((i) => i.syncVariantId === item.syncVariantId);
+        const existing = prev.find((i) => i.variantId === item.variantId);
         if (existing) {
           return prev.map((i) =>
-            i.syncVariantId === item.syncVariantId
+            i.variantId === item.variantId
               ? { ...i, quantity: i.quantity + quantity }
               : i,
           );
@@ -74,17 +75,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const removeItem = useCallback((syncVariantId: number) => {
-    setItems((prev) => prev.filter((i) => i.syncVariantId !== syncVariantId));
+  const removeItem = useCallback((variantId: string) => {
+    setItems((prev) => prev.filter((i) => i.variantId !== variantId));
   }, []);
 
-  const updateQuantity = useCallback((syncVariantId: number, quantity: number) => {
+  const updateQuantity = useCallback((variantId: string, quantity: number) => {
     if (quantity < 1) {
-      setItems((prev) => prev.filter((i) => i.syncVariantId !== syncVariantId));
+      setItems((prev) => prev.filter((i) => i.variantId !== variantId));
       return;
     }
     setItems((prev) =>
-      prev.map((i) => (i.syncVariantId === syncVariantId ? { ...i, quantity } : i)),
+      prev.map((i) => (i.variantId === variantId ? { ...i, quantity } : i)),
     );
   }, []);
 

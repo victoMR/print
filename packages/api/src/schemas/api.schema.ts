@@ -11,14 +11,16 @@ export const addressSchema = z.object({
 });
 
 export const checkoutItemSchema = z.object({
-  syncVariantId: z.number().int().positive(),
+  variantId: z.string().uuid(),
+  syncVariantId: z.number().int().positive().optional(),
   quantity: z.number().int().positive(),
   retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/).optional(),
 });
 
 export const shippingRatesBodySchema = z.object({
   items: z.array(z.object({
-    syncVariantId: z.number().int().positive(),
+    variantId: z.string().uuid(),
+    syncVariantId: z.number().int().positive().optional(),
     quantity: z.number().int().positive(),
   })).min(1),
   address: addressSchema,
@@ -31,21 +33,23 @@ export const shippingRatesBodySchema = z.object({
 
 export const estimateBodySchema = z.object({
   items: z.array(z.object({
-    syncVariantId: z.number().int().positive(),
+    variantId: z.string().uuid(),
+    syncVariantId: z.number().int().positive().optional(),
     quantity: z.number().int().positive(),
     retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/),
   })).min(1),
-  shippingMethod: z.enum(['STANDARD', 'EXPRESS', 'PRINTFUL_FAST']).default('STANDARD'),
+  shippingMethod: z.enum(['STANDARD', 'EXPRESS']).default('STANDARD'),
   address: addressSchema,
 });
 
 export const createOrderBodySchema = z.object({
   items: z.array(z.object({
-    syncVariantId: z.number().int().positive(),
+    variantId: z.string().uuid(),
+    syncVariantId: z.number().int().positive().optional(),
     quantity: z.number().int().positive(),
     retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/),
   })).min(1),
-  shippingMethod: z.enum(['STANDARD', 'EXPRESS', 'PRINTFUL_FAST']).default('STANDARD'),
+  shippingMethod: z.enum(['STANDARD', 'EXPRESS']).default('STANDARD'),
   recipient: addressSchema.extend({
     name: z.string().min(1),
     phone: z.string().min(10),
@@ -59,6 +63,7 @@ export const createOrderBodySchema = z.object({
     tax: z.string().regex(/^\d+\.\d{2}$/),
     total: z.string().regex(/^\d+\.\d{2}$/),
   }),
+  saveAccount: z.boolean().optional(),
 });
 
 const syncFileSchema = z.object({

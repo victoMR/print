@@ -46,7 +46,7 @@ export function CartDrawer() {
           ) : (
             <div className="space-y-6">
               {items.map((item) => (
-                <div key={item.syncVariantId} className="flex gap-4">
+                <div key={item.variantId} className="flex gap-4">
                   <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
                     <Image
                       src={item.thumbnail || "/placeholder.svg"}
@@ -68,7 +68,7 @@ export function CartDrawer() {
                         <button
                           type="button"
                           onClick={() =>
-                            updateQuantity(item.syncVariantId, item.quantity - 1)
+                            updateQuantity(item.variantId, item.quantity - 1)
                           }
                           className="p-1.5 hover:bg-muted boty-transition rounded-l-full"
                           aria-label="Disminuir cantidad"
@@ -79,7 +79,7 @@ export function CartDrawer() {
                         <button
                           type="button"
                           onClick={() =>
-                            updateQuantity(item.syncVariantId, item.quantity + 1)
+                            updateQuantity(item.variantId, item.quantity + 1)
                           }
                           className="p-1.5 hover:bg-muted boty-transition rounded-r-full"
                           aria-label="Aumentar cantidad"
@@ -90,7 +90,7 @@ export function CartDrawer() {
 
                       <button
                         type="button"
-                        onClick={() => removeItem(item.syncVariantId)}
+                        onClick={() => removeItem(item.variantId)}
                         className="p-1.5 text-muted-foreground hover:text-destructive boty-transition"
                         aria-label="Quitar artículo"
                       >

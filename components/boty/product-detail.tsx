@@ -14,12 +14,12 @@ type ProductDetailProps = {
 
 export function ProductDetail({ product }: ProductDetailProps) {
   const { addItem } = useCart();
-  const [variantId, setVariantId] = useState(product.variants[0]?.syncVariantId);
+  const [variantId, setVariantId] = useState(product.variants[0]?.variantId);
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
 
   const selected = useMemo(
-    () => product.variants.find((v) => v.syncVariantId === variantId),
+    () => product.variants.find((v) => v.variantId === variantId),
     [product.variants, variantId],
   );
 
@@ -35,14 +35,14 @@ export function ProductDetail({ product }: ProductDetailProps) {
       product.variants.find((v) => v.size === size && v.color === color) ??
       product.variants.find((v) => v.size === size) ??
       product.variants.find((v) => v.color === color);
-    if (match) setVariantId(match.syncVariantId);
+    if (match) setVariantId(match.variantId);
   }
 
   function handleAddToCart() {
     if (!selected) return;
     addItem(
       {
-        syncVariantId: selected.syncVariantId,
+        variantId: selected.variantId,
         productSlug: product.slug,
         productName: product.name,
         variantLabel: `${selected.size} / ${selected.color}`,

@@ -20,7 +20,7 @@ export function CheckoutCartSummary({ items }: CheckoutCartSummaryProps) {
       <h2 className="text-lg font-semibold mb-4">Tu pedido</h2>
       <ul className="flex flex-col gap-3 list-none p-0 m-0 mb-4">
         {items.map((item) => (
-          <li key={item.syncVariantId} className="flex gap-3">
+          <li key={item.variantId} className="flex gap-3">
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg">
               <Image
                 src={item.thumbnail}

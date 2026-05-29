@@ -33,7 +33,7 @@ export function CartView() {
     <div className="flex flex-col gap-6">
       <ul className="flex flex-col gap-4 list-none p-0 m-0">
         {items.map((item) => (
-          <li key={item.syncVariantId}>
+          <li key={item.variantId}>
             <GlassCard className="flex gap-4 p-4">
               <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
                 <Image src={item.thumbnail} alt={item.productName} fill className="object-cover" />
@@ -46,7 +46,7 @@ export function CartView() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeItem(item.syncVariantId)}
+                    onClick={() => removeItem(item.variantId)}
                     className="text-xs text-foreground/50 hover:text-red-500"
                   >
                     Quitar
@@ -56,12 +56,12 @@ export function CartView() {
                   <div className="flex items-center gap-2">
                     <QtyBtn
                       label="−"
-                      onClick={() => updateQuantity(item.syncVariantId, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
                     />
                     <span className="w-6 text-center text-sm">{item.quantity}</span>
                     <QtyBtn
                       label="+"
-                      onClick={() => updateQuantity(item.syncVariantId, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
                     />
                   </div>
                   <span className="font-medium">

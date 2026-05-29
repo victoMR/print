@@ -1,17 +1,19 @@
 import type {
+  AdminDesign,
+  AdminInventoryRow,
+  AdminOrderSummary,
+  AdminProductDetail,
+  AdminProductSummary,
   CatalogDetailResponse,
   CatalogListResponse,
   CreateOrderResponse,
   EstimateResponse,
+  MrpapsOrderStatus,
   OrderStatusResponse,
-  PrintfulCatalogProduct,
-  PrintfulSyncProduct,
   ShippingRatesResponse,
-  StoreProductDetailResponse,
-  SyncProductPayload,
-  SyncProductUpdatePayload,
 } from "./api-types";
 import type { CheckoutRecipient } from "./api-types";
+import { getAdminToken } from "./admin-session";
 
 const SERVER_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
 const V1 = "/api/v1";
@@ -121,8 +123,44 @@ export async function fetchCatalogProduct(
   }
 }
 
+function adminHeaders(): Record<string, string> {
+  const token = getAdminToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function adminLogin(email: string, password: string) {
+  const res = await apiFetch<{
+    data: {
+      token: string;
+      user: { id: string; email: string; fullName: string; role: "admin" };
+    };
+  }>(`${V1}/admin/auth/login`, {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+    cache: "no-store",
+  });
+
+  return {
+    data: {
+      token: res.data.token,
+      user: {
+        id: res.data.user.id,
+        email: res.data.user.email,
+        role: "admin" as const,
+      },
+    },
+  };
+}
+
+export async function adminFetchMe() {
+  return apiFetch<{ data: { id: string; email: string; role: "admin" } }>(
+    `${V1}/admin/auth/me`,
+    { headers: adminHeaders(), cache: "no-store" },
+  );
+}
+
 export async function fetchShippingRates(body: {
-  items: Array<{ syncVariantId: number; quantity: number }>;
+  items: Array<{ variantId: string; quantity: number }>;
   address: {
     address1: string;
     address2?: string;
@@ -146,7 +184,7 @@ export async function fetchShippingRates(body: {
 
 export async function fetchEstimate(body: {
   items: Array<{
-    syncVariantId: number;
+    variantId: string;
     quantity: number;
     retailPriceMxn: string;
   }>;
@@ -169,7 +207,7 @@ export async function fetchEstimate(body: {
 
 export async function createDraftOrder(body: {
   items: Array<{
-    syncVariantId: number;
+    variantId: string;
     quantity: number;
     retailPriceMxn: string;
   }>;
@@ -182,6 +220,7 @@ export async function createDraftOrder(body: {
     tax: string;
     total: string;
   };
+  saveAccount?: boolean;
 }) {
   return apiFetch<CreateOrderResponse>(`${V1}/checkout/orders`, {
     method: "POST",
@@ -197,66 +236,147 @@ export async function fetchOrderStatus(internalOrderId: string) {
   );
 }
 
-export async function adminListSyncProducts() {
-  return apiFetch<{ data: PrintfulSyncProduct[] }>(`${V1}/admin/sync-products`, {
+export async function adminListOrders(status?: MrpapsOrderStatus) {
+  const q = status ? `?status=${status}` : "";
+  return apiFetch<{ data: AdminOrderSummary[] }>(`${V1}/admin/orders${q}`, {
+    headers: adminHeaders(),
     cache: "no-store",
   });
 }
 
-export async function adminListCatalog() {
-  return apiFetch<{ data: PrintfulCatalogProduct[] }>(`${V1}/admin/catalog`, {
-    cache: "no-store",
-  });
-}
-
-export async function adminGetCatalogProduct(id: number) {
-  return apiFetch<{ data: unknown }>(`${V1}/admin/catalog/${id}`, {
-    cache: "no-store",
-  });
-}
-
-export async function adminCreateSyncProduct(payload: SyncProductPayload) {
-  return apiFetch(`${V1}/admin/sync-products`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
-}
-
-export async function adminSyncCatalog() {
-  return apiFetch(`${V1}/admin/sync-catalog`, {
-    method: "POST",
-    cache: "no-store",
-  });
-}
-
-export async function adminGetSyncProduct(syncProductId: number) {
-  return apiFetch<StoreProductDetailResponse>(
-    `${V1}/admin/sync-products/${syncProductId}`,
-    { cache: "no-store" },
-  );
-}
-
-export async function adminUpdateSyncProduct(
-  syncProductId: number,
-  body: SyncProductUpdatePayload,
+export async function adminUpdateOrderStatus(
+  publicId: string,
+  body: {
+    status: MrpapsOrderStatus;
+    trackingNumber?: string | null;
+    trackingUrl?: string | null;
+    carrier?: string | null;
+    internalNotes?: string | null;
+    note?: string;
+  },
 ) {
-  return apiFetch<{ data: unknown }>(
-    `${V1}/admin/sync-products/${syncProductId}`,
+  return apiFetch<{ data: { publicId: string; status: MrpapsOrderStatus } }>(
+    `${V1}/admin/orders/${encodeURIComponent(publicId)}/status`,
     {
-      method: "PUT",
+      method: "PATCH",
+      headers: adminHeaders(),
       body: JSON.stringify(body),
       cache: "no-store",
     },
   );
 }
 
-export async function adminDeleteSyncProduct(syncProductId: number) {
-  await apiFetch<undefined>(
-    `${V1}/admin/sync-products/${syncProductId}`,
+export async function adminListInventory() {
+  return apiFetch<{ data: AdminInventoryRow[] }>(`${V1}/admin/inventory`, {
+    headers: adminHeaders(),
+    cache: "no-store",
+  });
+}
+
+export async function adminUpdateInventory(variantId: string, stockQuantity: number) {
+  return apiFetch<{ data: { variantId: string; stockQuantity: number } }>(
+    `${V1}/admin/inventory/${encodeURIComponent(variantId)}`,
     {
-      method: "DELETE",
+      method: "PATCH",
+      headers: adminHeaders(),
+      body: JSON.stringify({ stockQuantity }),
       cache: "no-store",
     },
   );
+}
+
+export async function adminListDesigns() {
+  return apiFetch<{ data: AdminDesign[] }>(`${V1}/admin/designs`, {
+    headers: adminHeaders(),
+    cache: "no-store",
+  });
+}
+
+export async function adminCreateDesign(body: {
+  name: string;
+  description?: string;
+  fileUrl: string;
+  thumbnailUrl?: string;
+  tags?: string[];
+}) {
+  return apiFetch<{ data: AdminDesign }>(`${V1}/admin/designs`, {
+    method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+}
+
+export async function adminDeleteDesign(id: string) {
+  await apiFetch<undefined>(`${V1}/admin/designs/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: adminHeaders(),
+    cache: "no-store",
+  });
+}
+
+export async function adminListProducts() {
+  return apiFetch<{ data: AdminProductSummary[] }>(`${V1}/admin/products`, {
+    headers: adminHeaders(),
+    cache: "no-store",
+  });
+}
+
+export async function adminGetProduct(productId: string) {
+  return apiFetch<{ data: AdminProductDetail }>(
+    `${V1}/admin/products/${encodeURIComponent(productId)}`,
+    { headers: adminHeaders(), cache: "no-store" },
+  );
+}
+
+export async function adminCreateProduct(body: {
+  name: string;
+  slug?: string;
+  description?: string;
+  thumbnailUrl: string;
+  status?: "active" | "inactive";
+}) {
+  return apiFetch<{ data: AdminProductSummary }>(`${V1}/admin/products`, {
+    method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+}
+
+export async function adminUpdateProduct(
+  productId: string,
+  body: {
+    name?: string;
+    slug?: string;
+    description?: string;
+    thumbnailUrl?: string;
+    status?: "active" | "inactive" | "archived";
+  },
+) {
+  return apiFetch(`${V1}/admin/products/${encodeURIComponent(productId)}`, {
+    method: "PATCH",
+    headers: adminHeaders(),
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+}
+
+export async function adminCreateProductVariant(
+  productId: string,
+  body: {
+    sku: string;
+    sizeLabel: string;
+    colorLabel: string;
+    retailPriceMxn: number;
+    stockQuantity?: number;
+    designId?: string | null;
+  },
+) {
+  return apiFetch(`${V1}/admin/products/${encodeURIComponent(productId)}/variants`, {
+    method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
 }
