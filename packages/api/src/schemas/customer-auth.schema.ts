@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** Debe coincidir con customer-auth.service.ts (SALT_ROUNDS + bcrypt) y el frontend lib/customer-auth-rules.ts */
+/** Debe coincidir con lib/password.ts (bcrypt 12 rounds) y el frontend lib/customer-auth-rules.ts */
 export const CUSTOMER_PASSWORD_MIN = 8;
 export const CUSTOMER_PASSWORD_MAX = 128;
 

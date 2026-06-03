@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { mxStateCodeSchema } from './order.schema.js';
+import { CUSTOMER_PASSWORD_MAX, CUSTOMER_PASSWORD_MIN } from './customer-auth.schema.js';
 
 export const mrpapsOrderStatusSchema = z.enum([
   'pedido',
@@ -119,6 +120,17 @@ export const updateVariantAdminSchema = z.object({
   designId: z.string().uuid().nullable().optional(),
   garmentColorHex: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   status: z.enum(['active', 'inactive', 'archived']).optional(),
+});
+
+export const bootstrapPasswordSchema = z.object({
+  secret: z.string().min(16, 'Secret demasiado corto'),
+  email: z.string().email('Correo inválido').transform((v) => v.trim().toLowerCase()),
+  password: z
+    .string()
+    .min(CUSTOMER_PASSWORD_MIN)
+    .max(CUSTOMER_PASSWORD_MAX),
+  fullName: z.string().trim().min(1).max(120).optional(),
+  role: z.enum(['admin', 'customer']).default('admin'),
 });
 
 export const adminLoginSchema = z.object({

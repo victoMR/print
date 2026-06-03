@@ -1,11 +1,12 @@
-import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import type { MrpapsUserRow } from '../db/mrpaps.types.js';
 import * as usersRepo from '../db/mrpaps-users.repository.js';
+import { hashPassword, verifyPassword } from '../lib/password.js';
 import { AuthError } from '../types/errors.js';
 
-const SALT_ROUNDS = 12;
 const TOKEN_TTL = '8h';
+
+export { hashPassword, verifyPassword };
 
 export type AdminTokenPayload = {
   sub: string;
@@ -19,14 +20,6 @@ function getJwtSecret(): Uint8Array {
     throw new Error('ADMIN_JWT_SECRET debe tener al menos 32 caracteres');
   }
   return new TextEncoder().encode(secret);
-}
-
-export async function hashPassword(plain: string): Promise<string> {
-  return bcrypt.hash(plain, SALT_ROUNDS);
-}
-
-export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(plain, hash);
 }
 
 export async function loginAdmin(email: string, password: string) {

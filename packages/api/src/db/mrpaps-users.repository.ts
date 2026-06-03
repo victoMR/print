@@ -50,7 +50,7 @@ export async function upsertCustomerWithPassword(input: {
   if (existing) {
     return queryRequired<MrpapsUserRow>(
       `UPDATE mrpaps_users
-       SET full_name = $2, phone = $3, password_hash = $4, updated_at = NOW()
+       SET full_name = $2, phone = $3, password_hash = $4, role = 'customer', updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
       [existing.id, input.full_name, input.phone, input.password_hash],

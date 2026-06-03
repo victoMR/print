@@ -1,9 +1,6 @@
 /**
  * Reglas de validación alineadas con packages/api/src/routes/v1/auth.routes.ts
- * (registerSchema / loginSchema) y customer-auth.service.ts (bcrypt + JWT).
- *
- * La contraseña NUNCA se hashea en el navegador: el API aplica bcrypt (12 rounds)
- * y devuelve un JWT de sesión. SHA256 no se usa para contraseñas (no es adecuado).
+ * y lib/password.ts (bcrypt, 12 rounds). El API hashea; el navegador envía texto plano.
  */
 
 export const CUSTOMER_PASSWORD_MIN = 8;

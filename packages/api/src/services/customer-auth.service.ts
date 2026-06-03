@@ -1,10 +1,8 @@
-import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import * as usersRepo from '../db/mrpaps-users.repository.js';
+import { hashPassword, verifyPassword } from '../lib/password.js';
 import { AuthError, BadRequestError } from '../types/errors.js';
 import type { MrpapsUserRow } from '../db/mrpaps.types.js';
-
-const SALT_ROUNDS = 12;
 const TOKEN_TTL = '30d';
 
 export type CustomerTokenPayload = {
@@ -31,7 +29,7 @@ export async function registerCustomer(input: {
   const existing = await usersRepo.findUserByEmail(email);
   if (existing?.password_hash) throw new BadRequestError('Ya existe una cuenta con ese correo. Inicia sesión.');
 
-  const hash = await bcrypt.hash(input.password, SALT_ROUNDS);
+  const hash = await hashPassword(input.password);
   const user = await usersRepo.upsertCustomerWithPassword({ email, full_name: input.fullName, phone: input.phone ?? null, password_hash: hash });
   const token = await signCustomerToken(user);
   return { token, user: publicCustomer(user) };
@@ -40,7 +38,7 @@ export async function registerCustomer(input: {
 export async function loginCustomer(email: string, password: string): Promise<{ token: string; user: ReturnType<typeof publicCustomer> }> {
   const user = await usersRepo.findUserByEmail(email.trim().toLowerCase());
   if (!user || user.role !== 'customer' || !user.password_hash) throw new AuthError('Correo o contraseña incorrectos');
-  const valid = await bcrypt.compare(password, user.password_hash);
+  const valid = await verifyPassword(password, user.password_hash);
   if (!valid) throw new AuthError('Correo o contraseña incorrectos');
   const token = await signCustomerToken(user);
   return { token, user: publicCustomer(user) };
