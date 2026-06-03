@@ -9,7 +9,7 @@ type ProductUnavailableProps = {
 
 export function ProductUnavailable({
   title = "Producto no disponible",
-  message = "Este producto aún no tiene variantes activas (talla/precio). Si eres el administrador, vuelve a guardarlo en el panel o aplica la migración 007 en Supabase.",
+  message = "Este producto aún no tiene variantes activas (talla/precio). Si eres el administrador, edítalo en el panel y agrega variantes.",
 }: ProductUnavailableProps) {
   return (
     <main className="min-h-screen">

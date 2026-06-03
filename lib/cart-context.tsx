@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
-const STORAGE_KEY = "mrpaps-cart-v2";
+const STORAGE_KEY = "mrpaps-cart-v3";
 
 type CartContextValue = {
   items: CartItem[];

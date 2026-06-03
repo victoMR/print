@@ -141,6 +141,14 @@ export function BotyCheckoutFlow() {
   const currentStateName = MX_STATES.find((s) => s.code === recipient.stateCode)?.name ?? recipient.stateCode;
   const selectedRate = rates.find((r) => r.id === shippingMethod);
 
+  function handleClearStaleCart() {
+    clearCart();
+    setError(null);
+    router.push("/shop");
+  }
+
+  const staleCartAction = error && isStaleCartError(error) ? handleClearStaleCart : undefined;
+
   const displayTotals = useMemo(() => {
     if (step === "confirm" || step === "payment") return totals;
     return {
@@ -533,7 +541,7 @@ export function BotyCheckoutFlow() {
                 <AddressConfirmBanner recipient={recipient} stateName={currentStateName} />
               )}
 
-              {error && <ErrorBanner message={error} />}
+              {error && <ErrorBanner message={error} onClearCart={staleCartAction} />}
 
               <button
                 type="submit"
@@ -598,7 +606,7 @@ export function BotyCheckoutFlow() {
                 ))}
               </div>
 
-              {error && <ErrorBanner message={error} />}
+              {error && <ErrorBanner message={error} onClearCart={staleCartAction} />}
 
               <button
                 type="button"
@@ -667,7 +675,7 @@ export function BotyCheckoutFlow() {
                 </p>
               )}
 
-              {error && <ErrorBanner message={error} />}
+              {error && <ErrorBanner message={error} onClearCart={staleCartAction} />}
 
               <button
                 type="button"
@@ -701,7 +709,7 @@ export function BotyCheckoutFlow() {
                 onSuccess={handlePaymentSuccess}
                 onError={(msg) => setError(msg)}
               />
-              {error && <ErrorBanner message={error} />}
+              {error && <ErrorBanner message={error} onClearCart={staleCartAction} />}
             </div>
           )}
         </div>
@@ -807,10 +815,33 @@ function AddressConfirmBanner({ recipient, stateName }: { recipient: CheckoutRec
   );
 }
 
-function ErrorBanner({ message }: { message: string }) {
+function isStaleCartError(message: string): boolean {
+  return (
+    message.includes("carrito") ||
+    message.includes("catálogo") ||
+    message.includes("Variante no encontrada")
+  );
+}
+
+function ErrorBanner({
+  message,
+  onClearCart,
+}: {
+  message: string;
+  onClearCart?: () => void;
+}) {
   return (
     <div role="alert" className="rounded-2xl bg-destructive/5 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-      {message}
+      <p>{message}</p>
+      {onClearCart ? (
+        <button
+          type="button"
+          onClick={onClearCart}
+          className="mt-2 font-medium underline underline-offset-2 hover:opacity-80"
+        >
+          Vaciar carrito e ir a la tienda
+        </button>
+      ) : null}
     </div>
   );
 }

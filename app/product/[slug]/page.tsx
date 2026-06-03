@@ -25,7 +25,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (res.data.variants.length === 0) {
     return (
       <ProductUnavailable
-        message="Este producto está en el catálogo pero no tiene variantes con precio. En admin, edítalo y guárdalo de nuevo (o revisa que la migración 007 esté aplicada en Supabase)."
+        message="Este producto está en el catálogo pero no tiene variantes con precio. En admin, edítalo y agrega al menos una variante activa."
       />
     );
   }

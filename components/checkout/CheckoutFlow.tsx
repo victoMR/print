@@ -72,7 +72,7 @@ export function CheckoutFlow() {
         },
       });
       if (res.data.rates.length === 0) {
-        setError("Printful no devolvió opciones de envío para esta dirección.");
+        setError("No hay opciones de envío disponibles para esta dirección. Verifica el código postal.");
         return;
       }
       setRates(res.data.rates);

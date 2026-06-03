@@ -11,7 +11,7 @@ sudaderas/Sudadera1/
 ## Añadir camiseta o gorra
 
 1. Coloca los PNG en carpetas como `camisetas/Camiseta1/` o `gorras/Gorra1/`.
-2. Registra la plantilla en Supabase (`mrpaps_garment_templates`) con:
+2. Registra la plantilla en PostgreSQL (`mrpaps_garment_templates`) — las migraciones en `supabase/migrations/` incluyen seeds; también puedes insertar vía SQL o panel admin.
    - `mockupUrl`: ruta pública bajo `/images/plantillas/...`
    - `printArea`: rectángulo normalizado `{ x, y, width, height }` sobre el mockup
    - `printWidthIn` / `printHeightIn`: tamaño real de impresión en pulgadas

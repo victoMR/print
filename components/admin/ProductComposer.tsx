@@ -482,7 +482,8 @@ export function ProductComposer({
         {templates.length === 0 && (
           <p className="text-sm text-amber-700 bg-amber-500/10 rounded-xl p-3">
             No hay plantillas activas. Añade PNG en{" "}
-            <code className="text-xs">public/images/plantillas/</code> y regístralas en Supabase.
+            <code className="text-xs">public/images/plantillas/</code> y regístralas en PostgreSQL
+            (<code className="text-xs">mrpaps_garment_templates</code>) vía migraciones o admin.
           </p>
         )}
 

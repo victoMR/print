@@ -1,6 +1,10 @@
 import * as productsRepo from '../db/mrpaps-products.repository.js';
 import * as templatesRepo from '../db/mrpaps-garment-templates.repository.js';
-import { NotFoundError, BadRequestError } from '../types/errors.js';
+import { BadRequestError, NotFoundError } from '../types/errors.js';
+import { logger } from '../lib/logger.js';
+
+const STALE_CART_MESSAGE =
+  'Tu carrito tiene productos que ya no existen en el catálogo. Vacía el carrito y vuelve a agregar los artículos desde la tienda.';
 
 export function slugify(value: string): string {
   return value
@@ -111,7 +115,11 @@ export async function resolveLineItems(
   for (const item of items) {
     const variant = await productsRepo.getVariantById(item.variantId);
     if (!variant || variant.status !== 'active' || variant.product.status !== 'active') {
-      throw new NotFoundError(`Variante no encontrada: ${item.variantId}`);
+      logger.warn(
+        { variantId: item.variantId, found: Boolean(variant), status: variant?.status },
+        'Carrito con variante inválida o inactiva',
+      );
+      throw new BadRequestError(STALE_CART_MESSAGE);
     }
 
     const dbPrice = Number(variant.retail_price_mxn).toFixed(2);

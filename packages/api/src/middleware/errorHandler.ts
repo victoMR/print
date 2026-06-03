@@ -63,7 +63,7 @@ export function errorHandler(
     res.status(503).json({
       ok: false,
       error:
-        'Falta la columna garment_color_hex. Ejecuta la migración supabase/migrations/007_mrpaps_variant_color_and_templates.sql.',
+        'Falta la columna garment_color_hex. Ejecuta: pnpm --filter @print/api migrate',
     });
     return;
   }
