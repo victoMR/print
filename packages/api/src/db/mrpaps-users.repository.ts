@@ -1,18 +1,13 @@
-import { supabase } from '../lib/supabase.js';
+import { query, queryOne, queryRequired, buildUpdateSet } from '../lib/db-helper.js';
 import type { MrpapsAddressRow, MrpapsUserRow } from './mrpaps.types.js';
 
 export async function findUserByEmail(email: string): Promise<MrpapsUserRow | null> {
-  const { data, error } = await supabase
-    .from('mrpaps_users')
-    .select('*')
-    .ilike('email', email.trim().toLowerCase())
-    .maybeSingle();
-
-  if (error) throw error;
-  return data as MrpapsUserRow | null;
+  return queryOne<MrpapsUserRow>(
+    `SELECT * FROM mrpaps_users WHERE lower(email) = lower($1)`,
+    [email.trim()],
+  );
 }
 
-/** Incluye password_hash — solo uso interno de auth. */
 export async function findUserByEmailForAuth(email: string): Promise<MrpapsUserRow | null> {
   return findUserByEmail(email);
 }
@@ -26,34 +21,21 @@ export async function upsertAdminUser(input: {
   const existing = await findUserByEmail(email);
 
   if (existing) {
-    const { data, error } = await supabase
-      .from('mrpaps_users')
-      .update({
-        full_name: input.full_name,
-        role: 'admin',
-        password_hash: input.password_hash,
-      })
-      .eq('id', existing.id)
-      .select('*')
-      .single();
-
-    if (error) throw error;
-    return data as MrpapsUserRow;
+    return queryRequired<MrpapsUserRow>(
+      `UPDATE mrpaps_users
+       SET full_name = $2, role = 'admin', password_hash = $3, updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [existing.id, input.full_name, input.password_hash],
+    );
   }
 
-  const { data, error } = await supabase
-    .from('mrpaps_users')
-    .insert({
-      email,
-      full_name: input.full_name,
-      role: 'admin',
-      password_hash: input.password_hash,
-    })
-    .select('*')
-    .single();
-
-  if (error) throw error;
-  return data as MrpapsUserRow;
+  return queryRequired<MrpapsUserRow>(
+    `INSERT INTO mrpaps_users (email, full_name, role, password_hash)
+     VALUES ($1, $2, 'admin', $3)
+     RETURNING *`,
+    [email, input.full_name, input.password_hash],
+  );
 }
 
 export async function upsertCustomerWithPassword(input: {
@@ -66,46 +48,36 @@ export async function upsertCustomerWithPassword(input: {
   const existing = await findUserByEmail(email);
 
   if (existing) {
-    const { data, error } = await supabase
-      .from('mrpaps_users')
-      .update({ full_name: input.full_name, phone: input.phone, password_hash: input.password_hash })
-      .eq('id', existing.id)
-      .select('*')
-      .single();
-    if (error) throw error;
-    return data as MrpapsUserRow;
+    return queryRequired<MrpapsUserRow>(
+      `UPDATE mrpaps_users
+       SET full_name = $2, phone = $3, password_hash = $4, updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [existing.id, input.full_name, input.phone, input.password_hash],
+    );
   }
 
-  const { data, error } = await supabase
-    .from('mrpaps_users')
-    .insert({ email, full_name: input.full_name, phone: input.phone, role: 'customer', password_hash: input.password_hash })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as MrpapsUserRow;
+  return queryRequired<MrpapsUserRow>(
+    `INSERT INTO mrpaps_users (email, full_name, phone, role, password_hash)
+     VALUES ($1, $2, $3, 'customer', $4)
+     RETURNING *`,
+    [email, input.full_name, input.phone, input.password_hash],
+  );
 }
 
 export async function updateCustomer(
   userId: string,
   patch: { full_name?: string; phone?: string | null },
 ): Promise<MrpapsUserRow> {
-  const { data, error } = await supabase
-    .from('mrpaps_users')
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq('id', userId)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as MrpapsUserRow;
+  const { clause, values } = buildUpdateSet({ ...patch, updated_at: new Date().toISOString() });
+  return queryRequired<MrpapsUserRow>(
+    `UPDATE mrpaps_users SET ${clause} WHERE id = $1 RETURNING *`,
+    [userId, ...values],
+  );
 }
 
 export async function deleteAddress(addressId: string, userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('mrpaps_addresses')
-    .delete()
-    .eq('id', addressId)
-    .eq('user_id', userId);
-  if (error) throw error;
+  await query(`DELETE FROM mrpaps_addresses WHERE id = $1 AND user_id = $2`, [addressId, userId]);
 }
 
 export async function updateAddress(
@@ -124,60 +96,70 @@ export async function updateAddress(
   }>,
 ): Promise<MrpapsAddressRow> {
   if (patch.is_default) {
-    await supabase.from('mrpaps_addresses').update({ is_default: false }).eq('user_id', userId);
+    await query(`UPDATE mrpaps_addresses SET is_default = false WHERE user_id = $1`, [userId]);
   }
-  const { data, error } = await supabase
-    .from('mrpaps_addresses')
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq('id', addressId)
-    .eq('user_id', userId)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as MrpapsAddressRow;
+  const { clause, values } = buildUpdateSet({ ...patch, updated_at: new Date().toISOString() });
+  return queryRequired<MrpapsAddressRow>(
+    `UPDATE mrpaps_addresses SET ${clause} WHERE id = $1 AND user_id = $2 RETURNING *`,
+    [addressId, userId, ...values],
+  );
 }
 
-/** Vincula pedidos huérfanos (sin user_id) creados con el mismo correo antes del fix de checkout. */
 export async function linkOrphanOrdersByEmail(userId: string, email: string): Promise<void> {
-  const normalized = email.trim().toLowerCase();
-  const { error } = await supabase
-    .from('mrpaps_orders')
-    .update({ user_id: userId })
-    .is('user_id', null)
-    .ilike('customer_email', normalized);
-  if (error) throw error;
+  await query(
+    `UPDATE mrpaps_orders SET user_id = $1
+     WHERE user_id IS NULL AND lower(customer_email) = lower($2)`,
+    [userId, email.trim()],
+  );
 }
 
 export async function listOrdersByUser(
   userId: string,
   email?: string,
-): Promise<{ id: string; public_id: string; order_number: string; status: string; total_mxn: string; ordered_at: string; item_count: number }[]> {
+): Promise<
+  {
+    id: string;
+    public_id: string;
+    order_number: string;
+    status: string;
+    total_mxn: string;
+    ordered_at: string;
+    item_count: number;
+  }[]
+> {
   if (email) {
     await linkOrphanOrdersByEmail(userId, email);
   }
 
-  const { data: orders, error: oErr } = await supabase
-    .from('mrpaps_orders')
-    .select('id, public_id, order_number, status, total_mxn, ordered_at')
-    .eq('user_id', userId)
-    .order('ordered_at', { ascending: false });
-  if (oErr) throw oErr;
+  const orders = await query<{
+    id: string;
+    public_id: string;
+    order_number: string;
+    status: string;
+    total_mxn: string;
+    ordered_at: string;
+  }>(
+    `SELECT id, public_id, order_number, status, total_mxn::text, ordered_at
+     FROM mrpaps_orders
+     WHERE user_id = $1
+     ORDER BY ordered_at DESC`,
+    [userId],
+  );
 
-  if (!orders || orders.length === 0) return [];
+  if (orders.length === 0) return [];
 
-  const orderIds = orders.map((o: { id: string }) => o.id);
-  const { data: items, error: iErr } = await supabase
-    .from('mrpaps_order_items')
-    .select('order_id, quantity')
-    .in('order_id', orderIds);
-  if (iErr) throw iErr;
+  const orderIds = orders.map((o) => o.id);
+  const items = await query<{ order_id: string; quantity: number }>(
+    `SELECT order_id, quantity FROM mrpaps_order_items WHERE order_id = ANY($1::uuid[])`,
+    [orderIds],
+  );
 
   const countByOrder = new Map<string, number>();
-  for (const item of (items ?? []) as { order_id: string; quantity: number }[]) {
+  for (const item of items) {
     countByOrder.set(item.order_id, (countByOrder.get(item.order_id) ?? 0) + item.quantity);
   }
 
-  return orders.map((o: { id: string; public_id: string; order_number: string; status: string; total_mxn: string; ordered_at: string }) => ({
+  return orders.map((o) => ({
     ...o,
     item_count: countByOrder.get(o.id) ?? 0,
   }));
@@ -194,48 +176,44 @@ export async function upsertUserByEmail(input: {
   const existing = await findUserByEmail(email);
 
   if (existing) {
-    const { data, error } = await supabase
-      .from('mrpaps_users')
-      .update({
-        full_name: input.full_name,
-        phone: input.phone ?? existing.phone,
-        tax_number: input.tax_number ?? existing.tax_number,
-        auth_user_id: input.auth_user_id ?? existing.auth_user_id,
-      })
-      .eq('id', existing.id)
-      .select('*')
-      .single();
-
-    if (error) throw error;
-    return data as MrpapsUserRow;
+    return queryRequired<MrpapsUserRow>(
+      `UPDATE mrpaps_users SET
+         full_name = $2,
+         phone = COALESCE($3, phone),
+         tax_number = COALESCE($4, tax_number),
+         auth_user_id = COALESCE($5, auth_user_id),
+         updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        existing.id,
+        input.full_name,
+        input.phone ?? null,
+        input.tax_number ?? null,
+        input.auth_user_id ?? null,
+      ],
+    );
   }
 
-  const { data, error } = await supabase
-    .from('mrpaps_users')
-    .insert({
+  return queryRequired<MrpapsUserRow>(
+    `INSERT INTO mrpaps_users (email, full_name, phone, tax_number, auth_user_id, role)
+     VALUES ($1, $2, $3, $4, $5, 'customer')
+     RETURNING *`,
+    [
       email,
-      full_name: input.full_name,
-      phone: input.phone ?? null,
-      tax_number: input.tax_number ?? null,
-      auth_user_id: input.auth_user_id ?? null,
-      role: 'customer',
-    })
-    .select('*')
-    .single();
-
-  if (error) throw error;
-  return data as MrpapsUserRow;
+      input.full_name,
+      input.phone ?? null,
+      input.tax_number ?? null,
+      input.auth_user_id ?? null,
+    ],
+  );
 }
 
 export async function listAddresses(userId: string): Promise<MrpapsAddressRow[]> {
-  const { data, error } = await supabase
-    .from('mrpaps_addresses')
-    .select('*')
-    .eq('user_id', userId)
-    .order('is_default', { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []) as MrpapsAddressRow[];
+  return query<MrpapsAddressRow>(
+    `SELECT * FROM mrpaps_addresses WHERE user_id = $1 ORDER BY is_default DESC`,
+    [userId],
+  );
 }
 
 export async function saveAddress(input: {
@@ -252,18 +230,26 @@ export async function saveAddress(input: {
   is_default?: boolean;
 }): Promise<MrpapsAddressRow> {
   if (input.is_default) {
-    await supabase
-      .from('mrpaps_addresses')
-      .update({ is_default: false })
-      .eq('user_id', input.user_id);
+    await query(`UPDATE mrpaps_addresses SET is_default = false WHERE user_id = $1`, [input.user_id]);
   }
 
-  const { data, error } = await supabase
-    .from('mrpaps_addresses')
-    .insert(input)
-    .select('*')
-    .single();
-
-  if (error) throw error;
-  return data as MrpapsAddressRow;
+  return queryRequired<MrpapsAddressRow>(
+    `INSERT INTO mrpaps_addresses (
+       user_id, label, recipient_name, phone, address1, address2, city, state_code, country_code, zip, is_default
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     RETURNING *`,
+    [
+      input.user_id,
+      input.label,
+      input.recipient_name,
+      input.phone,
+      input.address1,
+      input.address2 ?? null,
+      input.city,
+      input.state_code,
+      input.country_code,
+      input.zip,
+      input.is_default ?? false,
+    ],
+  );
 }

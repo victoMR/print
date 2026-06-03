@@ -1,61 +1,51 @@
-# Base de datos — Supabase (Mr. Paps)
+# Base de datos — PostgreSQL directo
 
-El backend usa **Supabase** con `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (solo servidor).
+El backend usa **`pg`** con `DATABASE_URL` (conexión TCP a PostgreSQL).
 
-## Migración actual (obligatoria)
+En producción (VPS): el API y Postgres corren en el mismo servidor; la DB solo escucha en `localhost`.
 
-Ejecuta en **SQL Editor** de Supabase el archivo:
-
-**[`supabase/migrations/003_mrpaps_core.sql`](../../../supabase/migrations/003_mrpaps_core.sql)**  
-**[`supabase/migrations/004_mrpaps_admin_auth.sql`](../../../supabase/migrations/004_mrpaps_admin_auth.sql)** (rol + password_hash)  
-**[`supabase/migrations/005_mrpaps_garment_templates.sql`](../../../supabase/migrations/005_mrpaps_garment_templates.sql)** (plantillas + bucket Storage + composición)  
-**[`supabase/migrations/006_mrpaps_templates_tshirt_cap.sql`](../../../supabase/migrations/006_mrpaps_templates_tshirt_cap.sql)** (camiseta/gorra — inactivas hasta PNG reales)  
-**[`supabase/migrations/007_mrpaps_variant_color_and_templates.sql`](../../../supabase/migrations/007_mrpaps_variant_color_and_templates.sql)** (color por variante + desactivar SVG) — **obligatoria** para crear variantes (`garment_color_hex`)  
-**008–011** — calibración hoodie / fulfillment manual  
-**012–014** — pedidos manuales, Stripe, cuentas cliente
-
-Crea tablas con prefijo `mrpaps_*`:
-
-| Tabla | Uso |
-|-------|-----|
-| `mrpaps_users` | Cuentas opcionales (email, teléfono, RFC) |
-| `mrpaps_addresses` | Direcciones guardadas por usuario |
-| `mrpaps_designs` | Archivos de diseño (Storage `mrpaps-assets/designs/`) |
-| `mrpaps_garment_templates` | Plantillas de prenda (mockup + área de impresión) |
-| `mrpaps_products` | Catálogo (+ `template_id`, `composition`) |
-| `mrpaps_product_variants` | Variantes (talla, color, precio, diseño opcional) |
-| `mrpaps_orders` | Pedidos (pedido → solicitado imprenta → recibido → enviado) |
-| `mrpaps_order_items` | Líneas del pedido |
-| `mrpaps_order_status_events` | Historial de cambios de estado |
-
-Incluye datos de ejemplo (camiseta clásica + 5 variantes) si la tabla de productos está vacía.
-
-Las migraciones `001_init.sql` / `002_*` (Printful) son **legacy**; ya no las usa el flujo v1.
-
-## Variables API
+## Variables
 
 ```bash
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-ADMIN_JWT_SECRET=              # mín. 32 caracteres; firma sesiones admin
-
-# Crear primer admin (una vez, local):
-# ADMIN_SEED_EMAIL=admin@mrpaps.mx ADMIN_SEED_PASSWORD='...' pnpm --filter @print/api seed:admin
+DATABASE_URL=postgres://mrpaps:TU_PASSWORD@127.0.0.1:5432/mrpaps
+UPLOAD_DIR=/var/lib/mrpaps/uploads          # opcional; default ./uploads
+ASSETS_PUBLIC_URL=https://api.tu-dominio.mx # URLs públicas de archivos subidos
 ```
 
-El panel `/admin` usa login (JWT); **no** expone `SUPABASE_SERVICE_ROLE_KEY` ni contraseñas al navegador.
+## Configurar PostgreSQL en el VPS (primera vez)
 
-## Repositorios Mr. Paps
+```bash
+sudo -u postgres psql
+```
+
+```sql
+CREATE USER mrpaps WITH PASSWORD 'TU_PASSWORD_SEGURO';
+CREATE DATABASE mrpaps OWNER mrpaps;
+GRANT ALL PRIVILEGES ON DATABASE mrpaps TO mrpaps;
+\q
+```
+
+Verifica que `postgresql.conf` tenga `listen_addresses = 'localhost'` (no expongas el puerto 5432 a internet).
+
+## Aplicar migraciones
+
+Desde la raíz del monorepo:
+
+```bash
+pnpm --filter @print/api migrate
+```
+
+Las migraciones están en `supabase/migrations/` (001–014). El script omite bloques de Supabase Storage (005) que no aplican en PostgreSQL puro.
+
+## Archivos subidos (diseños, previews)
+
+Ya no usamos Supabase Storage. Los uploads se guardan en disco (`UPLOAD_DIR`) y se sirven en `/uploads/...`.
+
+## Repositorios
 
 | Archivo | Tablas |
 |---------|--------|
-| `mrpaps-products.repository.ts` | productos, variantes |
-| `mrpaps-garment-templates.repository.ts` | plantillas de prenda |
-| `mrpaps-orders.repository.ts` | pedidos, ítems, estados |
-| `mrpaps-designs.repository.ts` | diseños |
-| `mrpaps-users.repository.ts` | usuarios y direcciones |
-
-## Storage
-
-La migración `005` crea el bucket público **`mrpaps-assets`** (PNG/JPG/WebP/SVG/PDF, máx. 20 MB).  
-Subidas vía API: `POST /api/v1/admin/designs/upload` y `POST /api/v1/admin/uploads`.
+| `mrpaps-*.repository.ts` | Dominio Mr. Paps |
+| `products.repository.ts` | `printful_products` (legacy) |
+| `orders.repository.ts` | `printful_orders` (legacy) |
+| `webhook-events.repository.ts` | `webhook_events` (legacy) |

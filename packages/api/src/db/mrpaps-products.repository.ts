@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase.js';
+import { query, queryOne, queryRequired, buildUpdateSet } from '../lib/db-helper.js';
 import type {
   MrpapsProductRow,
   MrpapsProductStatus,
@@ -7,72 +7,46 @@ import type {
 } from './mrpaps.types.js';
 
 export async function listActiveProducts(): Promise<MrpapsProductRow[]> {
-  const { data, error } = await supabase
-    .from('mrpaps_products')
-    .select('*')
-    .eq('status', 'active')
-    .order('name');
-
-  if (error) throw error;
-  return (data ?? []) as MrpapsProductRow[];
+  return query<MrpapsProductRow>(
+    `SELECT * FROM mrpaps_products WHERE status = 'active' ORDER BY name`,
+  );
 }
 
 export async function listProductsAdmin(): Promise<MrpapsProductRow[]> {
-  const { data, error } = await supabase
-    .from('mrpaps_products')
-    .select('*')
-    .neq('status', 'archived')
-    .order('name');
-
-  if (error) throw error;
-  return (data ?? []) as MrpapsProductRow[];
+  return query<MrpapsProductRow>(
+    `SELECT * FROM mrpaps_products WHERE status <> 'archived' ORDER BY name`,
+  );
 }
 
 export async function getProductBySlug(slug: string): Promise<MrpapsProductRow | null> {
-  const { data, error } = await supabase
-    .from('mrpaps_products')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'active')
-    .maybeSingle();
-
-  if (error) throw error;
-  return data as MrpapsProductRow | null;
+  return queryOne<MrpapsProductRow>(
+    `SELECT * FROM mrpaps_products WHERE slug = $1 AND status = 'active'`,
+    [slug],
+  );
 }
 
 export async function getProductById(id: string): Promise<MrpapsProductRow | null> {
-  const { data, error } = await supabase
-    .from('mrpaps_products')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data as MrpapsProductRow | null;
+  return queryOne<MrpapsProductRow>(`SELECT * FROM mrpaps_products WHERE id = $1`, [id]);
 }
 
 export async function listVariantsByProductId(productId: string): Promise<MrpapsProductVariantRow[]> {
-  const { data, error } = await supabase
-    .from('mrpaps_product_variants')
-    .select('*')
-    .eq('product_id', productId)
-    .eq('status', 'active')
-    .order('sort_order');
-
-  if (error) throw error;
-  return (data ?? []) as MrpapsProductVariantRow[];
+  return query<MrpapsProductVariantRow>(
+    `SELECT * FROM mrpaps_product_variants
+     WHERE product_id = $1 AND status = 'active'
+     ORDER BY sort_order`,
+    [productId],
+  );
 }
 
-export async function listVariantsByProductIdAdmin(productId: string): Promise<MrpapsProductVariantRow[]> {
-  const { data, error } = await supabase
-    .from('mrpaps_product_variants')
-    .select('*')
-    .eq('product_id', productId)
-    .neq('status', 'archived')
-    .order('sort_order');
-
-  if (error) throw error;
-  return (data ?? []) as MrpapsProductVariantRow[];
+export async function listVariantsByProductIdAdmin(
+  productId: string,
+): Promise<MrpapsProductVariantRow[]> {
+  return query<MrpapsProductVariantRow>(
+    `SELECT * FROM mrpaps_product_variants
+     WHERE product_id = $1 AND status <> 'archived'
+     ORDER BY sort_order`,
+    [productId],
+  );
 }
 
 export async function updateProductAdmin(
@@ -88,58 +62,51 @@ export async function updateProductAdmin(
     default_garment_color: string;
   }>,
 ): Promise<MrpapsProductRow> {
-  const { data, error } = await supabase
-    .from('mrpaps_products')
-    .update(patch)
-    .eq('id', productId)
-    .select('*')
-    .single();
+  const { clause, values } = buildUpdateSet(patch);
+  return queryRequired<MrpapsProductRow>(
+    `UPDATE mrpaps_products SET ${clause}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    [productId, ...values],
+  );
+}
 
-  if (error) throw error;
-  return data as MrpapsProductRow;
+function mapVariantWithProduct(row: MrpapsProductVariantRow & { product: MrpapsProductRow }): MrpapsVariantWithProduct {
+  const { product, ...variant } = row;
+  return { ...variant, product };
 }
 
 export async function listAllVariantsAdmin(): Promise<MrpapsVariantWithProduct[]> {
-  const { data, error } = await supabase
-    .from('mrpaps_product_variants')
-    .select('*, product:mrpaps_products(*)')
-    .neq('status', 'archived')
-    .order('sku');
-
-  if (error) throw error;
-  return (data ?? []).map((row) => {
-    const { product, ...variant } = row as MrpapsProductVariantRow & { product: MrpapsProductRow };
-    return { ...variant, product };
-  });
+  const rows = await query<MrpapsProductVariantRow & { product: MrpapsProductRow }>(
+    `SELECT v.*, row_to_json(p.*)::jsonb AS product
+     FROM mrpaps_product_variants v
+     JOIN mrpaps_products p ON p.id = v.product_id
+     WHERE v.status <> 'archived'
+     ORDER BY v.sku`,
+  );
+  return rows.map((row) => mapVariantWithProduct(row));
 }
 
 export async function getVariantById(id: string): Promise<MrpapsVariantWithProduct | null> {
-  const { data, error } = await supabase
-    .from('mrpaps_product_variants')
-    .select('*, product:mrpaps_products(*)')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (error) throw error;
-  if (!data) return null;
-
-  const { product, ...variant } = data as MrpapsProductVariantRow & { product: MrpapsProductRow };
-  return { ...variant, product };
+  const row = await queryOne<MrpapsProductVariantRow & { product: MrpapsProductRow }>(
+    `SELECT v.*, row_to_json(p.*)::jsonb AS product
+     FROM mrpaps_product_variants v
+     JOIN mrpaps_products p ON p.id = v.product_id
+     WHERE v.id = $1`,
+    [id],
+  );
+  return row ? mapVariantWithProduct(row) : null;
 }
 
 export async function updateVariantStock(
   variantId: string,
   stockQuantity: number,
 ): Promise<MrpapsProductVariantRow> {
-  const { data, error } = await supabase
-    .from('mrpaps_product_variants')
-    .update({ stock_quantity: stockQuantity })
-    .eq('id', variantId)
-    .select('*')
-    .single();
-
-  if (error) throw error;
-  return data as MrpapsProductVariantRow;
+  return queryRequired<MrpapsProductVariantRow>(
+    `UPDATE mrpaps_product_variants
+     SET stock_quantity = $2, updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [variantId, stockQuantity],
+  );
 }
 
 export async function findVariantByProductSizeColor(
@@ -147,27 +114,27 @@ export async function findVariantByProductSizeColor(
   sizeLabel: string,
   colorLabel: string,
 ): Promise<MrpapsProductVariantRow | null> {
-  const { data, error } = await supabase
-    .from('mrpaps_product_variants')
-    .select('*')
-    .eq('product_id', productId)
-    .eq('size_label', sizeLabel)
-    .eq('color_label', colorLabel)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data as MrpapsProductVariantRow | null;
+  return queryOne<MrpapsProductVariantRow>(
+    `SELECT * FROM mrpaps_product_variants
+     WHERE product_id = $1 AND size_label = $2 AND color_label = $3`,
+    [productId, sizeLabel, colorLabel],
+  );
 }
 
 export async function findVariantBySku(
   sku: string,
   excludeVariantId?: string,
 ): Promise<MrpapsProductVariantRow | null> {
-  let q = supabase.from('mrpaps_product_variants').select('*').eq('sku', sku);
-  if (excludeVariantId) q = q.neq('id', excludeVariantId);
-  const { data, error } = await q.maybeSingle();
-  if (error) throw error;
-  return data as MrpapsProductVariantRow | null;
+  if (excludeVariantId) {
+    return queryOne<MrpapsProductVariantRow>(
+      `SELECT * FROM mrpaps_product_variants WHERE sku = $1 AND id <> $2`,
+      [sku, excludeVariantId],
+    );
+  }
+  return queryOne<MrpapsProductVariantRow>(
+    `SELECT * FROM mrpaps_product_variants WHERE sku = $1`,
+    [sku],
+  );
 }
 
 export async function updateVariantAdmin(
@@ -184,15 +151,11 @@ export async function updateVariantAdmin(
     sort_order: number;
   }>,
 ): Promise<MrpapsProductVariantRow> {
-  const { data, error } = await supabase
-    .from('mrpaps_product_variants')
-    .update(patch)
-    .eq('id', variantId)
-    .select('*')
-    .single();
-
-  if (error) throw error;
-  return data as MrpapsProductVariantRow;
+  const { clause, values } = buildUpdateSet(patch);
+  return queryRequired<MrpapsProductVariantRow>(
+    `UPDATE mrpaps_product_variants SET ${clause}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    [variantId, ...values],
+  );
 }
 
 export async function upsertProduct(input: {
@@ -205,26 +168,31 @@ export async function upsertProduct(input: {
   composition?: Record<string, unknown>;
   default_garment_color?: string;
 }): Promise<MrpapsProductRow> {
-  const { data, error } = await supabase
-    .from('mrpaps_products')
-    .upsert(
-      {
-        slug: input.slug,
-        name: input.name,
-        description: input.description,
-        thumbnail_url: input.thumbnail_url,
-        status: input.status ?? 'active',
-        template_id: input.template_id ?? null,
-        composition: input.composition ?? {},
-        default_garment_color: input.default_garment_color ?? '#FFFFFF',
-      },
-      { onConflict: 'slug' },
-    )
-    .select('*')
-    .single();
-
-  if (error) throw error;
-  return data as MrpapsProductRow;
+  return queryRequired<MrpapsProductRow>(
+    `INSERT INTO mrpaps_products (
+       slug, name, description, thumbnail_url, status, template_id, composition, default_garment_color
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (slug) DO UPDATE SET
+       name = EXCLUDED.name,
+       description = EXCLUDED.description,
+       thumbnail_url = EXCLUDED.thumbnail_url,
+       status = EXCLUDED.status,
+       template_id = EXCLUDED.template_id,
+       composition = EXCLUDED.composition,
+       default_garment_color = EXCLUDED.default_garment_color,
+       updated_at = NOW()
+     RETURNING *`,
+    [
+      input.slug,
+      input.name,
+      input.description,
+      input.thumbnail_url,
+      input.status ?? 'active',
+      input.template_id ?? null,
+      JSON.stringify(input.composition ?? {}),
+      input.default_garment_color ?? '#FFFFFF',
+    ],
+  );
 }
 
 export async function upsertVariant(input: {
@@ -237,25 +205,31 @@ export async function upsertVariant(input: {
   design_id?: string | null;
   garment_color_hex?: string;
 }): Promise<MrpapsProductVariantRow> {
-  const { data, error } = await supabase
-    .from('mrpaps_product_variants')
-    .upsert(
-      {
-        product_id: input.product_id,
-        sku: input.sku,
-        size_label: input.size_label,
-        color_label: input.color_label,
-        retail_price_mxn: input.retail_price_mxn,
-        stock_quantity: input.stock_quantity,
-        design_id: input.design_id ?? null,
-        garment_color_hex: input.garment_color_hex ?? '#FFFFFF',
-        status: 'active',
-      },
-      { onConflict: 'sku' },
-    )
-    .select('*')
-    .single();
-
-  if (error) throw error;
-  return data as MrpapsProductVariantRow;
+  return queryRequired<MrpapsProductVariantRow>(
+    `INSERT INTO mrpaps_product_variants (
+       product_id, sku, size_label, color_label, retail_price_mxn, stock_quantity,
+       design_id, garment_color_hex, status
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')
+     ON CONFLICT (sku) DO UPDATE SET
+       product_id = EXCLUDED.product_id,
+       size_label = EXCLUDED.size_label,
+       color_label = EXCLUDED.color_label,
+       retail_price_mxn = EXCLUDED.retail_price_mxn,
+       stock_quantity = EXCLUDED.stock_quantity,
+       design_id = EXCLUDED.design_id,
+       garment_color_hex = EXCLUDED.garment_color_hex,
+       status = 'active',
+       updated_at = NOW()
+     RETURNING *`,
+    [
+      input.product_id,
+      input.sku,
+      input.size_label,
+      input.color_label,
+      input.retail_price_mxn,
+      input.stock_quantity,
+      input.design_id ?? null,
+      input.garment_color_hex ?? '#FFFFFF',
+    ],
+  );
 }

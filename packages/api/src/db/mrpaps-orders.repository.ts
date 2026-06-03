@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase.js';
+import { query, queryOne, queryRequired, buildUpdateSet } from '../lib/db-helper.js';
 import type {
   MrpapsOrderItemRow,
   MrpapsOrderRow,
@@ -40,51 +40,78 @@ export type CreateOrderInput = {
 };
 
 export async function generateOrderNumber(): Promise<string> {
-  const { data, error } = await supabase.rpc('mrpaps_next_order_number');
-  if (error) throw error;
-  return String(data);
+  const row = await queryRequired<{ mrpaps_next_order_number: string }>(
+    `SELECT mrpaps_next_order_number() AS mrpaps_next_order_number`,
+  );
+  return row.mrpaps_next_order_number;
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderWithItems> {
   const { items, ...order } = input;
 
-  const { data: orderRow, error: orderError } = await supabase
-    .from('mrpaps_orders')
-    .insert({
-      ...order,
-      status: 'pedido',
-    })
-    .select('*')
-    .single();
+  const orderRow = await queryRequired<MrpapsOrderRow>(
+    `INSERT INTO mrpaps_orders (
+       public_id, order_number, user_id, customer_name, customer_email, customer_phone,
+       customer_tax_number, ship_address1, ship_address2, ship_city, ship_state_code,
+       ship_country_code, ship_zip, shipping_method, shipping_label,
+       subtotal_mxn, shipping_mxn, tax_mxn, total_mxn, status
+     ) VALUES (
+       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'pedido'
+     ) RETURNING *`,
+    [
+      order.public_id,
+      order.order_number,
+      order.user_id ?? null,
+      order.customer_name,
+      order.customer_email,
+      order.customer_phone,
+      order.customer_tax_number ?? null,
+      order.ship_address1,
+      order.ship_address2 ?? null,
+      order.ship_city,
+      order.ship_state_code,
+      order.ship_country_code,
+      order.ship_zip,
+      order.shipping_method,
+      order.shipping_label ?? null,
+      order.subtotal_mxn,
+      order.shipping_mxn,
+      order.tax_mxn,
+      order.total_mxn,
+    ],
+  );
 
-  if (orderError) throw orderError;
+  const itemRows: MrpapsOrderItemRow[] = [];
+  for (const item of items) {
+    const row = await queryRequired<MrpapsOrderItemRow>(
+      `INSERT INTO mrpaps_order_items (
+         order_id, variant_id, design_id, quantity, unit_price_mxn,
+         product_name, variant_label, sku, thumbnail_url, print_file_url
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING *`,
+      [
+        orderRow.id,
+        item.variant_id,
+        item.design_id ?? null,
+        item.quantity,
+        item.unit_price_mxn,
+        item.product_name,
+        item.variant_label,
+        item.sku,
+        item.thumbnail_url ?? null,
+        item.print_file_url ?? null,
+      ],
+    );
+    itemRows.push(row);
+  }
 
-  const orderId = (orderRow as MrpapsOrderRow).id;
+  await query(
+    `INSERT INTO mrpaps_order_status_events (order_id, from_status, to_status, note, created_by)
+     VALUES ($1, NULL, 'pedido', 'Pedido creado', 'system')`,
+    [orderRow.id],
+  );
 
-  const { data: itemRows, error: itemsError } = await supabase
-    .from('mrpaps_order_items')
-    .insert(
-      items.map((item) => ({
-        order_id: orderId,
-        ...item,
-      })),
-    )
-    .select('*');
-
-  if (itemsError) throw itemsError;
-
-  await supabase.from('mrpaps_order_status_events').insert({
-    order_id: orderId,
-    from_status: null,
-    to_status: 'pedido',
-    note: 'Pedido creado',
-    created_by: 'system',
-  });
-
-  return {
-    ...(orderRow as MrpapsOrderRow),
-    items: (itemRows ?? []) as MrpapsOrderItemRow[],
-  };
+  return { ...orderRow, items: itemRows };
 }
 
 export async function listOrderStatusEvents(orderId: string): Promise<
@@ -96,79 +123,101 @@ export async function listOrderStatusEvents(orderId: string): Promise<
     created_at: string;
   }>
 > {
-  const { data, error } = await supabase
-    .from('mrpaps_order_status_events')
-    .select('from_status, to_status, note, created_by, created_at')
-    .eq('order_id', orderId)
-    .order('created_at', { ascending: true });
-
-  if (error) throw error;
-  return (data ?? []) as Array<{
-    from_status: MrpapsOrderStatus | null;
-    to_status: MrpapsOrderStatus;
-    note: string | null;
-    created_by: string | null;
-    created_at: string;
-  }>;
+  return query(
+    `SELECT from_status, to_status, note, created_by, created_at
+     FROM mrpaps_order_status_events
+     WHERE order_id = $1
+     ORDER BY created_at ASC`,
+    [orderId],
+  );
 }
 
 export async function getOrderByPublicId(publicId: string): Promise<MrpapsOrderWithItems | null> {
-  const { data: order, error } = await supabase
-    .from('mrpaps_orders')
-    .select('*')
-    .eq('public_id', publicId)
-    .maybeSingle();
-
-  if (error) throw error;
+  const order = await queryOne<MrpapsOrderRow>(
+    `SELECT * FROM mrpaps_orders WHERE public_id = $1`,
+    [publicId],
+  );
   if (!order) return null;
 
-  const { data: items, error: itemsError } = await supabase
-    .from('mrpaps_order_items')
-    .select('*')
-    .eq('order_id', (order as MrpapsOrderRow).id);
+  const items = await query<MrpapsOrderItemRow>(
+    `SELECT * FROM mrpaps_order_items WHERE order_id = $1`,
+    [order.id],
+  );
 
-  if (itemsError) throw itemsError;
+  return { ...order, items };
+}
 
-  return {
-    ...(order as MrpapsOrderRow),
-    items: (items ?? []) as MrpapsOrderItemRow[],
-  };
+export async function getOrderForPayment(publicId: string): Promise<{
+  id: string;
+  public_id: string;
+  total_mxn: string;
+  customer_email: string;
+  user_id: string | null;
+  payment_status: string | null;
+} | null> {
+  return queryOne(
+    `SELECT id, public_id, total_mxn::text, customer_email, user_id, payment_status
+     FROM mrpaps_orders WHERE public_id = $1`,
+    [publicId],
+  );
+}
+
+export async function getOrderPaymentSnapshot(publicId: string): Promise<{
+  id: string;
+  total_mxn: string;
+  payment_status: string | null;
+} | null> {
+  return queryOne(
+    `SELECT id, total_mxn::text, payment_status FROM mrpaps_orders WHERE public_id = $1`,
+    [publicId],
+  );
+}
+
+export async function updateOrderPaymentByPublicId(
+  publicId: string,
+  patch: {
+    stripe_payment_intent_id?: string;
+    payment_status: string;
+  },
+): Promise<void> {
+  const { clause, values } = buildUpdateSet({
+    stripe_payment_intent_id: patch.stripe_payment_intent_id,
+    payment_status: patch.payment_status,
+    updated_at: new Date().toISOString(),
+  });
+  await query(`UPDATE mrpaps_orders SET ${clause} WHERE public_id = $1`, [publicId, ...values]);
 }
 
 export async function listOrdersAdmin(filters?: {
   status?: MrpapsOrderStatus;
   limit?: number;
 }): Promise<MrpapsOrderWithItems[]> {
-  let query = supabase
-    .from('mrpaps_orders')
-    .select('*')
-    .order('ordered_at', { ascending: false })
-    .limit(filters?.limit ?? 100);
-
+  const params: unknown[] = [];
+  let sql = `SELECT * FROM mrpaps_orders`;
   if (filters?.status) {
-    query = query.eq('status', filters.status);
+    params.push(filters.status);
+    sql += ` WHERE status = $${params.length}`;
   }
+  params.push(filters?.limit ?? 100);
+  sql += ` ORDER BY ordered_at DESC LIMIT $${params.length}`;
 
-  const { data: orders, error } = await query;
-  if (error) throw error;
-  if (!orders?.length) return [];
+  const orders = await query<MrpapsOrderRow>(sql, params);
+  if (orders.length === 0) return [];
 
-  const orderIds = (orders as MrpapsOrderRow[]).map((o) => o.id);
-  const { data: items, error: itemsError } = await supabase
-    .from('mrpaps_order_items')
-    .select('*')
-    .in('order_id', orderIds);
-
-  if (itemsError) throw itemsError;
+  const orderIds = orders.map((o) => o.id);
+  const items = await query<MrpapsOrderItemRow>(
+    `SELECT * FROM mrpaps_order_items WHERE order_id = ANY($1::uuid[])`,
+    [orderIds],
+  );
 
   const itemsByOrder = new Map<string, MrpapsOrderItemRow[]>();
-  for (const item of (items ?? []) as MrpapsOrderItemRow[]) {
+  for (const item of items) {
     const list = itemsByOrder.get(item.order_id) ?? [];
     list.push(item);
     itemsByOrder.set(item.order_id, list);
   }
 
-  return (orders as MrpapsOrderRow[]).map((order) => ({
+  return orders.map((order) => ({
     ...order,
     items: itemsByOrder.get(order.id) ?? [],
   }));
@@ -189,9 +238,7 @@ export async function updateOrderStatus(
   meta: { note?: string; createdBy?: string },
 ): Promise<MrpapsOrderRow> {
   const existing = await getOrderByPublicId(publicId);
-  if (!existing) {
-    throw new Error('Pedido no encontrado');
-  }
+  if (!existing) throw new Error('Pedido no encontrado');
 
   const now = new Date().toISOString();
   const timestamps: Record<string, string> = {};
@@ -200,58 +247,45 @@ export async function updateOrderStatus(
     received_at?: string | null;
   };
 
-  if (toStatus === 'solicitado_imprenta' && !row.requested_at) {
-    timestamps.requested_at = now;
-  }
-  if (toStatus === 'recibido_imprenta' && !row.received_at) {
-    timestamps.received_at = now;
-  }
-  if (toStatus === 'enviado' && !existing.shipped_at) {
-    timestamps.shipped_at = now;
-  }
+  if (toStatus === 'solicitado_imprenta' && !row.requested_at) timestamps.requested_at = now;
+  if (toStatus === 'recibido_imprenta' && !row.received_at) timestamps.received_at = now;
+  if (toStatus === 'enviado' && !existing.shipped_at) timestamps.shipped_at = now;
 
-  const { data, error } = await supabase
-    .from('mrpaps_orders')
-    .update({
-      status: toStatus,
-      ...patch,
-      ...timestamps,
-    })
-    .eq('public_id', publicId)
-    .select('*')
-    .single();
-
-  if (error) throw error;
-
-  await supabase.from('mrpaps_order_status_events').insert({
-    order_id: existing.id,
-    from_status: existing.status,
-    to_status: toStatus,
-    note: meta.note ?? null,
-    created_by: meta.createdBy ?? 'admin',
+  const { clause, values } = buildUpdateSet({
+    status: toStatus,
+    ...patch,
+    ...timestamps,
+    updated_at: now,
   });
 
-  return data as MrpapsOrderRow;
+  const updated = await queryRequired<MrpapsOrderRow>(
+    `UPDATE mrpaps_orders SET ${clause} WHERE public_id = $1 RETURNING *`,
+    [publicId, ...values],
+  );
+
+  await query(
+    `INSERT INTO mrpaps_order_status_events (order_id, from_status, to_status, note, created_by)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [existing.id, existing.status, toStatus, meta.note ?? null, meta.createdBy ?? 'admin'],
+  );
+
+  return updated;
 }
 
-/** Cuántos ítems de pedido referencian cada variante (histórico; no se borran variantes con pedidos). */
 export async function countOrderItemsByVariantIds(
   variantIds: string[],
 ): Promise<Record<string, number>> {
   if (variantIds.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from('mrpaps_order_items')
-    .select('variant_id')
-    .in('variant_id', variantIds);
-
-  if (error) throw error;
+  const rows = await query<{ variant_id: string }>(
+    `SELECT variant_id FROM mrpaps_order_items WHERE variant_id = ANY($1::uuid[])`,
+    [variantIds],
+  );
 
   const counts: Record<string, number> = {};
   for (const id of variantIds) counts[id] = 0;
-  for (const row of data ?? []) {
-    const vid = row.variant_id as string;
-    counts[vid] = (counts[vid] ?? 0) + 1;
+  for (const row of rows) {
+    counts[row.variant_id] = (counts[row.variant_id] ?? 0) + 1;
   }
   return counts;
 }

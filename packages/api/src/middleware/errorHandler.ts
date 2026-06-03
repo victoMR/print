@@ -59,11 +59,11 @@ export function errorHandler(
   }
 
   const pg = err as { code?: string; message?: string };
-  if (pg?.code === 'PGRST204' && pg.message?.includes('garment_color_hex')) {
+  if (pg?.code === '42703' && pg.message?.includes('garment_color_hex')) {
     res.status(503).json({
       ok: false,
       error:
-        'Falta la columna garment_color_hex en Supabase. Ejecuta la migración supabase/migrations/007_mrpaps_variant_color_and_templates.sql en el SQL Editor.',
+        'Falta la columna garment_color_hex. Ejecuta la migración supabase/migrations/007_mrpaps_variant_color_and_templates.sql.',
     });
     return;
   }

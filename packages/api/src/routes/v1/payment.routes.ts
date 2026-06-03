@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { optionalCustomerAuth } from '../../middleware/customer-auth.js';
 import { createPaymentIntent, isStripeConfigured } from '../../services/mrpaps-payment.service.js';
-import { supabase } from '../../lib/supabase.js';
+import { getOrderForPayment } from '../../db/mrpaps-orders.repository.js';
 import { NotFoundError } from '../../types/errors.js';
 
 export const v1PaymentRouter: Router = Router();
@@ -19,21 +19,14 @@ v1PaymentRouter.post('/payment-intent', optionalCustomerAuth, async (req, res, n
     }
 
     const { publicOrderId } = createPaymentIntentSchema.parse(req.body);
-
-    const { data: order, error } = await supabase
-      .from('mrpaps_orders')
-      .select('id, public_id, total_mxn, customer_email, user_id')
-      .eq('public_id', publicOrderId)
-      .maybeSingle();
-
-    if (error) throw error;
+    const order = await getOrderForPayment(publicOrderId);
     if (!order) throw new NotFoundError('Pedido no encontrado');
 
     const { clientSecret, paymentIntentId } = await createPaymentIntent({
       amountMxn: Number(order.total_mxn),
-      orderId: order.id as string,
-      publicOrderId: order.public_id as string,
-      customerEmail: order.customer_email as string,
+      orderId: order.id,
+      publicOrderId: order.public_id,
+      customerEmail: order.customer_email,
     });
 
     res.json({ data: { clientSecret, paymentIntentId } });

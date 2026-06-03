@@ -1,6 +1,9 @@
-import { supabase } from '../lib/supabase.js';
 import { getStripe, isStripeConfigured } from '../lib/stripe.js';
 import { logger } from '../lib/logger.js';
+import {
+  getOrderPaymentSnapshot,
+  updateOrderPaymentByPublicId,
+} from '../db/mrpaps-orders.repository.js';
 import type Stripe from 'stripe';
 
 export { isStripeConfigured };
@@ -25,14 +28,10 @@ export async function createPaymentIntent(input: {
     receipt_email: input.customerEmail,
   });
 
-  await supabase
-    .from('mrpaps_orders')
-    .update({
-      stripe_payment_intent_id: intent.id,
-      payment_status: 'pending',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('public_id', input.publicOrderId);
+  await updateOrderPaymentByPublicId(input.publicOrderId, {
+    stripe_payment_intent_id: intent.id,
+    payment_status: 'pending',
+  });
 
   return { clientSecret: intent.client_secret!, paymentIntentId: intent.id };
 }
@@ -61,19 +60,12 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string): P
       return;
     }
 
-    // Verificar que el monto cobrado coincide con el total del pedido en DB
-    const { data: order, error: fetchError } = await supabase
-      .from('mrpaps_orders')
-      .select('id, total_mxn, payment_status')
-      .eq('public_id', publicOrderId)
-      .maybeSingle();
-
-    if (fetchError || !order) {
-      logger.error({ publicOrderId, fetchError }, 'Pedido no encontrado al procesar webhook');
+    const order = await getOrderPaymentSnapshot(publicOrderId);
+    if (!order) {
+      logger.error({ publicOrderId }, 'Pedido no encontrado al procesar webhook');
       return;
     }
 
-    // Idempotencia: si ya está pagado, no volver a procesar
     if (order.payment_status === 'paid') {
       logger.info({ publicOrderId }, 'Webhook duplicado ignorado — pedido ya pagado');
       return;
@@ -85,23 +77,15 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string): P
         { publicOrderId, intentId: intent.id, intentAmount: intent.amount, expectedCents },
         'FRAUDE DETECTADO: monto cobrado no coincide con total del pedido',
       );
-      // No marcar como pagado — requiere revisión manual
-      await supabase
-        .from('mrpaps_orders')
-        .update({ payment_status: 'amount_mismatch', updated_at: new Date().toISOString() })
-        .eq('public_id', publicOrderId);
+      await updateOrderPaymentByPublicId(publicOrderId, { payment_status: 'amount_mismatch' });
       return;
     }
 
-    const { error } = await supabase
-      .from('mrpaps_orders')
-      .update({ payment_status: 'paid', updated_at: new Date().toISOString() })
-      .eq('public_id', publicOrderId);
-
-    if (error) {
-      logger.error({ publicOrderId, error }, 'Error al marcar pedido como pagado');
-    } else {
+    try {
+      await updateOrderPaymentByPublicId(publicOrderId, { payment_status: 'paid' });
       logger.info({ publicOrderId, amountMxn: order.total_mxn }, 'Pedido marcado como pagado');
+    } catch (error) {
+      logger.error({ publicOrderId, error }, 'Error al marcar pedido como pagado');
     }
   }
 
@@ -109,10 +93,7 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string): P
     const intent = event.data.object as Stripe.PaymentIntent;
     const publicOrderId = intent.metadata.public_order_id;
     if (publicOrderId) {
-      await supabase
-        .from('mrpaps_orders')
-        .update({ payment_status: 'failed', updated_at: new Date().toISOString() })
-        .eq('public_id', publicOrderId);
+      await updateOrderPaymentByPublicId(publicOrderId, { payment_status: 'failed' });
       logger.info({ publicOrderId, intentId: intent.id }, 'Pago fallido registrado');
     }
   }
@@ -120,7 +101,12 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string): P
   if (event.type === 'charge.dispute.created') {
     const dispute = event.data.object as Stripe.Dispute;
     logger.warn(
-      { disputeId: dispute.id, chargeId: dispute.charge, amount: dispute.amount, reason: dispute.reason },
+      {
+        disputeId: dispute.id,
+        chargeId: dispute.charge,
+        amount: dispute.amount,
+        reason: dispute.reason,
+      },
       'DISPUTA/CHARGEBACK recibido — revisar manualmente',
     );
   }

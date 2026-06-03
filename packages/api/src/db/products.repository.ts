@@ -1,104 +1,93 @@
-import { supabase } from '../lib/supabase.js';
+import { query, queryOne, queryRequired } from '../lib/db-helper.js';
 import { logger } from '../lib/logger.js';
 import type { PrintfulProductInsert, PrintfulProductRow } from './types.js';
 
-function mapDbError(operation: string, error: { message: string; code?: string }): never {
-  logger.error({ operation, code: error.code, message: error.message }, 'Supabase printful_products error');
+function mapDbError(operation: string, error: Error): never {
+  logger.error({ operation, message: error.message }, 'PostgreSQL printful_products error');
   throw new Error(`printful_products.${operation}: ${error.message}`);
 }
 
 export async function upsertProducts(rows: PrintfulProductInsert[]): Promise<PrintfulProductRow[]> {
   if (rows.length === 0) return [];
 
-  const { data, error } = await supabase
-    .from('printful_products')
-    .upsert(
-      rows.map((row) => ({
-        ...row,
-        last_synced_at: row.last_synced_at ?? new Date().toISOString(),
-      })),
-      { onConflict: 'printful_sync_variant_id' },
-    )
-    .select();
-
-  if (error) {
-    mapDbError('upsert', error);
+  const results: PrintfulProductRow[] = [];
+  for (const row of rows) {
+    try {
+      const saved = await queryRequired<PrintfulProductRow>(
+        `INSERT INTO printful_products (
+           internal_sku, printful_sync_product_id, printful_sync_variant_id,
+           printful_catalog_variant_id, retail_price_mxn, printful_cost_usd, status, last_synced_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, NOW()))
+         ON CONFLICT (printful_sync_variant_id) DO UPDATE SET
+           internal_sku = EXCLUDED.internal_sku,
+           printful_sync_product_id = EXCLUDED.printful_sync_product_id,
+           printful_catalog_variant_id = EXCLUDED.printful_catalog_variant_id,
+           retail_price_mxn = EXCLUDED.retail_price_mxn,
+           printful_cost_usd = EXCLUDED.printful_cost_usd,
+           status = EXCLUDED.status,
+           last_synced_at = EXCLUDED.last_synced_at
+         RETURNING *`,
+        [
+          row.internal_sku,
+          row.printful_sync_product_id,
+          row.printful_sync_variant_id,
+          row.printful_catalog_variant_id,
+          row.retail_price_mxn,
+          row.printful_cost_usd,
+          row.status,
+          row.last_synced_at ?? new Date().toISOString(),
+        ],
+      );
+      results.push(saved);
+    } catch (err) {
+      mapDbError('upsert', err instanceof Error ? err : new Error(String(err)));
+    }
   }
-
-  return data ?? [];
+  return results;
 }
 
 export async function listActiveProducts(): Promise<PrintfulProductRow[]> {
-  const { data, error } = await supabase
-    .from('printful_products')
-    .select()
-    .eq('status', 'active')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    mapDbError('listActive', error);
-  }
-
-  return data ?? [];
+  return query<PrintfulProductRow>(
+    `SELECT * FROM printful_products WHERE status = 'active' ORDER BY created_at DESC`,
+  );
 }
 
 export async function getProductBySyncVariantId(
   syncVariantId: number,
 ): Promise<PrintfulProductRow | null> {
-  const { data, error } = await supabase
-    .from('printful_products')
-    .select()
-    .eq('printful_sync_variant_id', syncVariantId)
-    .maybeSingle();
-
-  if (error) {
-    mapDbError('getBySyncVariantId', error);
-  }
-
+  const data = await queryOne<PrintfulProductRow>(
+    `SELECT * FROM printful_products WHERE printful_sync_variant_id = $1`,
+    [syncVariantId],
+  );
   if (!data) return null;
 
-  // Supabase puede devolver `bigint` como string (depende de cómo esté tipado).
-  // Normalizamos a number para consumir consistentemente desde servicios.
   return {
     ...data,
-    printful_sync_product_id: Number((data as any).printful_sync_product_id),
-    printful_sync_variant_id: Number((data as any).printful_sync_variant_id),
-    printful_catalog_variant_id: Number((data as any).printful_catalog_variant_id),
-  } as PrintfulProductRow;
+    printful_sync_product_id: Number(data.printful_sync_product_id),
+    printful_sync_variant_id: Number(data.printful_sync_variant_id),
+    printful_catalog_variant_id: Number(data.printful_catalog_variant_id),
+  };
 }
 
-export async function getProductByInternalSku(internalSku: string): Promise<PrintfulProductRow | null> {
-  const { data, error } = await supabase
-    .from('printful_products')
-    .select()
-    .eq('internal_sku', internalSku)
-    .maybeSingle();
-
-  if (error) {
-    mapDbError('getByInternalSku', error);
-  }
-
-  return data;
+export async function getProductByInternalSku(
+  internalSku: string,
+): Promise<PrintfulProductRow | null> {
+  return queryOne<PrintfulProductRow>(
+    `SELECT * FROM printful_products WHERE internal_sku = $1`,
+    [internalSku],
+  );
 }
 
 export async function deactivateProductBySyncVariantId(syncVariantId: number): Promise<void> {
-  const { error } = await supabase
-    .from('printful_products')
-    .update({ status: 'inactive', last_synced_at: new Date().toISOString() })
-    .eq('printful_sync_variant_id', syncVariantId);
-
-  if (error) {
-    mapDbError('deactivate', error);
-  }
+  await query(
+    `UPDATE printful_products SET status = 'inactive', last_synced_at = NOW()
+     WHERE printful_sync_variant_id = $1`,
+    [syncVariantId],
+  );
 }
 
 export async function deleteBySyncProductId(printfulSyncProductId: number): Promise<void> {
-  const { error } = await supabase
-    .from('printful_products')
-    .delete()
-    .eq('printful_sync_product_id', printfulSyncProductId);
-
-  if (error) {
-    mapDbError('deleteBySyncProductId', error);
-  }
+  await query(`DELETE FROM printful_products WHERE printful_sync_product_id = $1`, [
+    printfulSyncProductId,
+  ]);
 }

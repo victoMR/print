@@ -1,8 +1,7 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { supabase } from '../lib/supabase.js';
 import { BadRequestError } from '../types/errors.js';
-
-const BUCKET = process.env.SUPABASE_STORAGE_BUCKET ?? 'mrpaps-assets';
 
 const ALLOWED_MIME = new Set([
   'image/png',
@@ -29,10 +28,17 @@ export type UploadResult = {
   size: number;
 };
 
-function publicUrl(path: string): string {
-  const base = process.env.SUPABASE_URL?.replace(/\/$/, '');
-  if (!base) throw new Error('SUPABASE_URL is required');
-  return `${base}/storage/v1/object/public/${BUCKET}/${path}`;
+function uploadRoot(): string {
+  return process.env.UPLOAD_DIR ?? path.resolve(process.cwd(), 'uploads');
+}
+
+function publicBaseUrl(): string {
+  const base = process.env.ASSETS_PUBLIC_URL ?? process.env.APP_URL ?? 'http://127.0.0.1:4000';
+  return base.replace(/\/$/, '');
+}
+
+function publicUrl(relativePath: string): string {
+  return `${publicBaseUrl()}/uploads/${relativePath}`;
 }
 
 export function validateUploadFile(mime: string, size: number): void {
@@ -61,21 +67,20 @@ export async function uploadAsset(
 
   const extFromName = originalName?.match(/\.([a-zA-Z0-9]+)$/)?.[1]?.toLowerCase();
   const ext = extFromName && extFromName.length <= 5 ? extFromName : (EXT_BY_MIME[mime] ?? 'bin');
-  const path = `${folder}/${randomUUID()}.${ext}`;
+  const relativePath = `${folder}/${randomUUID()}.${ext}`;
+  const absolutePath = path.join(uploadRoot(), relativePath);
 
-  const { error } = await supabase.storage.from(BUCKET).upload(path, buffer, {
-    contentType: mime,
-    upsert: false,
-  });
-
-  if (error) {
-    throw new BadRequestError(`Error al subir archivo: ${error.message}`);
-  }
+  await mkdir(path.dirname(absolutePath), { recursive: true });
+  await writeFile(absolutePath, buffer);
 
   return {
-    path,
-    url: publicUrl(path),
+    path: relativePath,
+    url: publicUrl(relativePath),
     mime,
     size: buffer.length,
   };
+}
+
+export function getUploadRoot(): string {
+  return uploadRoot();
 }

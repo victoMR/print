@@ -64,8 +64,9 @@ Scripts raíz sugeridos (cuando backend exista):
 | `PORT` | Backend | Puerto Express (default `4000` si no se define; ver `.env.example`) |
 | `APP_URL` | Backend | URL pública API (webhooks Printful) |
 | `PRINTFUL_TOKEN` | Solo backend | Nunca en Next |
-| `SUPABASE_URL` | Solo backend | URL del proyecto Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Solo backend | Persistencia server-only (nunca en frontend) |
+| `DATABASE_URL` | Solo backend | PostgreSQL directo (`postgres://user:pass@127.0.0.1:5432/dbname`) |
+| `UPLOAD_DIR` | Solo backend | Carpeta de archivos subidos (default `./uploads`) |
+| `ASSETS_PUBLIC_URL` | Solo backend | URL pública para `/uploads/...` (default `APP_URL`) |
 | Resto | Ver `.env.example` | Redis, Banxico, PAC, pagos |
 
 El frontend **solo** conoce `NEXT_PUBLIC_*`. Cualquier clave de pago server-side vive en `packages/api`.

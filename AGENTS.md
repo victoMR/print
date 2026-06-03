@@ -23,7 +23,7 @@ Guía rápida para agentes de IA y desarrolladores. **Leer primero:** [`.cursorr
 | Frontend | Raíz (`app/`, `components/`) | `print` |
 | Backend | `packages/api/` | `@print/api` |
 
-**Persistencia:** Supabase (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). Migración Mr. Paps: `supabase/migrations/003_mrpaps_core.sql`; ver `packages/api/src/db/README.md`.
+**Persistencia:** PostgreSQL directo (`DATABASE_URL` + `pg`). Migraciones en `supabase/migrations/`; ver `packages/api/src/db/README.md`.
 
 ## Admin
 
