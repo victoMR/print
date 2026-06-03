@@ -2,13 +2,12 @@ import './load-env.js';
 import { logger } from './lib/logger.js';
 
 async function main(): Promise<void> {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is required');
-  }
-
   if (!process.env.ADMIN_JWT_SECRET || process.env.ADMIN_JWT_SECRET.length < 32) {
     throw new Error('ADMIN_JWT_SECRET is required (mínimo 32 caracteres)');
   }
+
+  const { getPgClientConfig } = await import('./lib/database-config.js');
+  getPgClientConfig();
 
   const { validateDatabase } = await import('./lib/db.js');
   await validateDatabase();

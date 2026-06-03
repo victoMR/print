@@ -9,7 +9,12 @@ En producción (VPS): el API y Postgres corren en el mismo servidor; la DB solo 
 Copia `packages/api/.env.example` → `packages/api/.env`. **No pongas secretos en el `.env` de la raíz** (Next.js lo carga para el frontend).
 
 ```bash
-DATABASE_URL=postgres://mrpaps:TU_PASSWORD@127.0.0.1:5432/mrpaps
+# Recomendado (contraseña con símbolos):
+PGHOST=127.0.0.1
+PGUSER=mrpaps
+PGPASSWORD=TU_PASSWORD
+PGDATABASE=mrpaps
+
 UPLOAD_DIR=/var/lib/mrpaps/uploads          # opcional; default ./uploads
 ASSETS_PUBLIC_URL=https://api.tu-dominio.mx # URLs públicas de archivos subidos
 ```

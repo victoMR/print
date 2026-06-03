@@ -3,6 +3,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { describePgClientConfig, getPgClientConfig } from '../lib/database-config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, '../..');
@@ -19,12 +20,26 @@ function stripSupabaseStorageBlocks(sql: string): string {
 }
 
 async function main(): Promise<void> {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is required');
-  }
+  const pgConfig = getPgClientConfig();
+  console.log(`Conectando: ${describePgClientConfig(pgConfig)}`);
 
-  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
+  const client = new pg.Client(pgConfig);
+  try {
+    await client.connect();
+  } catch (err) {
+    const pgErr = err as { code?: string };
+    if (pgErr.code === '28P01') {
+      console.error(
+        '\nAutenticación fallida. Si la contraseña tiene # $ @ *, usa variables PG* en packages/api/.env:\n' +
+          '  PGHOST=127.0.0.1\n' +
+          '  PGPORT=5432\n' +
+          '  PGUSER=mrpaps\n' +
+          '  PGPASSWORD=contraseña_en_texto_plano\n' +
+          '  PGDATABASE=mrpaps\n',
+      );
+    }
+    throw err;
+  }
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
