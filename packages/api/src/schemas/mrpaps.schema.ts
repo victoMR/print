@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { mxStateCodeSchema } from './order.schema.js';
 import { CUSTOMER_PASSWORD_MAX, CUSTOMER_PASSWORD_MIN } from './customer-auth.schema.js';
+import { assetUrlSchema } from './asset-url.schema.js';
 
 export const mrpapsOrderStatusSchema = z.enum([
   'pedido',
@@ -85,15 +86,15 @@ export const updateOrderStatusSchema = z.object({
 export const createDesignSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional(),
-  fileUrl: z.string().url(),
-  thumbnailUrl: z.string().url().optional(),
+  fileUrl: assetUrlSchema,
+  thumbnailUrl: assetUrlSchema.optional(),
   tags: z.array(z.string()).optional(),
   metadata: z.record(z.unknown()).optional(),
 });
 
 const placementSchema = z.object({
   designId: z.string().uuid(),
-  designUrl: z.string().url().optional(),
+  designUrl: assetUrlSchema.optional(),
   x: z.number().min(0).max(1),
   y: z.number().min(0).max(1),
   width: z.number().min(0.01).max(1),
@@ -102,7 +103,7 @@ const placementSchema = z.object({
 
 const compositionViewSchema = z.object({
   placements: z.array(placementSchema),
-  printFileUrl: z.string().url().optional(),
+  printFileUrl: assetUrlSchema.optional(),
 });
 
 export const productCompositionSchema = z.object({
@@ -142,7 +143,7 @@ export const createProductSchema = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   description: z.string().max(5000).optional(),
-  thumbnailUrl: z.string().url().optional(),
+  thumbnailUrl: assetUrlSchema.optional(),
   /** Crea variante única «Única / Estándar» para la tienda. */
   retailPriceMxn: z.number().positive().optional(),
   status: z.enum(['active', 'inactive']).optional(),
@@ -155,7 +156,7 @@ export const updateProductSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   slug: z.string().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   description: z.string().max(5000).optional(),
-  thumbnailUrl: z.string().url().optional(),
+  thumbnailUrl: assetUrlSchema.optional(),
   status: z.enum(['active', 'inactive', 'archived']).optional(),
   templateId: z.string().uuid().nullable().optional(),
   composition: productCompositionSchema.optional(),

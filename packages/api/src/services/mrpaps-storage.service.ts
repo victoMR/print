@@ -50,13 +50,20 @@ function uploadRoot(): string {
   return process.env.UPLOAD_DIR ?? path.resolve(process.cwd(), 'uploads');
 }
 
-function publicBaseUrl(): string {
-  const base = process.env.ASSETS_PUBLIC_URL ?? process.env.APP_URL ?? 'http://127.0.0.1:4000';
-  return base.replace(/\/$/, '');
+function publicBaseUrl(): string | null {
+  const configured = process.env.ASSETS_PUBLIC_URL?.trim();
+  if (!configured || configured === 'same-origin') {
+    return null;
+  }
+  return configured.replace(/\/$/, '');
 }
 
 function publicUrl(relativePath: string): string {
-  return `${publicBaseUrl()}/uploads/${relativePath}`;
+  const base = publicBaseUrl();
+  if (!base) {
+    return `/uploads/${relativePath}`;
+  }
+  return `${base}/uploads/${relativePath}`;
 }
 
 function assertUuid(value: string, label: string): void {

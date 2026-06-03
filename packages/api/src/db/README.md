@@ -15,8 +15,9 @@ PGUSER=mrpaps
 PGPASSWORD=TU_PASSWORD
 PGDATABASE=mrpaps
 
-UPLOAD_DIR=/var/lib/mrpaps/uploads          # opcional; default ./uploads
-ASSETS_PUBLIC_URL=https://api.tu-dominio.mx # URLs públicas de archivos subidos
+UPLOAD_DIR=/var/lib/mrpaps/uploads          # carpeta en disco (permisos de escritura)
+# Opcional: https://tu-dominio.mx — si vacío, URLs relativas /uploads/... (recomendado con Next)
+ASSETS_PUBLIC_URL=
 ```
 
 ## Configurar PostgreSQL en el VPS (primera vez)
