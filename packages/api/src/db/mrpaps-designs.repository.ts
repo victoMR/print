@@ -10,6 +10,7 @@ export async function getDesignById(id: string): Promise<MrpapsDesignRow | null>
 }
 
 export async function createDesign(input: {
+  id?: string;
   name: string;
   description?: string | null;
   file_url: string;
@@ -18,6 +19,25 @@ export async function createDesign(input: {
   tags?: string[];
   metadata?: Record<string, unknown>;
 }): Promise<MrpapsDesignRow> {
+  if (input.id) {
+    return queryRequired<MrpapsDesignRow>(
+      `INSERT INTO mrpaps_designs (
+         id, name, description, file_url, thumbnail_url, user_id, tags, metadata
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [
+        input.id,
+        input.name,
+        input.description ?? null,
+        input.file_url,
+        input.thumbnail_url ?? input.file_url,
+        input.user_id ?? null,
+        input.tags ?? [],
+        JSON.stringify(input.metadata ?? {}),
+      ],
+    );
+  }
+
   return queryRequired<MrpapsDesignRow>(
     `INSERT INTO mrpaps_designs (
        name, description, file_url, thumbnail_url, user_id, tags, metadata

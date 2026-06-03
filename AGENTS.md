@@ -14,7 +14,8 @@ Guía rápida para agentes de IA y desarrolladores. **Leer primero:** [`.cursorr
 ## Documentación
 
 - **[`docs/ORCHESTRATION.md`](./docs/ORCHESTRATION.md)** — Monorepo, contratos REST `/api/v1`, secuencia de fases, diagramas
-- **[`.env.example`](./.env.example)** — Variables unificadas (frontend + backend)
+- **[`.env.local.example`](./.env.local.example)** — Frontend (solo `NEXT_PUBLIC_*`)
+- **[`packages/api/.env.example`](./packages/api/.env.example)** — Backend (secretos)
 
 ## Monorepo
 

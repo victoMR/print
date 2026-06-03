@@ -27,7 +27,8 @@ print/                          # Raíz — Next.js (frontend)
 ├── .cursor/
 │   └── agents/                 # Definiciones de agentes
 ├── .cursorrules
-├── .env.example                # Variables unificadas
+├── .env.local.example          # Frontend — solo NEXT_PUBLIC_*
+├── packages/api/.env.example   # Backend — secretos
 ├── AGENTS.md
 └── pnpm-workspace.yaml         # Recomendado (opcional en scaffold inicial)
 ```
@@ -60,14 +61,8 @@ Scripts raíz sugeridos (cuando backend exista):
 
 | Variable | Dónde | Uso |
 |----------|--------|-----|
-| `NEXT_PUBLIC_API_URL` | Frontend (.env) | Base REST, ej. `http://localhost:4000` |
-| `PORT` | Backend | Puerto Express (default `4000` si no se define; ver `.env.example`) |
-| `APP_URL` | Backend | URL pública API (webhooks Printful) |
-| `PRINTFUL_TOKEN` | Solo backend | Nunca en Next |
-| `DATABASE_URL` | Solo backend | PostgreSQL directo (`postgres://user:pass@127.0.0.1:5432/dbname`) |
-| `UPLOAD_DIR` | Solo backend | Carpeta de archivos subidos (default `./uploads`) |
-| `ASSETS_PUBLIC_URL` | Solo backend | URL pública para `/uploads/...` (default `APP_URL`) |
-| Resto | Ver `.env.example` | Redis, Banxico, PAC, pagos |
+| `NEXT_PUBLIC_*` | Frontend (`.env.local` en raíz) | Solo vars públicas; visibles en el navegador |
+| `PORT`, `APP_URL`, secretos | Backend (`packages/api/.env`) | Nunca en el `.env.local` del frontend |
 
 El frontend **solo** conoce `NEXT_PUBLIC_*`. Cualquier clave de pago server-side vive en `packages/api`.
 

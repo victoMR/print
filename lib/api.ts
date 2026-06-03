@@ -350,10 +350,20 @@ export async function adminListTemplates() {
   });
 }
 
-export async function adminUploadAsset(file: Blob, folder: "designs" | "previews" | "exports") {
+export type AdminUploadKind = "thumbnails" | "previews" | "exports";
+
+export type AdminUploadOptions = {
+  kind: AdminUploadKind;
+  productId?: string;
+  stagingId?: string;
+};
+
+export async function adminUploadAsset(file: Blob, options: AdminUploadOptions) {
   const form = new FormData();
   form.append("file", file);
-  form.append("folder", folder);
+  form.append("kind", options.kind);
+  if (options.productId) form.append("productId", options.productId);
+  if (options.stagingId) form.append("stagingId", options.stagingId);
   return adminMultipartFetch<{
     data: { url: string; path: string; mime: string; size: number };
   }>(`${V1}/admin/uploads`, form);
@@ -418,7 +428,7 @@ export async function adminCreateProduct(body: {
   name: string;
   slug?: string;
   description?: string;
-  thumbnailUrl: string;
+  thumbnailUrl?: string;
   retailPriceMxn?: number;
   status?: "active" | "inactive";
   templateId?: string;

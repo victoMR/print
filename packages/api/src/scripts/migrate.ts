@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const migrationsDir = path.resolve(__dirname, '../../../supabase/migrations');
+const packageRoot = path.resolve(__dirname, '../..');
+const monorepoRoot = path.resolve(packageRoot, '../..');
+const migrationsDir = path.join(monorepoRoot, 'supabase/migrations');
 
 /** Archivos con bloques Supabase Storage (no aplican en PostgreSQL puro). */
 const SKIP_FILES = new Set<string>();

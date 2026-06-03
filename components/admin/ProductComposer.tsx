@@ -244,6 +244,7 @@ export function ProductComposer({
     try {
       const designUrls = new Map(designs.map((d) => [d.id, d.fileUrl]));
       const links: string[] = [];
+      const stagingId = crypto.randomUUID();
 
       for (const v of template.views) {
         const viewPlacements = placementsByView[v.id] ?? [];
@@ -253,7 +254,10 @@ export function ProductComposer({
           placements: viewPlacements,
           designUrls,
         });
-        const uploadedPrint = await adminUploadAsset(printBlob, "exports");
+        const uploadedPrint = await adminUploadAsset(printBlob, {
+          kind: "exports",
+          stagingId,
+        });
         links.push(`${v.label}: ${uploadedPrint.data.url}`);
       }
 
@@ -265,7 +269,10 @@ export function ProductComposer({
         placements: placementsByView[previewView.id] ?? [],
         designUrls,
       });
-      const uploadedMock = await adminUploadAsset(mockBlob, "previews");
+      const uploadedMock = await adminUploadAsset(mockBlob, {
+        kind: "previews",
+        stagingId,
+      });
       links.push(`Vista previa: ${uploadedMock.data.url}`);
 
       onError(
@@ -306,6 +313,25 @@ export function ProductComposer({
       const previewView =
         template.views.find((v) => (placementsByView[v.id]?.length ?? 0) > 0) ?? view;
 
+      const name = productName.trim() || "Producto nuevo";
+      const slug = slugifyName(name);
+      const firstDesignId = allPlacements[0]?.designId ?? null;
+
+      let productId = editProductId ?? "";
+
+      if (isEditing && editProductId) {
+        productId = editProductId;
+      } else {
+        const product = await adminCreateProduct({
+          name,
+          slug,
+          templateId: template.id,
+          defaultGarmentColor: garmentColor,
+          retailPriceMxn: price,
+        });
+        productId = product.data.id;
+      }
+
       const printFileUrls: Record<string, string> = {};
       for (const v of template.views) {
         const viewPlacements = placementsByView[v.id] ?? [];
@@ -315,7 +341,10 @@ export function ProductComposer({
           placements: viewPlacements,
           designUrls,
         });
-        const uploadedPrint = await adminUploadAsset(printBlob, "exports");
+        const uploadedPrint = await adminUploadAsset(printBlob, {
+          kind: "exports",
+          productId,
+        });
         printFileUrls[v.id] = uploadedPrint.data.url;
       }
 
@@ -326,7 +355,10 @@ export function ProductComposer({
         designUrls,
       });
 
-      const uploaded = await adminUploadAsset(blob, "previews");
+      const uploaded = await adminUploadAsset(blob, {
+        kind: "previews",
+        productId,
+      });
       const composition = toProductComposition(
         template.id,
         garmentColor,
@@ -335,9 +367,6 @@ export function ProductComposer({
         printFileUrls,
         previewView.id,
       );
-      const name = productName.trim() || "Producto nuevo";
-      const slug = slugifyName(name);
-      const firstDesignId = allPlacements[0]?.designId ?? null;
 
       if (isEditing && editProductId) {
         await adminUpdateProduct(editProductId, {
@@ -371,19 +400,14 @@ export function ProductComposer({
 
         onEditDone?.();
       } else {
-        const product = await adminCreateProduct({
-          name,
-          slug,
+        await adminUpdateProduct(productId, {
           thumbnailUrl: uploaded.data.url,
-          templateId: template.id,
           composition,
-          defaultGarmentColor: garmentColor,
-          retailPriceMxn: price,
         });
 
         for (const size of selectedSizes) {
           const skuBase = sku.trim() || `${slug}-${size.toLowerCase()}-${slugifyName(colorLabel)}`;
-          await adminCreateProductVariant(product.data.id, {
+          await adminCreateProductVariant(productId, {
             sku: skuBase.slice(0, 50),
             sizeLabel: size,
             colorLabel,

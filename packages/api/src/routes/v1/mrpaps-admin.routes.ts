@@ -22,6 +22,7 @@ import * as storage from '../../services/mrpaps-storage.service.js';
 import { isEnviaConfigured } from '../../services/shipping/envia.client.js';
 import { quoteShipping } from '../../services/shipping/shipping-quote.service.js';
 import * as variantsAdmin from '../../services/mrpaps-variants-admin.service.js';
+import { BadRequestError } from '../../types/errors.js';
 
 export const v1MrpapsAdminRouter: Router = Router();
 
@@ -76,15 +77,12 @@ v1MrpapsAdminRouter.post('/uploads', (req, res, next) => {
     void (async () => {
       try {
         const file = requireUploadedFile(req);
-        const folderRaw = typeof req.body?.folder === 'string' ? req.body.folder : 'designs';
-        const folder = folderRaw === 'previews' || folderRaw === 'exports' ? folderRaw : 'designs';
+        const params = storage.parseUploadParams(req.body ?? {});
 
-        const uploaded = await storage.uploadAsset(
-          file.buffer,
-          file.mimetype,
-          folder,
-          file.originalname,
-        );
+        const uploaded = await storage.uploadAsset(file.buffer, file.mimetype, {
+          ...params,
+          originalName: file.originalname,
+        });
 
         res.status(201).json({
           data: {
@@ -99,6 +97,19 @@ v1MrpapsAdminRouter.post('/uploads', (req, res, next) => {
       }
     })();
   });
+});
+
+v1MrpapsAdminRouter.delete('/uploads', async (req, res, next) => {
+  try {
+    const pathParam = typeof req.query.path === 'string' ? req.query.path.trim() : '';
+    if (!pathParam) {
+      throw new BadRequestError('Indica ?path= con la ruta relativa del archivo.');
+    }
+    await storage.deleteAsset(pathParam);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
 });
 
 v1MrpapsAdminRouter.post('/designs/upload', (req, res, next) => {
@@ -117,14 +128,15 @@ v1MrpapsAdminRouter.post('/designs/upload', (req, res, next) => {
           ? req.body.description.trim() || undefined
           : undefined;
 
-        const uploaded = await storage.uploadAsset(
-          file.buffer,
-          file.mimetype,
-          'designs',
-          file.originalname,
-        );
+        const designId = crypto.randomUUID();
+        const uploaded = await storage.uploadAsset(file.buffer, file.mimetype, {
+          kind: 'designs',
+          designId,
+          originalName: file.originalname,
+        });
 
         const row = await designsRepo.createDesign({
+          id: designId,
           name,
           description: description ?? null,
           file_url: uploaded.url,
@@ -318,6 +330,7 @@ v1MrpapsAdminRouter.post('/designs', async (req, res, next) => {
 
 v1MrpapsAdminRouter.delete('/designs/:id', async (req, res, next) => {
   try {
+    await storage.deleteDesignAssets(req.params.id);
     await designsRepo.deleteDesign(req.params.id);
     res.status(204).end();
   } catch (err) {
@@ -365,7 +378,7 @@ v1MrpapsAdminRouter.post('/products', async (req, res, next) => {
       slug,
       name: body.name,
       description: body.description ?? '',
-      thumbnail_url: body.thumbnailUrl,
+      thumbnail_url: body.thumbnailUrl ?? storage.placeholderThumbnailUrl(),
       status: body.status ?? 'active',
       template_id: body.templateId ?? null,
       composition: body.composition ?? {},

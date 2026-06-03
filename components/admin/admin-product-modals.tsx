@@ -114,12 +114,17 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
     setBusy(true);
     setError(null);
     try {
-      const uploaded = await adminUploadAsset(photoFile, "previews");
       const slug = slugifyName(name);
       const res = await adminCreateProduct({
         name: name.trim(),
         slug,
         description: description.trim() || undefined,
+      });
+      const uploaded = await adminUploadAsset(photoFile, {
+        kind: "thumbnails",
+        productId: res.data.id,
+      });
+      await adminUpdateProduct(res.data.id, {
         thumbnailUrl: uploaded.data.url,
       });
       setCreatedId(res.data.id);
@@ -420,7 +425,10 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
     try {
       let thumbnailUrl: string | undefined;
       if (photoFile) {
-        const uploaded = await adminUploadAsset(photoFile, "previews");
+        const uploaded = await adminUploadAsset(photoFile, {
+          kind: "thumbnails",
+          productId: product.id,
+        });
         thumbnailUrl = uploaded.data.url;
       }
       await adminUpdateProduct(product.id, {

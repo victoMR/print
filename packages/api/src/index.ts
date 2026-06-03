@@ -13,6 +13,9 @@ async function main(): Promise<void> {
   const { validateDatabase } = await import('./lib/db.js');
   await validateDatabase();
 
+  const { ensurePlaceholderAsset } = await import('./services/mrpaps-storage.service.js');
+  await ensurePlaceholderAsset();
+
   const { connectRedis } = await import('./lib/queue.js');
   const redisOk = await connectRedis();
 

@@ -130,7 +130,7 @@ export const createProductSchema = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   description: z.string().max(5000).optional(),
-  thumbnailUrl: z.string().url(),
+  thumbnailUrl: z.string().url().optional(),
   /** Crea variante única «Única / Estándar» para la tienda. */
   retailPriceMxn: z.number().positive().optional(),
   status: z.enum(['active', 'inactive']).optional(),
