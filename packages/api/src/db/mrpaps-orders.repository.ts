@@ -1,4 +1,5 @@
 import { query, queryOne, queryRequired, buildUpdateSet } from '../lib/db-helper.js';
+import { generateTrackingCode, normalizeTrackingCode } from '../lib/order-tracking-code.js';
 import type {
   MrpapsOrderItemRow,
   MrpapsOrderRow,
@@ -44,6 +45,18 @@ export async function generateOrderNumber(): Promise<string> {
     `SELECT mrpaps_next_order_number() AS mrpaps_next_order_number`,
   );
   return row.mrpaps_next_order_number;
+}
+
+export async function reserveUniquePublicId(maxAttempts = 10): Promise<string> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const publicId = generateTrackingCode();
+    const existing = await queryOne<{ exists: boolean }>(
+      `SELECT EXISTS(SELECT 1 FROM mrpaps_orders WHERE public_id = $1) AS exists`,
+      [publicId],
+    );
+    if (!existing?.exists) return publicId;
+  }
+  throw new Error('No se pudo generar un código de seguimiento único');
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderWithItems> {
@@ -132,22 +145,61 @@ export async function listOrderStatusEvents(orderId: string): Promise<
   );
 }
 
-export async function getOrderByPublicId(publicId: string): Promise<MrpapsOrderWithItems | null> {
+async function loadOrderWithItems(order: MrpapsOrderRow): Promise<MrpapsOrderWithItems> {
+  const items = await query<MrpapsOrderItemRow>(
+    `SELECT * FROM mrpaps_order_items WHERE order_id = $1`,
+    [order.id],
+  );
+  return { ...order, items };
+}
+
+export async function getOrderByPublicId(rawPublicId: string): Promise<MrpapsOrderWithItems | null> {
+  const publicId = normalizeTrackingCode(rawPublicId);
+  if (!publicId) return null;
+
   const order = await queryOne<MrpapsOrderRow>(
     `SELECT * FROM mrpaps_orders WHERE public_id = $1`,
     [publicId],
   );
   if (!order) return null;
-
-  const items = await query<MrpapsOrderItemRow>(
-    `SELECT * FROM mrpaps_order_items WHERE order_id = $1`,
-    [order.id],
-  );
-
-  return { ...order, items };
+  return loadOrderWithItems(order);
 }
 
-export async function getOrderForPayment(publicId: string): Promise<{
+export async function getOrderByPublicIdAndEmail(
+  rawPublicId: string,
+  email: string,
+): Promise<MrpapsOrderWithItems | null> {
+  const publicId = normalizeTrackingCode(rawPublicId);
+  if (!publicId) return null;
+
+  const order = await queryOne<MrpapsOrderRow>(
+    `SELECT * FROM mrpaps_orders
+     WHERE public_id = $1 AND lower(customer_email) = lower($2)`,
+    [publicId, email.trim()],
+  );
+  if (!order) return null;
+  return loadOrderWithItems(order);
+}
+
+export async function getOrderForCustomer(
+  rawPublicId: string,
+  userId: string,
+  email: string,
+): Promise<MrpapsOrderWithItems | null> {
+  const publicId = normalizeTrackingCode(rawPublicId);
+  if (!publicId) return null;
+
+  const order = await queryOne<MrpapsOrderRow>(
+    `SELECT * FROM mrpaps_orders
+     WHERE public_id = $1
+       AND (user_id = $2::uuid OR lower(customer_email) = lower($3))`,
+    [publicId, userId, email.trim()],
+  );
+  if (!order) return null;
+  return loadOrderWithItems(order);
+}
+
+export async function getOrderForPayment(rawPublicId: string): Promise<{
   id: string;
   public_id: string;
   total_mxn: string;
@@ -155,6 +207,9 @@ export async function getOrderForPayment(publicId: string): Promise<{
   user_id: string | null;
   payment_status: string | null;
 } | null> {
+  const publicId = normalizeTrackingCode(rawPublicId);
+  if (!publicId) return null;
+
   return queryOne(
     `SELECT id, public_id, total_mxn::text, customer_email, user_id, payment_status
      FROM mrpaps_orders WHERE public_id = $1`,
@@ -162,11 +217,14 @@ export async function getOrderForPayment(publicId: string): Promise<{
   );
 }
 
-export async function getOrderPaymentSnapshot(publicId: string): Promise<{
+export async function getOrderPaymentSnapshot(rawPublicId: string): Promise<{
   id: string;
   total_mxn: string;
   payment_status: string | null;
 } | null> {
+  const publicId = normalizeTrackingCode(rawPublicId);
+  if (!publicId) return null;
+
   return queryOne(
     `SELECT id, total_mxn::text, payment_status FROM mrpaps_orders WHERE public_id = $1`,
     [publicId],

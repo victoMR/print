@@ -39,6 +39,9 @@ export function Header({ className }: { className?: string }) {
             <Link href="/shop" className="text-sm tracking-wide text-foreground/70 hover:text-foreground boty-transition">
               Shop
             </Link>
+            <Link href="/seguimiento" className="text-sm tracking-wide text-foreground/70 hover:text-foreground boty-transition">
+              Seguimiento
+            </Link>
             <Link href="/" className="text-sm tracking-wide text-foreground/70 hover:text-foreground boty-transition">
               About
             </Link>
@@ -84,6 +87,7 @@ export function Header({ className }: { className?: string }) {
         <div className={`lg:hidden overflow-hidden boty-transition ${isMenuOpen ? "max-h-64 pb-6" : "max-h-0"}`}>
           <div className="flex flex-col gap-4 pt-4 border-t border-border/50">
             <Link href="/shop" className="text-sm text-foreground/70 hover:text-foreground boty-transition" onClick={() => setIsMenuOpen(false)}>Shop</Link>
+            <Link href="/seguimiento" className="text-sm text-foreground/70 hover:text-foreground boty-transition" onClick={() => setIsMenuOpen(false)}>Seguimiento</Link>
             <Link href="/" className="text-sm text-foreground/70 hover:text-foreground boty-transition" onClick={() => setIsMenuOpen(false)}>About</Link>
             <Link href={accountHref} className="text-sm text-foreground/70 hover:text-foreground boty-transition" onClick={() => setIsMenuOpen(false)}>
               {user ? "Mi cuenta" : "Iniciar sesión"}

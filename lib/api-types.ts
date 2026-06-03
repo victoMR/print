@@ -88,6 +88,7 @@ export type EstimateResponse = {
 export type CreateOrderResponse = {
   data: {
     internalOrderId: string;
+    trackingCode: string;
     orderNumber?: string;
     status: string;
     paymentClientSecret: string | null;
@@ -96,6 +97,7 @@ export type CreateOrderResponse = {
 
 export type OrderDetail = {
   publicId: string;
+  trackingCode: string;
   orderNumber: string;
   status: MrpapsOrderStatus;
   orderedAt: string;

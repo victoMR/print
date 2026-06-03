@@ -272,11 +272,42 @@ export async function createDraftOrder(body: {
   });
 }
 
-export async function fetchOrderDetail(publicOrderId: string) {
+export async function trackGuestOrder(trackingCode: string, email: string) {
+  return apiFetch<OrderDetailResponse>(`${V1}/orders/track`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trackingCode, email }),
+    cache: "no-store",
+  });
+}
+
+export async function fetchGuestOrderDetail(trackingCode: string, email: string) {
+  const params = new URLSearchParams({ email });
   return apiFetch<OrderDetailResponse>(
-    `${V1}/orders/${encodeURIComponent(publicOrderId)}`,
+    `${V1}/orders/${encodeURIComponent(trackingCode)}?${params.toString()}`,
     { cache: "no-store" },
   );
+}
+
+export async function fetchAccountOrderDetail(publicOrderId: string) {
+  const token = getCustomerToken();
+  if (!token) throw new Error("Inicia sesión para ver tu pedido");
+
+  return apiFetch<OrderDetailResponse>(
+    `${V1}/account/orders/${encodeURIComponent(publicOrderId)}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+}
+
+/** @deprecated Usar fetchGuestOrderDetail o fetchAccountOrderDetail */
+export async function fetchOrderDetail(publicOrderId: string, email?: string) {
+  if (!email) {
+    throw new Error("Se requiere el correo del pedido para consultar el estado.");
+  }
+  return fetchGuestOrderDetail(publicOrderId, email);
 }
 
 /** @deprecated Usar fetchOrderDetail */

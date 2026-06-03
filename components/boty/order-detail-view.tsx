@@ -36,6 +36,7 @@ type OrderDetailViewProps = {
   order: OrderDetail;
   /** Mensaje hero tras checkout */
   showThankYou?: boolean;
+  variant?: "public" | "account";
   backHref?: string;
   backLabel?: string;
 };
@@ -43,6 +44,7 @@ type OrderDetailViewProps = {
 export function OrderDetailView({
   order,
   showThankYou = false,
+  variant = "public",
   backHref,
   backLabel = "Volver",
 }: OrderDetailViewProps) {
@@ -55,6 +57,14 @@ export function OrderDetailView({
           <p className="text-muted-foreground text-sm mt-2">
             Te enviamos confirmación a <span className="text-foreground">{order.customer.email}</span>
           </p>
+          {variant === "public" && (
+            <p className="text-sm mt-4 bg-muted/50 rounded-2xl px-4 py-3 inline-block">
+              Guarda tu código de seguimiento:{" "}
+              <span className="font-mono font-semibold text-foreground tracking-wide">
+                {order.trackingCode}
+              </span>
+            </p>
+          )}
         </div>
       )}
 
@@ -70,8 +80,15 @@ export function OrderDetailView({
       <BotySurface className="p-6 md:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Pedido</p>
-            <h2 className="font-serif text-2xl md:text-3xl mt-1">#{order.orderNumber}</h2>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">
+              {variant === "public" ? "Código de seguimiento" : "Pedido"}
+            </p>
+            <h2 className="font-serif text-2xl md:text-3xl mt-1 font-mono tracking-wide">
+              {variant === "public" ? order.trackingCode : `#${order.orderNumber}`}
+            </h2>
+            {variant === "account" && (
+              <p className="text-xs text-muted-foreground mt-1 font-mono">{order.trackingCode}</p>
+            )}
             <p className="text-xs text-muted-foreground mt-2">
               {new Date(order.orderedAt).toLocaleString("es-MX", {
                 dateStyle: "long",

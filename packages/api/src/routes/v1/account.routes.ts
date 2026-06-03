@@ -4,6 +4,7 @@ import { requireCustomerAuth } from '../../middleware/customer-auth.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
 import { publicCustomer } from '../../services/customer-auth.service.js';
 import { mxStateCodeSchema } from '../../schemas/order.schema.js';
+import { getCustomerOrderDetail } from '../../services/mrpaps-order-tracking.service.js';
 const ORDER_STATUS_LABELS: Record<string, string> = {
   pedido: 'Pedido recibido',
   solicitado_imprenta: 'Solicitado a imprenta',
@@ -139,5 +140,16 @@ v1AccountRouter.get('/orders', async (req, res, next) => {
         itemCount: o.item_count,
       })),
     });
+  } catch (err) { next(err); }
+});
+
+v1AccountRouter.get('/orders/:publicId', async (req, res, next) => {
+  try {
+    const data = await getCustomerOrderDetail(
+      req.params.publicId,
+      req.customerUser!.id,
+      req.customerUser!.email,
+    );
+    res.json({ data });
   } catch (err) { next(err); }
 });

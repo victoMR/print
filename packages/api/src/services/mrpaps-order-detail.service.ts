@@ -1,5 +1,6 @@
 import * as ordersRepo from '../db/mrpaps-orders.repository.js';
 import type { MrpapsOrderStatus, MrpapsOrderWithItems } from '../db/mrpaps.types.js';
+import { formatTrackingCodeDisplay } from '../lib/order-tracking-code.js';
 import { NotFoundError } from '../types/errors.js';
 
 const STATUS_FLOW: MrpapsOrderStatus[] = [
@@ -11,6 +12,7 @@ const STATUS_FLOW: MrpapsOrderStatus[] = [
 
 export type OrderDetailDto = {
   publicId: string;
+  trackingCode: string;
   orderNumber: string;
   status: MrpapsOrderStatus;
   orderedAt: string;
@@ -128,6 +130,7 @@ function mapOrder(
 
   const detail: OrderDetailDto = {
     publicId: order.public_id,
+    trackingCode: formatTrackingCodeDisplay(order.public_id),
     orderNumber: order.order_number,
     status: order.status,
     orderedAt: order.ordered_at ?? order.created_at,
@@ -191,8 +194,27 @@ function mapOrder(
   return detail;
 }
 
-export async function getOrderDetail(publicId: string): Promise<OrderDetailDto> {
-  const order = await ordersRepo.getOrderByPublicId(publicId);
+function stripGuestFields(detail: OrderDetailDto): OrderDetailDto {
+  return {
+    ...detail,
+    internalNotes: undefined,
+    items: detail.items.map((item) => ({
+      ...item,
+      printFileUrl: null,
+    })),
+  };
+}
+
+export async function mapGuestOrderDetail(order: MrpapsOrderWithItems): Promise<OrderDetailDto> {
+  const events = await ordersRepo.listOrderStatusEvents(order.id);
+  return stripGuestFields(mapOrder(order, events));
+}
+
+export async function getOrderDetail(
+  publicId: string,
+  preloaded?: MrpapsOrderWithItems,
+): Promise<OrderDetailDto> {
+  const order = preloaded ?? (await ordersRepo.getOrderByPublicId(publicId));
   if (!order) throw new NotFoundError('Pedido no encontrado');
   const events = await ordersRepo.listOrderStatusEvents(order.id);
   return mapOrder(order, events);

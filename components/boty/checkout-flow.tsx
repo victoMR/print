@@ -7,6 +7,7 @@ import { createDraftOrder, fetchEstimate, fetchShippingRates } from "@/lib/api";
 import type { CheckoutRecipient, ShippingRate } from "@/lib/api-types";
 import { useCart } from "@/lib/cart-context";
 import { useCustomer } from "@/lib/customer-context";
+import { saveGuestOrderAccess } from "@/lib/order-guest-session";
 import { createAddress, listAddresses, type SavedAddress } from "@/lib/customer-api";
 import { MX_STATES } from "@/lib/mx-states";
 import { cn, formatMxn } from "@/lib/utils";
@@ -59,6 +60,7 @@ export function BotyCheckoutFlow() {
   const [shippingMethod, setShippingMethod] = useState("STANDARD");
   const [totals, setTotals] = useState({ subtotal: "0.00", shipping: "0.00", tax: "0.00", total: "0.00" });
   const [publicOrderId, setPublicOrderId] = useState<string | null>(null);
+  const [trackingCode, setTrackingCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -229,7 +231,12 @@ export function BotyCheckoutFlow() {
         retailCosts: { currency: "MXN", ...totals },
         saveAccount: !user,
       });
-      setPublicOrderId(res.data.internalOrderId);
+      const code = res.data.trackingCode ?? res.data.internalOrderId;
+      setPublicOrderId(code);
+      setTrackingCode(code);
+      if (!user) {
+        saveGuestOrderAccess(code, recipient.email);
+      }
       setStep("payment");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear el pedido");
@@ -671,7 +678,7 @@ export function BotyCheckoutFlow() {
 
               {!user && (
                 <p className="text-xs text-muted-foreground bg-muted/40 rounded-2xl px-4 py-3">
-                  Al confirmar, crearemos una cuenta con tu correo para que puedas rastrear tu pedido.
+                  Al confirmar recibirás un código de seguimiento único. Guárdalo junto con tu correo para consultar el estado en cualquier momento.
                 </p>
               )}
 
@@ -699,6 +706,15 @@ export function BotyCheckoutFlow() {
                 <CreditCard className="w-5 h-5 text-primary" />
                 Pago seguro
               </h2>
+              {!user && trackingCode && (
+                <div className="rounded-2xl bg-primary/5 border border-primary/20 px-4 py-3 text-sm">
+                  <p className="text-muted-foreground">Tu código de seguimiento</p>
+                  <p className="font-mono font-semibold tracking-wide mt-1">{trackingCode}</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Guárdalo: lo necesitarás con tu correo para ver el estado del pedido.
+                  </p>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
                 Ingresa los datos de tu tarjeta. El cargo es de{" "}
                 <strong className="text-foreground">{formatMxn(totals.total)}</strong>.

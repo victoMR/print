@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import type {
   MrpapsCreateOrderBody,
   MrpapsEstimateBody,
@@ -14,7 +13,7 @@ import {
   resolveShippingPriceMxn,
 } from './mrpaps-shipping.service.js';
 import { BadRequestError } from '../types/errors.js';
-import { getOrderDetail } from './mrpaps-order-detail.service.js';
+import { getGuestOrderByCodeAndEmail } from './mrpaps-order-tracking.service.js';
 
 function addressFromRecipient(recipient: MrpapsCreateOrderBody['recipient']) {
   return {
@@ -113,7 +112,7 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
     });
   }
 
-  const publicId = randomUUID().replace(/-/g, '');
+  const publicId = await ordersRepo.reserveUniquePublicId();
   const orderNumber = await ordersRepo.generateOrderNumber();
 
   const orderItems = await Promise.all(
@@ -159,12 +158,13 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
 
   return {
     internalOrderId: order.public_id,
+    trackingCode: order.public_id,
     orderNumber: order.order_number,
     status: order.status,
     paymentClientSecret: null as string | null,
   };
 }
 
-export async function getPublicOrder(publicId: string) {
-  return getOrderDetail(publicId);
+export async function getPublicOrder(trackingCode: string, email: string) {
+  return getGuestOrderByCodeAndEmail(trackingCode, email);
 }
