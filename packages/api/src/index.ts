@@ -17,18 +17,12 @@ async function main(): Promise<void> {
   await ensurePlaceholderAsset();
 
   const { connectRedis } = await import('./lib/queue.js');
-  const redisOk = await connectRedis();
+  await connectRedis();
 
   const { createApp } = await import('./app.js');
 
   const app = createApp();
   const port = Number(process.env.PORT ?? 4000);
-
-  if (redisOk && process.env.ENABLE_PRINTFUL_WEBHOOKS === 'true') {
-    const { startWebhookWorker } = await import('./workers/webhook.worker.js');
-    startWebhookWorker();
-    logger.info('Worker Printful (legacy) activo');
-  }
 
   app.listen(port, () => {
     logger.info({ port }, 'API Mr. Paps escuchando');
