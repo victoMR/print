@@ -3,11 +3,12 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import { describePgClientConfig, getPgClientConfig } from '../lib/database-config.js';
+import { describePgClientConfig, getPgClientConfig, getPgConfigSource } from '../lib/database-config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, '../..');
 const monorepoRoot = path.resolve(packageRoot, '../..');
+const apiEnvPath = path.join(packageRoot, '.env');
 const migrationsDir = path.join(monorepoRoot, 'supabase/migrations');
 
 /** Archivos con bloques Supabase Storage (no aplican en PostgreSQL puro). */
@@ -21,7 +22,15 @@ function stripSupabaseStorageBlocks(sql: string): string {
 
 async function main(): Promise<void> {
   const pgConfig = getPgClientConfig();
+  console.log(`Env: ${apiEnvPath}`);
   console.log(`Conectando: ${describePgClientConfig(pgConfig)}`);
+
+  if (getPgConfigSource() === 'DATABASE_URL' && process.env.PGPASSWORD) {
+    console.warn(
+      'Aviso: tienes PGPASSWORD definido pero se usa DATABASE_URL. ' +
+        'Borra DATABASE_URL de packages/api/.env o mueve PG* ahí.',
+    );
+  }
 
   const client = new pg.Client(pgConfig);
   try {
