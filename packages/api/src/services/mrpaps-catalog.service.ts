@@ -70,7 +70,7 @@ export async function listPublicProducts(page = 1, limit = 24) {
     )
   ).filter((p): p is NonNullable<typeof p> => p !== null);
 
-  return { data, meta: { page: safePage, limit: safeLimit, total: data.length } };
+  return { data, meta: { page: safePage, limit: safeLimit, total } };
 }
 
 export async function getPublicProduct(idOrSlug: string) {

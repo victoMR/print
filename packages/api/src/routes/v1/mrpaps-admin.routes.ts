@@ -13,7 +13,6 @@ import {
   updateVariantAdminSchema,
 } from '../../schemas/mrpaps.schema.js';
 import * as catalog from '../../services/mrpaps-catalog.service.js';
-import * as checkout from '../../services/mrpaps-checkout.service.js';
 import * as designsRepo from '../../db/mrpaps-designs.repository.js';
 import * as templatesRepo from '../../db/mrpaps-garment-templates.repository.js';
 import * as ordersRepo from '../../db/mrpaps-orders.repository.js';
