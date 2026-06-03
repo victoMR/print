@@ -1,8 +1,14 @@
 import { z } from 'zod';
 import { mxStateCodeSchema } from './order.schema.js';
 
-export const mrpapsOrderStatusSchema = z.enum(['pedido', 'impreso', 'enviado', 'cancelado']);
-export const shippingMethodSchema = z.enum(['STANDARD', 'EXPRESS']);
+export const mrpapsOrderStatusSchema = z.enum([
+  'pedido',
+  'solicitado_imprenta',
+  'recibido_imprenta',
+  'enviado',
+  'cancelado',
+]);
+export const shippingMethodSchema = z.string().min(1).max(80);
 
 export const checkoutItemSchema = z.object({
   variantId: z.string().uuid(),
@@ -62,6 +68,8 @@ export const createOrderBodySchema = z.object({
     total: z.string().regex(/^\d+\.\d{2}$/),
   }),
   saveAccount: z.boolean().optional(),
+  /** Solo desde JWT en checkout; no enviar desde el cliente */
+  customerUserId: z.string().uuid().optional(),
 });
 
 export const updateOrderStatusSchema = z.object({
@@ -79,16 +87,37 @@ export const createDesignSchema = z.object({
   fileUrl: z.string().url(),
   thumbnailUrl: z.string().url().optional(),
   tags: z.array(z.string()).optional(),
+  metadata: z.record(z.unknown()).optional(),
 });
 
-export const updateInventorySchema = z.object({
-  stockQuantity: z.number().int().min(0),
+const placementSchema = z.object({
+  designId: z.string().uuid(),
+  designUrl: z.string().url().optional(),
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  width: z.number().min(0.01).max(1),
+  rotation: z.number().default(0),
+});
+
+const compositionViewSchema = z.object({
+  placements: z.array(placementSchema),
+  printFileUrl: z.string().url().optional(),
+});
+
+export const productCompositionSchema = z.object({
+  templateId: z.string().uuid(),
+  garmentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  primaryPrintView: z.string().optional(),
+  views: z.record(z.string(), compositionViewSchema),
 });
 
 export const updateVariantAdminSchema = z.object({
+  sku: z.string().min(1).max(50).optional(),
+  sizeLabel: z.string().min(1).max(50).optional(),
+  colorLabel: z.string().min(1).max(50).optional(),
   retailPriceMxn: z.number().positive().optional(),
-  stockQuantity: z.number().int().min(0).optional(),
   designId: z.string().uuid().nullable().optional(),
+  garmentColorHex: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   status: z.enum(['active', 'inactive', 'archived']).optional(),
 });
 
@@ -102,7 +131,12 @@ export const createProductSchema = z.object({
   slug: z.string().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   description: z.string().max(5000).optional(),
   thumbnailUrl: z.string().url(),
+  /** Crea variante única «Única / Estándar» para la tienda. */
+  retailPriceMxn: z.number().positive().optional(),
   status: z.enum(['active', 'inactive']).optional(),
+  templateId: z.string().uuid().optional(),
+  composition: productCompositionSchema.optional(),
+  defaultGarmentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
 });
 
 export const updateProductSchema = z.object({
@@ -111,6 +145,9 @@ export const updateProductSchema = z.object({
   description: z.string().max(5000).optional(),
   thumbnailUrl: z.string().url().optional(),
   status: z.enum(['active', 'inactive', 'archived']).optional(),
+  templateId: z.string().uuid().nullable().optional(),
+  composition: productCompositionSchema.optional(),
+  defaultGarmentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
 });
 
 export const createVariantSchema = z.object({
@@ -118,10 +155,17 @@ export const createVariantSchema = z.object({
   sizeLabel: z.string().min(1).max(50),
   colorLabel: z.string().min(1).max(50),
   retailPriceMxn: z.number().positive(),
-  stockQuantity: z.number().int().min(0).default(0),
   designId: z.string().uuid().nullable().optional(),
+  garmentColorHex: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
 });
 
 export type MrpapsShippingRatesBody = z.infer<typeof shippingRatesBodySchema>;
+
+export const adminShippingQuoteSchema = z.object({
+  itemCount: z.number().int().positive().default(1),
+  address: shippingRatesBodySchema.shape.address,
+});
+
+export type AdminShippingQuoteBody = z.infer<typeof adminShippingQuoteSchema>;
 export type MrpapsEstimateBody = z.infer<typeof estimateBodySchema>;
 export type MrpapsCreateOrderBody = z.infer<typeof createOrderBodySchema>;

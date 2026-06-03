@@ -42,13 +42,14 @@ export async function estimateCostsMxn(input: EstimateBody) {
   });
 }
 
-export async function createDraftOrderPublic(body: CreateOrderBody) {
+export async function createDraftOrderPublic(body: CreateOrderBody, customerUserId?: string) {
   return mrpapsCheckout.createOrder({
     items: mapPricedItems(body.items),
     shippingMethod: body.shippingMethod as 'STANDARD' | 'EXPRESS',
     recipient: body.recipient,
     retailCosts: body.retailCosts,
     saveAccount: (body as CreateOrderBody & { saveAccount?: boolean }).saveAccount,
+    customerUserId,
   });
 }
 

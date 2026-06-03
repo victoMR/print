@@ -8,22 +8,12 @@ export const metadata = {
 
 export default function CheckoutPage() {
   return (
-    <main className="min-h-screen">
+    <div className="flex flex-col bg-muted/20">
       <Header />
-      <div className="pt-28 pb-20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h1 className="font-serif text-4xl md:text-5xl text-foreground mb-4">
-              Checkout
-            </h1>
-            <p className="text-muted-foreground">
-              Completa tu dirección y confirma tu pedido borrador
-            </p>
-          </div>
-          <BotyCheckoutFlow />
-        </div>
-      </div>
+      <main className="min-h-screen pt-32 pb-16 px-4 sm:px-6 lg:px-8">
+        <BotyCheckoutFlow />
+      </main>
       <Footer />
-    </main>
+    </div>
   );
 }

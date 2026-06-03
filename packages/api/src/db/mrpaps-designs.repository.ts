@@ -29,6 +29,7 @@ export async function createDesign(input: {
   thumbnail_url?: string | null;
   user_id?: string | null;
   tags?: string[];
+  metadata?: Record<string, unknown>;
 }): Promise<MrpapsDesignRow> {
   const { data, error } = await supabase
     .from('mrpaps_designs')
@@ -39,6 +40,7 @@ export async function createDesign(input: {
       thumbnail_url: input.thumbnail_url ?? input.file_url,
       user_id: input.user_id ?? null,
       tags: input.tags ?? [],
+      metadata: input.metadata ?? {},
     })
     .select('*')
     .single();

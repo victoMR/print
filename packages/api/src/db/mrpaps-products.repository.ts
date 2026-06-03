@@ -83,6 +83,9 @@ export async function updateProductAdmin(
     description: string;
     thumbnail_url: string;
     status: MrpapsProductStatus;
+    template_id: string | null;
+    composition: Record<string, unknown>;
+    default_garment_color: string;
   }>,
 ): Promise<MrpapsProductRow> {
   const { data, error } = await supabase
@@ -139,13 +142,46 @@ export async function updateVariantStock(
   return data as MrpapsProductVariantRow;
 }
 
+export async function findVariantByProductSizeColor(
+  productId: string,
+  sizeLabel: string,
+  colorLabel: string,
+): Promise<MrpapsProductVariantRow | null> {
+  const { data, error } = await supabase
+    .from('mrpaps_product_variants')
+    .select('*')
+    .eq('product_id', productId)
+    .eq('size_label', sizeLabel)
+    .eq('color_label', colorLabel)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as MrpapsProductVariantRow | null;
+}
+
+export async function findVariantBySku(
+  sku: string,
+  excludeVariantId?: string,
+): Promise<MrpapsProductVariantRow | null> {
+  let q = supabase.from('mrpaps_product_variants').select('*').eq('sku', sku);
+  if (excludeVariantId) q = q.neq('id', excludeVariantId);
+  const { data, error } = await q.maybeSingle();
+  if (error) throw error;
+  return data as MrpapsProductVariantRow | null;
+}
+
 export async function updateVariantAdmin(
   variantId: string,
   patch: Partial<{
+    sku: string;
+    size_label: string;
+    color_label: string;
     retail_price_mxn: number;
     stock_quantity: number;
     status: MrpapsProductStatus;
     design_id: string | null;
+    garment_color_hex: string;
+    sort_order: number;
   }>,
 ): Promise<MrpapsProductVariantRow> {
   const { data, error } = await supabase
@@ -165,6 +201,9 @@ export async function upsertProduct(input: {
   description: string;
   thumbnail_url: string;
   status?: MrpapsProductStatus;
+  template_id?: string | null;
+  composition?: Record<string, unknown>;
+  default_garment_color?: string;
 }): Promise<MrpapsProductRow> {
   const { data, error } = await supabase
     .from('mrpaps_products')
@@ -175,6 +214,9 @@ export async function upsertProduct(input: {
         description: input.description,
         thumbnail_url: input.thumbnail_url,
         status: input.status ?? 'active',
+        template_id: input.template_id ?? null,
+        composition: input.composition ?? {},
+        default_garment_color: input.default_garment_color ?? '#FFFFFF',
       },
       { onConflict: 'slug' },
     )
@@ -193,6 +235,7 @@ export async function upsertVariant(input: {
   retail_price_mxn: number;
   stock_quantity: number;
   design_id?: string | null;
+  garment_color_hex?: string;
 }): Promise<MrpapsProductVariantRow> {
   const { data, error } = await supabase
     .from('mrpaps_product_variants')
@@ -205,6 +248,7 @@ export async function upsertVariant(input: {
         retail_price_mxn: input.retail_price_mxn,
         stock_quantity: input.stock_quantity,
         design_id: input.design_id ?? null,
+        garment_color_hex: input.garment_color_hex ?? '#FFFFFF',
         status: 'active',
       },
       { onConflict: 'sku' },

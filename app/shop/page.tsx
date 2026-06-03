@@ -12,10 +12,14 @@ export default async function ShopPage() {
   const products = catalog?.data ?? [];
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen flex flex-col">
       <Header />
-      <ShopPageContent products={products} />
-      <Footer />
+      <div className="flex-1">
+        <ShopPageContent products={products} />
+      </div>
+      <div className="mt-auto w-full shrink-0">
+        <Footer />
+      </div>
     </main>
   );
 }

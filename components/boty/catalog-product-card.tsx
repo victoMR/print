@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { RemoteImage } from "@/components/ui/remote-image";
 import { ShoppingBag } from "lucide-react";
 import type { CatalogProductSummary } from "@/lib/api-types";
 import { formatMxn } from "@/lib/utils";
@@ -37,7 +37,7 @@ export function CatalogProductCard({
               imageLoaded ? "opacity-0" : "opacity-100"
             }`}
           />
-          <Image
+          <RemoteImage
             src={product.thumbnail || "/placeholder.svg"}
             alt={product.name}
             fill

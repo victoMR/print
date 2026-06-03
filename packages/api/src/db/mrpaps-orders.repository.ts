@@ -87,6 +87,31 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
   };
 }
 
+export async function listOrderStatusEvents(orderId: string): Promise<
+  Array<{
+    from_status: MrpapsOrderStatus | null;
+    to_status: MrpapsOrderStatus;
+    note: string | null;
+    created_by: string | null;
+    created_at: string;
+  }>
+> {
+  const { data, error } = await supabase
+    .from('mrpaps_order_status_events')
+    .select('from_status, to_status, note, created_by, created_at')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as Array<{
+    from_status: MrpapsOrderStatus | null;
+    to_status: MrpapsOrderStatus;
+    note: string | null;
+    created_by: string | null;
+    created_at: string;
+  }>;
+}
+
 export async function getOrderByPublicId(publicId: string): Promise<MrpapsOrderWithItems | null> {
   const { data: order, error } = await supabase
     .from('mrpaps_orders')
@@ -157,7 +182,8 @@ export async function updateOrderStatus(
     tracking_url: string | null;
     carrier: string | null;
     internal_notes: string | null;
-    printed_at: string | null;
+    requested_at: string | null;
+    received_at: string | null;
     shipped_at: string | null;
   }>,
   meta: { note?: string; createdBy?: string },
@@ -167,12 +193,21 @@ export async function updateOrderStatus(
     throw new Error('Pedido no encontrado');
   }
 
-  const timestamps: Record<string, string | null> = {};
-  if (toStatus === 'impreso' && !existing.printed_at) {
-    timestamps.printed_at = new Date().toISOString();
+  const now = new Date().toISOString();
+  const timestamps: Record<string, string> = {};
+  const row = existing as MrpapsOrderRow & {
+    requested_at?: string | null;
+    received_at?: string | null;
+  };
+
+  if (toStatus === 'solicitado_imprenta' && !row.requested_at) {
+    timestamps.requested_at = now;
+  }
+  if (toStatus === 'recibido_imprenta' && !row.received_at) {
+    timestamps.received_at = now;
   }
   if (toStatus === 'enviado' && !existing.shipped_at) {
-    timestamps.shipped_at = new Date().toISOString();
+    timestamps.shipped_at = now;
   }
 
   const { data, error } = await supabase
@@ -199,22 +234,24 @@ export async function updateOrderStatus(
   return data as MrpapsOrderRow;
 }
 
-export async function decrementStockForOrder(items: CreateOrderInput['items']): Promise<void> {
-  for (const item of items) {
-    const { data: variant, error: fetchError } = await supabase
-      .from('mrpaps_product_variants')
-      .select('stock_quantity')
-      .eq('id', item.variant_id)
-      .single();
+/** Cuántos ítems de pedido referencian cada variante (histórico; no se borran variantes con pedidos). */
+export async function countOrderItemsByVariantIds(
+  variantIds: string[],
+): Promise<Record<string, number>> {
+  if (variantIds.length === 0) return {};
 
-    if (fetchError) throw fetchError;
+  const { data, error } = await supabase
+    .from('mrpaps_order_items')
+    .select('variant_id')
+    .in('variant_id', variantIds);
 
-    const nextStock = Math.max(0, Number(variant.stock_quantity) - item.quantity);
-    const { error: updateError } = await supabase
-      .from('mrpaps_product_variants')
-      .update({ stock_quantity: nextStock })
-      .eq('id', item.variant_id);
+  if (error) throw error;
 
-    if (updateError) throw updateError;
+  const counts: Record<string, number> = {};
+  for (const id of variantIds) counts[id] = 0;
+  for (const row of data ?? []) {
+    const vid = row.variant_id as string;
+    counts[vid] = (counts[vid] ?? 0) + 1;
   }
+  return counts;
 }

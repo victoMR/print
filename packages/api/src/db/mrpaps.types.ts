@@ -1,4 +1,9 @@
-export type MrpapsOrderStatus = 'pedido' | 'impreso' | 'enviado' | 'cancelado';
+export type MrpapsOrderStatus =
+  | 'pedido'
+  | 'solicitado_imprenta'
+  | 'recibido_imprenta'
+  | 'enviado'
+  | 'cancelado';
 export type MrpapsProductStatus = 'active' | 'inactive' | 'archived';
 
 export type MrpapsUserRole = 'customer' | 'admin';
@@ -46,6 +51,31 @@ export type MrpapsDesignRow = {
   updated_at: string;
 };
 
+export type GarmentTemplateView = {
+  id: string;
+  label: string;
+  mockupUrl: string;
+  mockupWidth?: number;
+  mockupHeight?: number;
+  contentBounds?: { x: number; y: number; width: number; height: number };
+  colorMaskUrl: string | null;
+  printArea: { x: number; y: number; width: number; height: number };
+  printWidthIn: number;
+  printHeightIn: number;
+};
+
+export type MrpapsGarmentTemplateRow = {
+  id: string;
+  slug: string;
+  name: string;
+  garment_type: 'tshirt' | 'hoodie' | 'cap';
+  views: GarmentTemplateView[];
+  sort_order: number;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at: string;
+};
+
 export type MrpapsProductRow = {
   id: string;
   slug: string;
@@ -53,6 +83,9 @@ export type MrpapsProductRow = {
   description: string;
   thumbnail_url: string;
   status: MrpapsProductStatus;
+  template_id: string | null;
+  composition: Record<string, unknown>;
+  default_garment_color: string;
   created_at: string;
   updated_at: string;
 };
@@ -67,6 +100,7 @@ export type MrpapsProductVariantRow = {
   stock_quantity: number;
   low_stock_threshold: number;
   design_id: string | null;
+  garment_color_hex: string;
   status: MrpapsProductStatus;
   sort_order: number;
   created_at: string;
@@ -101,7 +135,11 @@ export type MrpapsOrderRow = {
   internal_notes: string | null;
   ordered_at: string;
   printed_at: string | null;
+  requested_at: string | null;
+  received_at: string | null;
   shipped_at: string | null;
+  stripe_payment_intent_id: string | null;
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded' | null;
   created_at: string;
   updated_at: string;
 };

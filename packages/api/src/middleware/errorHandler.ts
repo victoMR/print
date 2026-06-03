@@ -1,4 +1,5 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import multer from 'multer';
 import { ZodError } from 'zod';
 import {
   AuthError,
@@ -15,6 +16,14 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
+  if (err instanceof multer.MulterError) {
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'El archivo supera el límite de 20 MB.'
+      : err.message;
+    res.status(400).json({ ok: false, error: message });
+    return;
+  }
+
   if (err instanceof ZodError) {
     res.status(400).json({
       ok: false,
@@ -46,6 +55,16 @@ export function errorHandler(
 
   if (err instanceof PrintfulServerError) {
     res.status(502).json({ ok: false, error: err.message });
+    return;
+  }
+
+  const pg = err as { code?: string; message?: string };
+  if (pg?.code === 'PGRST204' && pg.message?.includes('garment_color_hex')) {
+    res.status(503).json({
+      ok: false,
+      error:
+        'Falta la columna garment_color_hex en Supabase. Ejecuta la migración supabase/migrations/007_mrpaps_variant_color_and_templates.sql en el SQL Editor.',
+    });
     return;
   }
 

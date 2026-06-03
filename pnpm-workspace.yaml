@@ -7,3 +7,7 @@ allowBuilds:
   msgpackr-extract: true
   sharp: true
   unrs-resolver: true
+
+# Fuerza nanoid 3.x en todo el árbol de dependencias (postcss@8.4.31 requiere nanoid/non-secure)
+overrides:
+  nanoid: '3.3.12'

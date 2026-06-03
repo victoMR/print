@@ -18,7 +18,7 @@ export function OrderStatusView({ internalOrderId }: OrderStatusViewProps) {
     void fetchOrderStatus(internalOrderId)
       .then((res) => {
         setStatus(res.data.status);
-        setTotal(res.data.totalMxn);
+        setTotal(res.data.totals.totalMxn);
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : "No se pudo cargar el pedido");

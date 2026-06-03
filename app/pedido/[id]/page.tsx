@@ -1,19 +1,19 @@
+import { Suspense } from "react";
 import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
-import { OrderStatus } from "@/components/boty/order-status";
+import { PedidoDetailContent } from "./pedido-detail-content";
 
-type PedidoPageProps = {
-  params: Promise<{ id: string }>;
-};
+type PedidoPageProps = { params: Promise<{ id: string }> };
 
 export default async function PedidoPage({ params }: PedidoPageProps) {
   const { id } = await params;
-
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen flex flex-col">
       <Header />
-      <div className="pt-28 pb-20 px-6">
-        <OrderStatus internalOrderId={id} />
+      <div className="flex-1 pt-28 pb-12 px-4 sm:px-6">
+        <Suspense fallback={<p className="text-center text-muted-foreground text-sm py-16">Cargando…</p>}>
+          <PedidoDetailContent publicOrderId={id} />
+        </Suspense>
       </div>
       <Footer />
     </main>

@@ -7,9 +7,25 @@ import type {
 import * as catalog from './mrpaps-catalog.service.js';
 import * as ordersRepo from '../db/mrpaps-orders.repository.js';
 import * as usersRepo from '../db/mrpaps-users.repository.js';
-import * as designsRepo from '../db/mrpaps-designs.repository.js';
-import { getLocalShippingRates, getShippingLabel, getShippingPriceMxn } from './mrpaps-shipping.service.js';
-import { NotFoundError } from '../types/errors.js';
+import { resolvePrintFileUrl } from './mrpaps-print.service.js';
+import {
+  getShippingLabel,
+  getShippingRates as fetchShippingRates,
+  resolveShippingPriceMxn,
+} from './mrpaps-shipping.service.js';
+import { BadRequestError } from '../types/errors.js';
+import { getOrderDetail } from './mrpaps-order-detail.service.js';
+
+function addressFromRecipient(recipient: MrpapsCreateOrderBody['recipient']) {
+  return {
+    address1: recipient.address1,
+    address2: recipient.address2,
+    city: recipient.city,
+    stateCode: recipient.stateCode,
+    countryCode: recipient.countryCode,
+    zip: recipient.zip,
+  };
+}
 
 const IVA_RATE = 0.16;
 
@@ -26,14 +42,17 @@ function computeRetailTotals(subtotal: number, shipping: number) {
 
 export async function getShippingRates(input: MrpapsShippingRatesBody) {
   await catalog.resolveLineItems(input.items);
-  return getLocalShippingRates(input);
+  return fetchShippingRates(input);
 }
 
 export async function estimateCosts(input: MrpapsEstimateBody) {
   const lines = await catalog.resolveLineItems(input.items);
   const subtotal = lines.reduce((sum, l) => sum + l.unitPriceMxn * l.quantity, 0);
-  const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
-  const shipping = getShippingPriceMxn(input.shippingMethod, itemCount);
+  const shipping = await resolveShippingPriceMxn(
+    { items: input.items, address: input.address },
+    input.shippingMethod,
+    true,
+  );
   const totals = computeRetailTotals(subtotal, shipping);
 
   return {
@@ -45,9 +64,16 @@ export async function estimateCosts(input: MrpapsEstimateBody) {
 
 export async function createOrder(body: MrpapsCreateOrderBody) {
   const lines = await catalog.resolveLineItems(body.items);
-  const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
   const subtotal = lines.reduce((sum, l) => sum + l.unitPriceMxn * l.quantity, 0);
-  const shipping = getShippingPriceMxn(body.shippingMethod, itemCount);
+  const shippingInput = {
+    items: body.items,
+    address: addressFromRecipient(body.recipient),
+  };
+  const shipping = await resolveShippingPriceMxn(
+    shippingInput,
+    body.shippingMethod,
+    true,
+  );
   const expected = computeRetailTotals(subtotal, shipping);
 
   if (
@@ -56,11 +82,14 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
     body.retailCosts.tax !== expected.tax ||
     body.retailCosts.total !== expected.total
   ) {
-    throw new Error('Los totales no coinciden. Vuelve a cotizar el pedido.');
+    throw new BadRequestError('Los totales no coinciden. Vuelve a cotizar el pedido.');
   }
 
   let userId: string | null = null;
-  if (body.saveAccount) {
+
+  if (body.customerUserId) {
+    userId = body.customerUserId;
+  } else if (body.saveAccount) {
     const user = await usersRepo.upsertUserByEmail({
       email: body.recipient.email,
       full_name: body.recipient.name,
@@ -89,11 +118,7 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
 
   const orderItems = await Promise.all(
     lines.map(async (line) => {
-      let printFileUrl: string | null = null;
-      if (line.variant.design_id) {
-        const design = await designsRepo.getDesignById(line.variant.design_id);
-        printFileUrl = design?.file_url ?? null;
-      }
+      const printFileUrl = await resolvePrintFileUrl(line.variant.product, line.variant);
 
       return {
         variant_id: line.variant.id,
@@ -124,15 +149,13 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
     ship_country_code: body.recipient.countryCode,
     ship_zip: body.recipient.zip,
     shipping_method: body.shippingMethod,
-    shipping_label: getShippingLabel(body.shippingMethod),
+    shipping_label: await getShippingLabel(shippingInput, body.shippingMethod),
     subtotal_mxn: Number(expected.subtotal),
     shipping_mxn: Number(expected.shipping),
     tax_mxn: Number(expected.tax),
     total_mxn: Number(expected.total),
     items: orderItems,
   });
-
-  await ordersRepo.decrementStockForOrder(orderItems);
 
   return {
     internalOrderId: order.public_id,
@@ -143,26 +166,5 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
 }
 
 export async function getPublicOrder(publicId: string) {
-  const order = await ordersRepo.getOrderByPublicId(publicId);
-  if (!order) {
-    throw new NotFoundError('Pedido no encontrado');
-  }
-
-  return {
-    internalOrderId: order.public_id,
-    orderNumber: order.order_number,
-    status: order.status,
-    totalMxn: Number(order.total_mxn).toFixed(2),
-    trackingNumber: order.tracking_number,
-    trackingUrl: order.tracking_url,
-    carrier: order.carrier,
-    shippedAt: order.shipped_at,
-    printedAt: order.printed_at,
-    items: order.items.map((i) => ({
-      productName: i.product_name,
-      variantLabel: i.variant_label,
-      quantity: i.quantity,
-      unitPriceMxn: Number(i.unit_price_mxn).toFixed(2),
-    })),
-  };
+  return getOrderDetail(publicId);
 }

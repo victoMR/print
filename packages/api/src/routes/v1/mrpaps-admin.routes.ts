@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { requireAdminAuth } from '../../middleware/admin-auth.js';
+import { requireUploadedFile, uploadSingle } from '../../middleware/upload.js';
 import {
   adminLoginSchema,
+  adminShippingQuoteSchema,
   createDesignSchema,
   createProductSchema,
   createVariantSchema,
   mrpapsOrderStatusSchema,
-  updateInventorySchema,
   updateOrderStatusSchema,
   updateProductSchema,
   updateVariantAdminSchema,
@@ -14,9 +15,14 @@ import {
 import * as catalog from '../../services/mrpaps-catalog.service.js';
 import * as checkout from '../../services/mrpaps-checkout.service.js';
 import * as designsRepo from '../../db/mrpaps-designs.repository.js';
+import * as templatesRepo from '../../db/mrpaps-garment-templates.repository.js';
 import * as ordersRepo from '../../db/mrpaps-orders.repository.js';
 import * as productsRepo from '../../db/mrpaps-products.repository.js';
 import * as adminAuth from '../../services/admin-auth.service.js';
+import * as storage from '../../services/mrpaps-storage.service.js';
+import { isEnviaConfigured } from '../../services/shipping/envia.client.js';
+import { quoteShipping } from '../../services/shipping/shipping-quote.service.js';
+import * as variantsAdmin from '../../services/mrpaps-variants-admin.service.js';
 
 export const v1MrpapsAdminRouter: Router = Router();
 
@@ -41,6 +47,136 @@ v1MrpapsAdminRouter.get('/auth/me', requireAdminAuth, async (req, res) => {
 });
 
 v1MrpapsAdminRouter.use(requireAdminAuth);
+
+function mapTemplate(row: Awaited<ReturnType<typeof templatesRepo.listActiveTemplates>>[number]) {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    garmentType: row.garment_type,
+    views: row.views,
+    sortOrder: row.sort_order,
+  };
+}
+
+v1MrpapsAdminRouter.get('/templates', async (_req, res, next) => {
+  try {
+    const rows = await templatesRepo.listActiveTemplates();
+    res.json({ data: rows.map(mapTemplate) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1MrpapsAdminRouter.post('/uploads', (req, res, next) => {
+  uploadSingle(req, res, (err) => {
+    if (err) {
+      next(err);
+      return;
+    }
+    void (async () => {
+      try {
+        const file = requireUploadedFile(req);
+        const folderRaw = typeof req.body?.folder === 'string' ? req.body.folder : 'designs';
+        const folder = folderRaw === 'previews' || folderRaw === 'exports' ? folderRaw : 'designs';
+
+        const uploaded = await storage.uploadAsset(
+          file.buffer,
+          file.mimetype,
+          folder,
+          file.originalname,
+        );
+
+        res.status(201).json({
+          data: {
+            url: uploaded.url,
+            path: uploaded.path,
+            mime: uploaded.mime,
+            size: uploaded.size,
+          },
+        });
+      } catch (e) {
+        next(e);
+      }
+    })();
+  });
+});
+
+v1MrpapsAdminRouter.post('/designs/upload', (req, res, next) => {
+  uploadSingle(req, res, (err) => {
+    if (err) {
+      next(err);
+      return;
+    }
+    void (async () => {
+      try {
+        const file = requireUploadedFile(req);
+        const name = typeof req.body?.name === 'string' && req.body.name.trim()
+          ? req.body.name.trim()
+          : file.originalname.replace(/\.[^.]+$/, '') || 'Diseño';
+        const description = typeof req.body?.description === 'string'
+          ? req.body.description.trim() || undefined
+          : undefined;
+
+        const uploaded = await storage.uploadAsset(
+          file.buffer,
+          file.mimetype,
+          'designs',
+          file.originalname,
+        );
+
+        const row = await designsRepo.createDesign({
+          name,
+          description: description ?? null,
+          file_url: uploaded.url,
+          thumbnail_url: uploaded.url,
+          metadata: {
+            storagePath: uploaded.path,
+            mime: uploaded.mime,
+            size: uploaded.size,
+            originalName: file.originalname,
+          },
+        });
+
+        res.status(201).json({
+          data: {
+            id: row.id,
+            name: row.name,
+            description: row.description,
+            fileUrl: row.file_url,
+            thumbnailUrl: row.thumbnail_url,
+            tags: row.tags,
+            metadata: row.metadata,
+            createdAt: row.created_at,
+          },
+        });
+      } catch (e) {
+        next(e);
+      }
+    })();
+  });
+});
+
+v1MrpapsAdminRouter.post('/shipping/quote', async (req, res, next) => {
+  try {
+    const body = adminShippingQuoteSchema.parse(req.body);
+    const result = await quoteShipping(
+      {
+        items: [{ variantId: '00000000-0000-0000-0000-000000000001', quantity: body.itemCount }],
+        address: body.address,
+      },
+      { forCustomer: false },
+    );
+    res.json({
+      data: {
+        ...result,
+        enviaConfigured: isEnviaConfigured(),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
   try {
@@ -72,6 +208,8 @@ v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
           sku: i.sku,
           quantity: i.quantity,
           unitPriceMxn: Number(i.unit_price_mxn).toFixed(2),
+          thumbnailUrl: i.thumbnail_url,
+          printFileUrl: i.print_file_url,
         })),
       })),
     });
@@ -82,7 +220,8 @@ v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
 
 v1MrpapsAdminRouter.get('/orders/:publicId', async (req, res, next) => {
   try {
-    const data = await checkout.getPublicOrder(req.params.publicId);
+    const { getAdminOrderDetail } = await import('../../services/mrpaps-order-detail.service.js');
+    const data = await getAdminOrderDetail(req.params.publicId);
     res.json({ data });
   } catch (err) {
     next(err);
@@ -116,40 +255,19 @@ v1MrpapsAdminRouter.patch('/orders/:publicId/status', async (req, res, next) => 
   }
 });
 
-v1MrpapsAdminRouter.get('/inventory', async (_req, res, next) => {
-  try {
-    const data = await catalog.listInventoryAdmin();
-    res.json({ data });
-  } catch (err) {
-    next(err);
-  }
-});
-
-v1MrpapsAdminRouter.patch('/inventory/:variantId', async (req, res, next) => {
-  try {
-    const body = updateInventorySchema.parse(req.body);
-    const row = await productsRepo.updateVariantStock(req.params.variantId, body.stockQuantity);
-    res.json({
-      data: {
-        variantId: row.id,
-        stockQuantity: row.stock_quantity,
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
 v1MrpapsAdminRouter.patch('/variants/:variantId', async (req, res, next) => {
   try {
     const body = updateVariantAdminSchema.parse(req.body);
-    const row = await productsRepo.updateVariantAdmin(req.params.variantId, {
-      retail_price_mxn: body.retailPriceMxn,
-      stock_quantity: body.stockQuantity,
-      design_id: body.designId,
+    const data = await variantsAdmin.updateVariantAdmin(req.params.variantId, {
+      sku: body.sku,
+      sizeLabel: body.sizeLabel,
+      colorLabel: body.colorLabel,
+      retailPriceMxn: body.retailPriceMxn,
+      designId: body.designId,
+      garmentColorHex: body.garmentColorHex,
       status: body.status,
     });
-    res.json({ data: row });
+    res.json({ data });
   } catch (err) {
     next(err);
   }
@@ -166,6 +284,7 @@ v1MrpapsAdminRouter.get('/designs', async (_req, res, next) => {
         fileUrl: d.file_url,
         thumbnailUrl: d.thumbnail_url,
         tags: d.tags,
+        metadata: d.metadata,
         createdAt: d.created_at,
       })),
     });
@@ -183,6 +302,7 @@ v1MrpapsAdminRouter.post('/designs', async (req, res, next) => {
       file_url: body.fileUrl,
       thumbnail_url: body.thumbnailUrl,
       tags: body.tags,
+      metadata: body.metadata,
     });
     res.status(201).json({
       data: {
@@ -231,32 +351,8 @@ v1MrpapsAdminRouter.get('/products', async (_req, res, next) => {
 
 v1MrpapsAdminRouter.get('/products/:productId', async (req, res, next) => {
   try {
-    const product = await productsRepo.getProductById(req.params.productId);
-    if (!product) {
-      res.status(404).json({ error: 'Producto no encontrado' });
-      return;
-    }
-    const variants = await productsRepo.listVariantsByProductIdAdmin(product.id);
-    res.json({
-      data: {
-        id: product.id,
-        slug: product.slug,
-        name: product.name,
-        description: product.description,
-        thumbnailUrl: product.thumbnail_url,
-        status: product.status,
-        variants: variants.map((v) => ({
-          id: v.id,
-          sku: v.sku,
-          size: v.size_label,
-          color: v.color_label,
-          retailPriceMxn: Number(v.retail_price_mxn).toFixed(2),
-          stockQuantity: v.stock_quantity,
-          status: v.status,
-          designId: v.design_id,
-        })),
-      },
-    });
+    const data = await variantsAdmin.getAdminProductWithVariants(req.params.productId);
+    res.json({ data });
   } catch (err) {
     next(err);
   }
@@ -272,7 +368,24 @@ v1MrpapsAdminRouter.post('/products', async (req, res, next) => {
       description: body.description ?? '',
       thumbnail_url: body.thumbnailUrl,
       status: body.status ?? 'active',
+      template_id: body.templateId ?? null,
+      composition: body.composition ?? {},
+      default_garment_color: body.defaultGarmentColor ?? body.composition?.garmentColor ?? '#FFFFFF',
     });
+
+    if (body.retailPriceMxn) {
+      await productsRepo.upsertVariant({
+        product_id: row.id,
+        sku: `MRP-${slug.toUpperCase().replace(/-/g, '').slice(0, 24)}`,
+        size_label: 'Única',
+        color_label: 'Estándar',
+        retail_price_mxn: body.retailPriceMxn,
+        stock_quantity: 0,
+        design_id: null,
+        garment_color_hex: body.defaultGarmentColor ?? '#FFFFFF',
+      });
+    }
+
     res.status(201).json({
       data: {
         id: row.id,
@@ -296,6 +409,9 @@ v1MrpapsAdminRouter.patch('/products/:productId', async (req, res, next) => {
       description: body.description,
       thumbnail_url: body.thumbnailUrl,
       status: body.status,
+      template_id: body.templateId,
+      composition: body.composition,
+      default_garment_color: body.defaultGarmentColor,
     });
     res.json({
       data: {
@@ -313,30 +429,15 @@ v1MrpapsAdminRouter.patch('/products/:productId', async (req, res, next) => {
 v1MrpapsAdminRouter.post('/products/:productId/variants', async (req, res, next) => {
   try {
     const body = createVariantSchema.parse(req.body);
-    const product = await productsRepo.getProductById(req.params.productId);
-    if (!product) {
-      res.status(404).json({ error: 'Producto no encontrado' });
-      return;
-    }
-    const row = await productsRepo.upsertVariant({
-      product_id: product.id,
+    const data = await variantsAdmin.createVariantAdmin(req.params.productId, {
       sku: body.sku,
-      size_label: body.sizeLabel,
-      color_label: body.colorLabel,
-      retail_price_mxn: body.retailPriceMxn,
-      stock_quantity: body.stockQuantity,
-      design_id: body.designId ?? null,
+      sizeLabel: body.sizeLabel,
+      colorLabel: body.colorLabel,
+      retailPriceMxn: body.retailPriceMxn,
+      designId: body.designId,
+      garmentColorHex: body.garmentColorHex,
     });
-    res.status(201).json({
-      data: {
-        id: row.id,
-        sku: row.sku,
-        size: row.size_label,
-        color: row.color_label,
-        retailPriceMxn: Number(row.retail_price_mxn).toFixed(2),
-        stockQuantity: row.stock_quantity,
-      },
-    });
+    res.status(201).json({ data });
   } catch (err) {
     next(err);
   }

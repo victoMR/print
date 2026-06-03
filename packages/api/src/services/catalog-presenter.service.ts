@@ -25,12 +25,14 @@ export async function getPublicProduct(idOrSlug: string) {
     name: product.name,
     description: product.description,
     thumbnail: product.thumbnail,
+    preview: product.preview ?? null,
     variants: product.variants.map((v) => ({
       variantId: v.variantId,
       syncVariantId: v.variantId,
       size: v.size,
       color: v.color,
       retailPriceMxn: v.retailPriceMxn,
+      garmentColorHex: v.garmentColorHex,
       inStock: v.inStock,
     })),
   };

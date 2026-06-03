@@ -1,16 +1,6 @@
 import './load-env.js';
 import { logger } from './lib/logger.js';
 
-async function validatePrintfulToken(): Promise<void> {
-  const { printful } = await import('./lib/printful.js');
-  const { callPrintful } = await import('./services/printful.helper.js');
-
-  await callPrintful(
-    () => printful.get('/store'),
-    { operation: 'validatePrintfulToken' },
-  );
-}
-
 async function validateSupabase(): Promise<void> {
   const { supabase } = await import('./lib/supabase.js');
 
@@ -39,24 +29,18 @@ async function main(): Promise<void> {
 
   await validateSupabase();
 
-  if (process.env.PRINTFUL_TOKEN) {
-    await validatePrintfulToken();
-    logger.info('Printful token OK (opcional; rutas legacy)');
-  } else {
-    logger.warn('PRINTFUL_TOKEN no definido — modo Mr. Paps (solo Supabase)');
-  }
-
   const { connectRedis } = await import('./lib/queue.js');
   const redisOk = await connectRedis();
 
   const { createApp } = await import('./app.js');
-  const { startWebhookWorker } = await import('./workers/webhook.worker.js');
 
   const app = createApp();
   const port = Number(process.env.PORT ?? 4000);
 
-  if (redisOk) {
+  if (redisOk && process.env.ENABLE_PRINTFUL_WEBHOOKS === 'true') {
+    const { startWebhookWorker } = await import('./workers/webhook.worker.js');
     startWebhookWorker();
+    logger.info('Worker Printful (legacy) activo');
   }
 
   app.listen(port, () => {

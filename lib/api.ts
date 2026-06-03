@@ -1,19 +1,23 @@
 import type {
   AdminDesign,
-  AdminInventoryRow,
   AdminOrderSummary,
   AdminProductDetail,
   AdminProductSummary,
+  GarmentTemplate,
+  ProductComposition,
   CatalogDetailResponse,
   CatalogListResponse,
   CreateOrderResponse,
   EstimateResponse,
   MrpapsOrderStatus,
+  OrderDetail,
+  OrderDetailResponse,
   OrderStatusResponse,
   ShippingRatesResponse,
 } from "./api-types";
 import type { CheckoutRecipient } from "./api-types";
 import { getAdminToken } from "./admin-session";
+import { getCustomerToken } from "./customer-session";
 
 const SERVER_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
 const V1 = "/api/v1";
@@ -128,6 +132,40 @@ function adminHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+async function adminMultipartFetch<T>(
+  path: string,
+  formData: FormData,
+): Promise<T> {
+  const base = getApiBase();
+  const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      ...adminHeaders(),
+    },
+    body: formData,
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    let body: unknown;
+    try {
+      body = await res.json();
+    } catch {
+      body = undefined;
+    }
+    const msg =
+      body && typeof body === "object" && "error" in body
+        ? String((body as { error: unknown }).error)
+        : `Error API ${res.status}`;
+    throw new ApiError(msg, res.status, body);
+  }
+
+  return (await res.json()) as T;
+}
+
 export async function adminLogin(email: string, password: string) {
   const res = await apiFetch<{
     data: {
@@ -222,17 +260,56 @@ export async function createDraftOrder(body: {
   };
   saveAccount?: boolean;
 }) {
+  const customerToken = typeof window !== "undefined" ? getCustomerToken() : null;
+  const headers: Record<string, string> = {};
+  if (customerToken) headers.Authorization = `Bearer ${customerToken}`;
+
   return apiFetch<CreateOrderResponse>(`${V1}/checkout/orders`, {
     method: "POST",
+    headers,
     body: JSON.stringify(body),
     cache: "no-store",
   });
 }
 
-export async function fetchOrderStatus(internalOrderId: string) {
-  return apiFetch<OrderStatusResponse>(
-    `${V1}/orders/${encodeURIComponent(internalOrderId)}`,
+export async function fetchOrderDetail(publicOrderId: string) {
+  return apiFetch<OrderDetailResponse>(
+    `${V1}/orders/${encodeURIComponent(publicOrderId)}`,
     { cache: "no-store" },
+  );
+}
+
+/** @deprecated Usar fetchOrderDetail */
+export async function fetchOrderStatus(internalOrderId: string) {
+  return fetchOrderDetail(internalOrderId);
+}
+
+export async function adminFetchOrderDetail(publicId: string) {
+  return apiFetch<OrderDetailResponse>(
+    `${V1}/admin/orders/${encodeURIComponent(publicId)}`,
+    { headers: adminHeaders(), cache: "no-store" },
+  );
+}
+
+export async function adminShippingQuote(body: {
+  itemCount: number;
+  address: {
+    address1: string;
+    address2?: string;
+    city: string;
+    stateCode: string;
+    countryCode: "MX";
+    zip: string;
+  };
+}) {
+  return apiFetch<{ data: import("./api-types").AdminShippingQuoteResult }>(
+    `${V1}/admin/shipping/quote`,
+    {
+      method: "POST",
+      headers: adminHeaders(),
+      body: JSON.stringify(body),
+      cache: "no-store",
+    },
   );
 }
 
@@ -266,23 +343,31 @@ export async function adminUpdateOrderStatus(
   );
 }
 
-export async function adminListInventory() {
-  return apiFetch<{ data: AdminInventoryRow[] }>(`${V1}/admin/inventory`, {
+export async function adminListTemplates() {
+  return apiFetch<{ data: GarmentTemplate[] }>(`${V1}/admin/templates`, {
     headers: adminHeaders(),
     cache: "no-store",
   });
 }
 
-export async function adminUpdateInventory(variantId: string, stockQuantity: number) {
-  return apiFetch<{ data: { variantId: string; stockQuantity: number } }>(
-    `${V1}/admin/inventory/${encodeURIComponent(variantId)}`,
-    {
-      method: "PATCH",
-      headers: adminHeaders(),
-      body: JSON.stringify({ stockQuantity }),
-      cache: "no-store",
-    },
-  );
+export async function adminUploadAsset(file: Blob, folder: "designs" | "previews" | "exports") {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("folder", folder);
+  return adminMultipartFetch<{
+    data: { url: string; path: string; mime: string; size: number };
+  }>(`${V1}/admin/uploads`, form);
+}
+
+export async function adminUploadDesign(
+  file: File,
+  fields?: { name?: string; description?: string },
+) {
+  const form = new FormData();
+  form.append("file", file);
+  if (fields?.name) form.append("name", fields.name);
+  if (fields?.description) form.append("description", fields.description);
+  return adminMultipartFetch<{ data: AdminDesign }>(`${V1}/admin/designs/upload`, form);
 }
 
 export async function adminListDesigns() {
@@ -334,7 +419,11 @@ export async function adminCreateProduct(body: {
   slug?: string;
   description?: string;
   thumbnailUrl: string;
+  retailPriceMxn?: number;
   status?: "active" | "inactive";
+  templateId?: string;
+  composition?: ProductComposition;
+  defaultGarmentColor?: string;
 }) {
   return apiFetch<{ data: AdminProductSummary }>(`${V1}/admin/products`, {
     method: "POST",
@@ -352,6 +441,9 @@ export async function adminUpdateProduct(
     description?: string;
     thumbnailUrl?: string;
     status?: "active" | "inactive" | "archived";
+    templateId?: string;
+    composition?: ProductComposition;
+    defaultGarmentColor?: string;
   },
 ) {
   return apiFetch(`${V1}/admin/products/${encodeURIComponent(productId)}`, {
@@ -369,12 +461,32 @@ export async function adminCreateProductVariant(
     sizeLabel: string;
     colorLabel: string;
     retailPriceMxn: number;
-    stockQuantity?: number;
     designId?: string | null;
+    garmentColorHex?: string;
   },
 ) {
   return apiFetch(`${V1}/admin/products/${encodeURIComponent(productId)}/variants`, {
     method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+}
+
+export async function adminUpdateProductVariant(
+  variantId: string,
+  body: {
+    sku?: string;
+    sizeLabel?: string;
+    colorLabel?: string;
+    retailPriceMxn?: number;
+    designId?: string | null;
+    garmentColorHex?: string;
+    status?: "active" | "inactive" | "archived";
+  },
+) {
+  return apiFetch(`${V1}/admin/variants/${encodeURIComponent(variantId)}`, {
+    method: "PATCH",
     headers: adminHeaders(),
     body: JSON.stringify(body),
     cache: "no-store",

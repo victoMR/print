@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { RemoteImage } from "@/components/ui/remote-image";
 import { ChevronLeft, Minus, Plus, Check } from "lucide-react";
 import type { CatalogProductDetail } from "@/lib/api-types";
+import { ProductMockupPreview } from "@/components/boty/product-mockup-preview";
 import { useCart } from "@/lib/cart-context";
 import { formatMxn } from "@/lib/utils";
 
@@ -68,14 +69,24 @@ export function ProductDetail({ product }: ProductDetailProps) {
 
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
           <div className="relative aspect-square rounded-3xl overflow-hidden bg-card boty-shadow">
-            <Image
-              src={product.thumbnail || "/placeholder.svg"}
-              alt={product.name}
-              fill
-              className="object-cover"
-              priority
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
+            {product.preview ? (
+              <ProductMockupPreview
+                preview={product.preview}
+                fallbackThumbnail={product.thumbnail || "/placeholder.svg"}
+                alt={product.name}
+                garmentColorOverride={selected?.garmentColorHex}
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+            ) : (
+              <RemoteImage
+                src={product.thumbnail || "/placeholder.svg"}
+                alt={product.name}
+                fill
+                className="object-cover"
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+            )}
           </div>
 
           <div className="flex flex-col">
@@ -94,9 +105,6 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 <span className="text-3xl font-medium text-foreground">
                   {formatMxn(selected.retailPriceMxn)}
                 </span>
-                {!selected.inStock && (
-                  <span className="text-sm text-destructive">Agotado</span>
-                )}
               </div>
             )}
 
@@ -179,7 +187,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={!selected?.inStock}
+                disabled={!selected}
                 className={`flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-sm tracking-wide boty-transition boty-shadow disabled:opacity-50 ${
                   isAdded
                     ? "bg-primary/80 text-primary-foreground"

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
 import { ProductDetail } from "@/components/boty/product-detail";
+import { ProductUnavailable } from "@/components/boty/product-unavailable";
 import { fetchCatalogProduct } from "@/lib/api";
 
 type ProductPageProps = {
@@ -20,7 +21,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const res = await fetchCatalogProduct(slug);
 
   if (!res?.data) notFound();
-  if (res.data.variants.length === 0) notFound();
+
+  if (res.data.variants.length === 0) {
+    return (
+      <ProductUnavailable
+        message="Este producto está en el catálogo pero no tiene variantes con precio. En admin, edítalo y guárdalo de nuevo (o revisa que la migración 007 esté aplicada en Supabase)."
+      />
+    );
+  }
 
   return (
     <main className="min-h-screen">

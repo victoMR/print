@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { NEXT_IMAGE_REMOTE_PATTERNS } from "./lib/next-image-hosts";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000";
 
@@ -19,14 +20,7 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "images.pexels.com" },
-      { protocol: "https", hostname: "files.cdn.printful.com" },
-      { protocol: "https", hostname: "img.printful.com" },
-      { protocol: "https", hostname: "**.printful.com" },
-      { protocol: "https", hostname: "i.pinimg.com" },
-    ],
+    remotePatterns: NEXT_IMAGE_REMOTE_PATTERNS,
   },
 };
 
