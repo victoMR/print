@@ -144,8 +144,8 @@ function InnerPaymentForm({
               address: "never",
             },
           },
+          // stripe-js 5.x solo tipa applePay/googlePay; Link se controla vía layout + billing en confirm
           wallets: {
-            link: "never",
             applePay: "never",
             googlePay: "never",
           },
