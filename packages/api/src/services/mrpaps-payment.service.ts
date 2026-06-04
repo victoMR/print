@@ -68,7 +68,8 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string): P
     }
 
     if (order.payment_status === 'paid') {
-      logger.info({ publicOrderId }, 'Webhook duplicado ignorado — pedido ya pagado');
+      logger.info({ publicOrderId }, 'Webhook duplicado — pedido ya pagado; verificando correo pendiente');
+      await sendOrderConfirmationEmail(publicOrderId);
       return;
     }
 
@@ -85,6 +86,7 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string): P
     try {
       await updateOrderPaymentByPublicId(publicOrderId, { payment_status: 'paid' });
       logger.info({ publicOrderId, amountMxn: order.total_mxn }, 'Pedido marcado como pagado');
+      logger.info({ publicOrderId }, 'Iniciando correo de confirmación de compra');
       await sendOrderConfirmationEmail(publicOrderId);
     } catch (error) {
       logger.error({ publicOrderId, error }, 'Error al marcar pedido como pagado');

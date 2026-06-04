@@ -13,6 +13,8 @@ import { getGuestOrderAccess, saveGuestOrderAccess } from "@/lib/order-guest-ses
 import { OrderTrackingForm } from "./order-tracking-form";
 import { OrderDetailSkeleton, OrderDetailView } from "./order-detail-view";
 import { BotyAlert, BotySurface } from "./ui-patterns";
+import { scrollToTop } from "@/lib/scroll-to-top";
+import { useCart } from "@/lib/cart-context";
 
 type OrderDetailPageProps = {
   publicOrderId: string;
@@ -22,10 +24,19 @@ type OrderDetailPageProps = {
 function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) {
   const params = useSearchParams();
   const paid = params.get("paid") === "1";
+  const { clearCart, hydrated } = useCart();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    scrollToTop();
+  }, [publicOrderId, paid]);
+
+  useEffect(() => {
+    if (paid && hydrated) clearCart();
+  }, [paid, hydrated, clearCart]);
 
   useEffect(() => {
     let cancelled = false;

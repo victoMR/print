@@ -22,6 +22,7 @@ import * as storage from '../../services/mrpaps-storage.service.js';
 import { isEnviaConfigured } from '../../services/shipping/envia.client.js';
 import { quoteShipping } from '../../services/shipping/shipping-quote.service.js';
 import * as variantsAdmin from '../../services/mrpaps-variants-admin.service.js';
+import * as mailTest from '../../services/mail-test.service.js';
 import { BadRequestError } from '../../types/errors.js';
 
 export const v1MrpapsAdminRouter: Router = Router();
@@ -47,6 +48,25 @@ v1MrpapsAdminRouter.get('/auth/me', requireAdminAuth, async (req, res) => {
 });
 
 v1MrpapsAdminRouter.use(requireAdminAuth);
+
+v1MrpapsAdminRouter.get('/mail/status', async (_req, res, next) => {
+  try {
+    const data = await mailTest.getMailStatus();
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1MrpapsAdminRouter.post('/mail/test', async (req, res, next) => {
+  try {
+    const body = mailTest.adminMailTestSchema.parse(req.body ?? {});
+    const data = await mailTest.runMailTest(body);
+    res.status(data.ok ? 200 : 422).json({ data });
+  } catch (err) {
+    next(err);
+  }
+});
 
 function mapTemplate(row: Awaited<ReturnType<typeof templatesRepo.listActiveTemplates>>[number]) {
   return {

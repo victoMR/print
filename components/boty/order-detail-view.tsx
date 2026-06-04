@@ -51,20 +51,21 @@ export function OrderDetailView({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {showThankYou && (
-        <div className="text-center mb-2">
-          <p className="text-sm text-primary font-medium">Pedido registrado</p>
+        <div className="text-center mb-2 animate-thank-you-in">
+          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mb-4 animate-payment-pop">
+            <Check className="w-8 h-8 text-emerald-600" strokeWidth={2.5} aria-hidden />
+          </div>
+          <p className="text-sm text-primary font-medium">Pago confirmado</p>
           <h1 className="font-serif text-3xl md:text-4xl mt-2">Gracias por tu compra</h1>
           <p className="text-muted-foreground text-sm mt-2">
             Te enviamos confirmación a <span className="text-foreground">{order.customer.email}</span>
           </p>
-          {variant === "public" && (
-            <p className="text-sm mt-4 bg-muted/50 rounded-2xl px-4 py-3 inline-block">
-              Guarda tu código de seguimiento:{" "}
-              <span className="font-mono font-semibold text-foreground tracking-wide">
-                {order.trackingCode}
-              </span>
-            </p>
-          )}
+          <p className="text-sm mt-4 bg-muted/50 rounded-2xl px-4 py-3 inline-block">
+            Código de seguimiento:{" "}
+            <span className="font-mono font-semibold text-foreground tracking-wide">
+              {order.trackingCode}
+            </span>
+          </p>
         </div>
       )}
 
@@ -217,12 +218,21 @@ export function OrderDetailView({
 
       {showThankYou && (
         <div className="flex flex-wrap justify-center gap-3 pt-2">
-          <Link
-            href="/cuenta/pedidos"
-            className="bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary/90 boty-transition"
-          >
-            Ver mis pedidos
-          </Link>
+          {variant === "account" ? (
+            <Link
+              href="/cuenta/pedidos"
+              className="bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary/90 boty-transition"
+            >
+              Ver todos mis pedidos
+            </Link>
+          ) : (
+            <Link
+              href="/seguimiento"
+              className="bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary/90 boty-transition"
+            >
+              Consultar otro pedido
+            </Link>
+          )}
           <Link
             href="/shop"
             className="px-6 py-2.5 rounded-full text-sm font-medium border border-border hover:bg-muted boty-transition"

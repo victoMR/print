@@ -21,7 +21,7 @@ function escapeHtml(value: string): string {
     .replaceAll('"', '&quot;');
 }
 
-function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
+export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
   subject: string;
   html: string;
   text: string;

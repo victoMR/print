@@ -168,3 +168,55 @@
 .animate-scale-fade-in {
   animation: scale-fade-in 0.6s ease-out;
 }
+
+@keyframes payment-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-payment-pop {
+  animation: payment-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes payment-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+.animate-payment-shake {
+  animation: payment-shake 0.45s ease-out;
+}
+
+@keyframes thank-you-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-thank-you-in {
+  animation: thank-you-in 0.7s ease-out forwards;
+}

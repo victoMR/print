@@ -15,6 +15,17 @@ async function main(): Promise<void> {
   const { ensurePlaceholderAsset } = await import('./services/mrpaps-storage.service.js');
   await ensurePlaceholderAsset();
 
+  const { getMailDiagnostics, isMailConfigured } = await import('./lib/mail.js');
+  const mailDiag = getMailDiagnostics();
+  if (isMailConfigured()) {
+    logger.info(
+      { host: mailDiag.host, port: mailDiag.port, user: mailDiag.userMasked, from: mailDiag.from },
+      'SMTP configurado para correos transaccionales',
+    );
+  } else {
+    logger.warn({ missing: mailDiag.missing }, 'SMTP no configurado — no se enviarán correos de pedido');
+  }
+
   const { connectRedis } = await import('./lib/queue.js');
   await connectRedis();
 

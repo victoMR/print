@@ -57,11 +57,13 @@ function BillingSummary({ billing }: { billing: StripeCheckoutBilling }) {
 function InnerPaymentForm({
   publicOrderId,
   billing,
+  returnUrl,
   onSuccess,
   onError,
 }: {
   publicOrderId: string;
   billing: StripeCheckoutBilling;
+  returnUrl?: string;
   onSuccess: () => void;
   onError: (msg: string) => void;
 }) {
@@ -90,7 +92,9 @@ function InnerPaymentForm({
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/pedido/${encodeURIComponent(publicOrderId)}?paid=1`,
+          return_url:
+            returnUrl ??
+            `${window.location.origin}/pedido/${encodeURIComponent(publicOrderId)}?paid=1`,
           receipt_email: billing.email,
           payment_method_data: {
             billing_details: {
@@ -177,12 +181,14 @@ export function StripePaymentForm({
   publicOrderId,
   totalMxn,
   billing,
+  returnUrl,
   onSuccess,
   onError,
 }: {
   publicOrderId: string;
   totalMxn: string;
   billing: StripeCheckoutBilling;
+  returnUrl?: string;
   onSuccess: () => void;
   onError: (msg: string) => void;
 }) {
@@ -239,6 +245,7 @@ export function StripePaymentForm({
         <InnerPaymentForm
           publicOrderId={publicOrderId}
           billing={billing}
+          returnUrl={returnUrl}
           onSuccess={onSuccess}
           onError={onError}
         />

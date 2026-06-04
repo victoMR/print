@@ -13,6 +13,8 @@ import { MX_STATES } from "@/lib/mx-states";
 import { cn, formatMxn } from "@/lib/utils";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { StripePaymentForm } from "./stripe-payment-form";
+import { PaymentOutcomeOverlay } from "./payment-outcome-overlay";
+import { scrollToTop } from "@/lib/scroll-to-top";
 import {
   Check,
   ChevronRight,
@@ -60,6 +62,16 @@ export function BotyCheckoutFlow() {
   const [trackingCode, setTrackingCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [paymentOutcome, setPaymentOutcome] = useState<"success" | "error" | null>(null);
+
+  const paymentReturnUrl =
+    typeof window !== "undefined" && publicOrderId
+      ? `${window.location.origin}${
+          user
+            ? `/cuenta/pedidos/${encodeURIComponent(publicOrderId)}?paid=1`
+            : `/pedido/${encodeURIComponent(publicOrderId)}?paid=1`
+        }`
+      : undefined;
 
   // ── Load saved addresses when logged in ───────────────────────────────────
   useEffect(() => {
@@ -221,12 +233,35 @@ export function BotyCheckoutFlow() {
 
   function handlePaymentSuccess() {
     clearCart();
-    router.push(
-      user
-        ? `/cuenta/pedidos/${publicOrderId}?paid=1`
-        : `/pedido/${publicOrderId}?paid=1`,
-    );
+    setError(null);
+    setPaymentOutcome("success");
   }
+
+  function handlePaymentError(msg: string) {
+    setError(msg);
+    setPaymentOutcome("error");
+  }
+
+  useEffect(() => {
+    if (paymentOutcome !== "success" || !publicOrderId) return;
+
+    const path = user
+      ? `/cuenta/pedidos/${encodeURIComponent(publicOrderId)}?paid=1`
+      : `/pedido/${encodeURIComponent(publicOrderId)}?paid=1`;
+
+    const timer = window.setTimeout(() => {
+      router.push(path, { scroll: false });
+      scrollToTop();
+      requestAnimationFrame(() => scrollToTop());
+      setPaymentOutcome(null);
+    }, 2400);
+
+    return () => window.clearTimeout(timer);
+  }, [paymentOutcome, publicOrderId, user, router]);
+
+  useEffect(() => {
+    if (step === "payment") scrollToTop();
+  }, [step]);
 
   // ── Empty / loading guards ────────────────────────────────────────────────
   if (!hydrated) {
@@ -256,6 +291,7 @@ export function BotyCheckoutFlow() {
   const stepIndex = STEP_ORDER.indexOf(step);
 
   return (
+    <>
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* ── Progress bar ─────────────────────────────────────────────────── */}
       <nav aria-label="Pasos del checkout" className="flex items-center justify-center gap-0">
@@ -627,6 +663,7 @@ export function BotyCheckoutFlow() {
               <StripePaymentForm
                 publicOrderId={publicOrderId}
                 totalMxn={formatMxn(totals.total)}
+                returnUrl={paymentReturnUrl}
                 billing={{
                   name: recipient.name,
                   email: recipient.email,
@@ -639,9 +676,11 @@ export function BotyCheckoutFlow() {
                   postalCode: recipient.zip,
                 }}
                 onSuccess={handlePaymentSuccess}
-                onError={(msg) => setError(msg)}
+                onError={handlePaymentError}
               />
-              {error && <ErrorBanner message={error} onClearCart={staleCartAction} />}
+              {error && paymentOutcome !== "error" && (
+                <ErrorBanner message={error} onClearCart={staleCartAction} />
+              )}
             </div>
           )}
         </div>
@@ -726,6 +765,30 @@ export function BotyCheckoutFlow() {
         </div>
       </div>
     </div>
+
+    {paymentOutcome === "success" && (
+      <PaymentOutcomeOverlay
+        variant="success"
+        title="¡Pago recibido!"
+        description="Tu pedido quedó registrado. En un momento verás todos los detalles."
+      />
+    )}
+
+    {paymentOutcome === "error" && (
+      <PaymentOutcomeOverlay
+        variant="error"
+        title="No se pudo completar el pago"
+        description="Revisa los datos de tu tarjeta o prueba con otro método."
+        detail={error ?? undefined}
+        actionLabel="Reintentar pago"
+        onAction={() => {
+          setPaymentOutcome(null);
+          setError(null);
+          scrollToTop();
+        }}
+      />
+    )}
+    </>
   );
 }
 
