@@ -256,18 +256,41 @@ export async function getOrderPaymentSnapshot(rawPublicId: string): Promise<{
 }
 
 export async function updateOrderPaymentByPublicId(
-  publicId: string,
+  rawPublicId: string,
   patch: {
     stripe_payment_intent_id?: string;
     payment_status: string;
   },
 ): Promise<void> {
+  const publicId = normalizeTrackingCode(rawPublicId);
+  if (!publicId) return;
+
   const { clause, values } = buildUpdateSet({
     stripe_payment_intent_id: patch.stripe_payment_intent_id,
     payment_status: patch.payment_status,
     updated_at: new Date().toISOString(),
   });
   await query(`UPDATE mrpaps_orders SET ${clause} WHERE public_id = $1`, [publicId, ...values]);
+}
+
+export async function getOrderForPaymentFinalize(rawPublicId: string): Promise<{
+  id: string;
+  public_id: string;
+  total_mxn: string;
+  customer_email: string;
+  payment_status: string | null;
+  stripe_payment_intent_id: string | null;
+  confirmation_email_sent_at: string | null;
+} | null> {
+  const publicId = normalizeTrackingCode(rawPublicId);
+  if (!publicId) return null;
+
+  return queryOne(
+    `SELECT id, public_id, total_mxn::text, customer_email, payment_status,
+            stripe_payment_intent_id, confirmation_email_sent_at
+     FROM mrpaps_orders WHERE public_id = $1`,
+    [publicId],
+  );
 }
 
 export async function markConfirmationEmailSent(rawPublicId: string): Promise<void> {

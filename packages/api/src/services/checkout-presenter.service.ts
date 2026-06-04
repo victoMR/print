@@ -54,3 +54,8 @@ export async function createDraftOrderPublic(body: CreateOrderBody, customerUser
 export async function getPublicOrder(trackingCode: string, email: string) {
   return mrpapsCheckout.getPublicOrder(trackingCode, email);
 }
+
+export async function finalizeOrderPaymentPublic(publicOrderId: string) {
+  const { finalizeOrderPayment } = await import('./mrpaps-order-payment-finalize.service.js');
+  return finalizeOrderPayment(publicOrderId);
+}

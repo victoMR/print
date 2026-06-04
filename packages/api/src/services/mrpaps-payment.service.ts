@@ -1,10 +1,7 @@
 import { getStripe, isStripeConfigured } from '../lib/stripe.js';
 import { logger } from '../lib/logger.js';
-import {
-  getOrderPaymentSnapshot,
-  updateOrderPaymentByPublicId,
-} from '../db/mrpaps-orders.repository.js';
-import { sendOrderConfirmationEmail } from './order-confirmation-email.service.js';
+import { updateOrderPaymentByPublicId } from '../db/mrpaps-orders.repository.js';
+import { finalizeOrderPayment } from './mrpaps-order-payment-finalize.service.js';
 import type Stripe from 'stripe';
 
 export { isStripeConfigured };
@@ -61,35 +58,11 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string): P
       return;
     }
 
-    const order = await getOrderPaymentSnapshot(publicOrderId);
-    if (!order) {
-      logger.error({ publicOrderId }, 'Pedido no encontrado al procesar webhook');
-      return;
-    }
-
-    if (order.payment_status === 'paid') {
-      logger.info({ publicOrderId }, 'Webhook duplicado — pedido ya pagado; verificando correo pendiente');
-      await sendOrderConfirmationEmail(publicOrderId);
-      return;
-    }
-
-    const expectedCents = Math.round(Number(order.total_mxn) * 100);
-    if (intent.amount !== expectedCents) {
-      logger.error(
-        { publicOrderId, intentId: intent.id, intentAmount: intent.amount, expectedCents },
-        'FRAUDE DETECTADO: monto cobrado no coincide con total del pedido',
-      );
-      await updateOrderPaymentByPublicId(publicOrderId, { payment_status: 'amount_mismatch' });
-      return;
-    }
-
     try {
-      await updateOrderPaymentByPublicId(publicOrderId, { payment_status: 'paid' });
-      logger.info({ publicOrderId, amountMxn: order.total_mxn }, 'Pedido marcado como pagado');
-      logger.info({ publicOrderId }, 'Iniciando correo de confirmación de compra');
-      await sendOrderConfirmationEmail(publicOrderId);
+      const result = await finalizeOrderPayment(publicOrderId, { paymentIntent: intent });
+      logger.info({ publicOrderId, result }, 'Webhook payment_intent.succeeded procesado');
     } catch (error) {
-      logger.error({ publicOrderId, error }, 'Error al marcar pedido como pagado');
+      logger.error({ publicOrderId, error }, 'Error al finalizar pago desde webhook');
     }
   }
 

@@ -244,6 +244,15 @@ export async function fetchEstimate(body: {
   });
 }
 
+export async function finalizeOrderPayment(publicOrderId: string) {
+  return apiFetch<{
+    data: { paymentStatus: string; emailSent: boolean; message: string };
+  }>(`${V1}/checkout/orders/${encodeURIComponent(publicOrderId)}/finalize-payment`, {
+    method: "POST",
+    cache: "no-store",
+  });
+}
+
 export async function createDraftOrder(body: {
   items: Array<{
     variantId: string;

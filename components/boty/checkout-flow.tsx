@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { createDraftOrder, fetchEstimate } from "@/lib/api";
+import { createDraftOrder, fetchEstimate, finalizeOrderPayment } from "@/lib/api";
 import type { CheckoutRecipient } from "@/lib/api-types";
 import { useCart } from "@/lib/cart-context";
 import { useCustomer } from "@/lib/customer-context";
@@ -231,10 +231,17 @@ export function BotyCheckoutFlow() {
     }
   }
 
-  function handlePaymentSuccess() {
+  async function handlePaymentSuccess() {
     clearCart();
     setError(null);
     setPaymentOutcome("success");
+    if (publicOrderId) {
+      try {
+        await finalizeOrderPayment(publicOrderId);
+      } catch {
+        // El webhook puede completar después; no bloquear la UX de éxito
+      }
+    }
   }
 
   function handlePaymentError(msg: string) {

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import {
   fetchAccountOrderDetail,
   fetchGuestOrderDetail,
+  finalizeOrderPayment,
   trackGuestOrder,
 } from "@/lib/api";
 import type { OrderDetail } from "@/lib/api-types";
@@ -37,6 +38,13 @@ function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) 
   useEffect(() => {
     if (paid && hydrated) clearCart();
   }, [paid, hydrated, clearCart]);
+
+  useEffect(() => {
+    if (!paid) return;
+    void finalizeOrderPayment(publicOrderId).catch(() => {
+      // Webhook o reintento manual; la página igual muestra el pedido
+    });
+  }, [paid, publicOrderId]);
 
   useEffect(() => {
     let cancelled = false;

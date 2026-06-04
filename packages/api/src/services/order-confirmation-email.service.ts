@@ -172,7 +172,14 @@ export async function sendOrderConfirmationEmail(rawPublicId: string): Promise<v
       html: content.html,
       text: content.text,
     });
-    await ordersRepo.markConfirmationEmailSent(order.public_id);
+    try {
+      await ordersRepo.markConfirmationEmailSent(order.public_id);
+    } catch (markErr) {
+      logger.error(
+        { publicOrderId: order.public_id, err: markErr },
+        'Correo enviado pero falló confirmation_email_sent_at (¿migración 016?)',
+      );
+    }
     logger.info(
       { publicOrderId: order.public_id, email: order.customer_email },
       'Correo de confirmación enviado',
@@ -182,5 +189,6 @@ export async function sendOrderConfirmationEmail(rawPublicId: string): Promise<v
       { publicOrderId: order.public_id, email: order.customer_email, error },
       'Error al enviar correo de confirmación',
     );
+    throw error;
   }
 }

@@ -6,7 +6,6 @@ import { v1MrpapsAdminRouter } from './mrpaps-admin.routes.js';
 import { v1AuthRouter } from './auth.routes.js';
 import { v1AccountRouter } from './account.routes.js';
 import { v1PaymentRouter } from './payment.routes.js';
-import { v1StripeWebhookRouter } from './stripe-webhook.routes.js';
 
 export const v1Router: Router = Router();
 
@@ -17,4 +16,4 @@ v1Router.use('/admin', v1MrpapsAdminRouter);
 v1Router.use('/auth', v1AuthRouter);
 v1Router.use('/account', v1AccountRouter);
 v1Router.use('/checkout', v1PaymentRouter);
-v1Router.use('/webhooks', v1StripeWebhookRouter);
+// Stripe webhook: montado en app.ts (body raw, antes de express.json)
