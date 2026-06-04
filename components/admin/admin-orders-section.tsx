@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   adminFetchOrderDetail,
   adminListOrders,
@@ -25,7 +25,9 @@ import {
   Loader2,
   MapPin,
   Package,
+  Search,
   Truck,
+  X,
 } from "lucide-react";
 import { mxStateLabel } from "@/lib/mx-state-label";
 
@@ -55,15 +57,36 @@ type AdminOrdersSectionProps = {
 export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: AdminOrdersSectionProps) {
   const [orders, setOrders] = useState<AdminOrderSummary[]>([]);
   const [filterStatus, setFilterStatus] = useState<MrpapsOrderStatus | "">("");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [listLoading, setListLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<OrderDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounce the search input → searchQuery
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setSearchQuery(searchInput), 350);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchInput]);
 
   const loadList = useCallback(async () => {
     onError(null);
-    const res = await adminListOrders(filterStatus || undefined);
-    setOrders(res.data);
-  }, [filterStatus, onError]);
+    setListLoading(true);
+    try {
+      const res = await adminListOrders({
+        status: filterStatus || undefined,
+        search: searchQuery || undefined,
+      });
+      setOrders(res.data);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Error al cargar pedidos");
+    } finally {
+      setListLoading(false);
+    }
+  }, [filterStatus, searchQuery, onError]);
 
   useEffect(() => {
     void loadList();
@@ -141,28 +164,57 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
 
   return (
     <section className="space-y-6">
-      <BotySurface className="p-4 flex flex-wrap items-center gap-4">
-        <BotyLabel className="shrink-0">Filtrar estado</BotyLabel>
-        <BotySelect
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value as MrpapsOrderStatus | "")}
-          className="max-w-xs"
-        >
-          <option value="">Todos</option>
-          {ALL_ORDER_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {ORDER_STATUS_LABELS[s]}
-            </option>
-          ))}
-        </BotySelect>
-        <span className="text-xs text-muted-foreground ml-auto">
+      <BotySurface className="p-4 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3">
+        {/* Search bar */}
+        <div className="relative flex-1 min-w-0 w-full sm:w-auto sm:min-w-[260px] sm:max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Buscar por nombre, correo o ID…"
+            className="w-full rounded-xl border border-border bg-background pl-9 pr-8 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 boty-transition placeholder:text-muted-foreground/60"
+          />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={() => setSearchInput("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground boty-transition"
+              aria-label="Limpiar búsqueda"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Status filter */}
+        <div className="flex items-center gap-2 shrink-0">
+          <BotyLabel className="shrink-0">Estado</BotyLabel>
+          <BotySelect
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as MrpapsOrderStatus | "")}
+            className="max-w-[180px]"
+          >
+            <option value="">Todos</option>
+            {ALL_ORDER_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {ORDER_STATUS_LABELS[s]}
+              </option>
+            ))}
+          </BotySelect>
+        </div>
+
+        <span className="text-xs text-muted-foreground sm:ml-auto flex items-center gap-1.5">
+          {listLoading && <Loader2 className="w-3 h-3 animate-spin" />}
           {orders.length} pedido{orders.length !== 1 ? "s" : ""}
         </span>
       </BotySurface>
 
       {orders.length === 0 ? (
         <BotySurface className="p-12 text-center text-muted-foreground text-sm">
-          No hay pedidos con este filtro.
+          {searchQuery
+            ? `No se encontraron pedidos para "${searchQuery}".`
+            : "No hay pedidos con este filtro."}
         </BotySurface>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">

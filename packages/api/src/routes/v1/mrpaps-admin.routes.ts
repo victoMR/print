@@ -194,8 +194,11 @@ v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
     const status = typeof req.query.status === 'string'
       ? mrpapsOrderStatusSchema.safeParse(req.query.status).data
       : undefined;
+    const search = typeof req.query.search === 'string' && req.query.search.trim()
+      ? req.query.search.trim()
+      : undefined;
 
-    const orders = await ordersRepo.listOrdersAdmin({ status });
+    const orders = await ordersRepo.listOrdersAdmin({ status, search });
     res.json({
       data: orders.map((o) => ({
         publicId: o.public_id,

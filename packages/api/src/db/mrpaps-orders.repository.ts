@@ -272,14 +272,31 @@ export async function updateOrderPaymentByPublicId(
 
 export async function listOrdersAdmin(filters?: {
   status?: MrpapsOrderStatus;
+  search?: string;
   limit?: number;
 }): Promise<MrpapsOrderWithItems[]> {
   const params: unknown[] = [];
+  const conditions: string[] = [];
   let sql = `SELECT * FROM mrpaps_orders`;
+
   if (filters?.status) {
     params.push(filters.status);
-    sql += ` WHERE status = $${params.length}`;
+    conditions.push(`status = $${params.length}`);
   }
+
+  if (filters?.search?.trim()) {
+    const term = `%${filters.search.trim()}%`;
+    params.push(term);
+    const n = params.length;
+    conditions.push(
+      `(customer_name ILIKE $${n} OR customer_email ILIKE $${n} OR order_number ILIKE $${n} OR public_id ILIKE $${n})`,
+    );
+  }
+
+  if (conditions.length > 0) {
+    sql += ` WHERE ${conditions.join(' AND ')}`;
+  }
+
   params.push(filters?.limit ?? 100);
   sql += ` ORDER BY ordered_at DESC LIMIT $${params.length}`;
 

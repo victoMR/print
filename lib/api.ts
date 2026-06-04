@@ -344,8 +344,11 @@ export async function adminShippingQuote(body: {
   );
 }
 
-export async function adminListOrders(status?: MrpapsOrderStatus) {
-  const q = status ? `?status=${status}` : "";
+export async function adminListOrders(filters?: { status?: MrpapsOrderStatus; search?: string }) {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.search?.trim()) params.set("search", filters.search.trim());
+  const q = params.size > 0 ? `?${params.toString()}` : "";
   return apiFetch<{ data: AdminOrderSummary[] }>(`${V1}/admin/orders${q}`, {
     headers: adminHeaders(),
     cache: "no-store",

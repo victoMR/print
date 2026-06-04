@@ -39,8 +39,8 @@ export function ProductDetail({ product }: ProductDetailProps) {
     if (match) setVariantId(match.variantId);
   }
 
-  function handleAddToCart() {
-    if (!selected) return;
+  function addSelectedToCart() {
+    if (!selected) return false;
     addItem(
       {
         variantId: selected.variantId,
@@ -52,8 +52,17 @@ export function ProductDetail({ product }: ProductDetailProps) {
       },
       quantity,
     );
+    return true;
+  }
+
+  function handleAddToCart() {
+    if (!addSelectedToCart()) return;
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
+  }
+
+  function handleBuyNow() {
+    addSelectedToCart();
   }
 
   return (
@@ -203,12 +212,14 @@ export function ProductDetail({ product }: ProductDetailProps) {
                   "Agregar al carrito"
                 )}
               </button>
-              <Link
-                href="/checkout"
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-transparent border border-foreground/20 text-foreground px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-foreground/5"
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={!selected}
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-transparent border border-foreground/20 text-foreground px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-foreground/5 disabled:opacity-50"
               >
                 Comprar ahora
-              </Link>
+              </button>
             </div>
 
             <p className="text-xs text-muted-foreground">
