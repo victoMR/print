@@ -14,6 +14,7 @@ export function Hero() {
           srcHd={MEDIA.hero.srcHd}
           poster={MEDIA.hero.poster}
           pauseOnLeave={false}
+          playInView
           preload="metadata"
         />
         <div className="pointer-events-none absolute inset-0 bg-[#F0E4E6]/15 sm:bg-[#F0E4E6]/10" />
