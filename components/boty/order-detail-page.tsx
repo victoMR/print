@@ -14,7 +14,9 @@ import { getGuestOrderAccess, saveGuestOrderAccess } from "@/lib/order-guest-ses
 import { OrderTrackingForm } from "./order-tracking-form";
 import { OrderDetailSkeleton, OrderDetailView } from "./order-detail-view";
 import { BotyAlert, BotySurface } from "./ui-patterns";
-import { scrollToTop } from "@/lib/scroll-to-top";
+import { PaymentOutcomeOverlay } from "./payment-outcome-overlay";
+import { PAYMENT_OUTCOME_VISIBLE_MS, paymentSuccessDescription } from "@/lib/payment-outcome-timing";
+import { scrollToTopAfterNav } from "@/lib/scroll-to-top";
 import { useCart } from "@/lib/cart-context";
 
 type OrderDetailPageProps = {
@@ -30,10 +32,15 @@ function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) 
   const [error, setError] = useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showPaidOverlay, setShowPaidOverlay] = useState(false);
 
   useEffect(() => {
-    scrollToTop();
-  }, [publicOrderId, paid]);
+    if (!paid) return;
+    setShowPaidOverlay(true);
+    scrollToTopAfterNav();
+    const timer = window.setTimeout(() => setShowPaidOverlay(false), PAYMENT_OUTCOME_VISIBLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [paid, publicOrderId]);
 
   useEffect(() => {
     if (paid && hydrated) clearCart();
@@ -95,7 +102,22 @@ function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) 
     setOrder(res.data);
   }
 
-  if (loading) return <OrderDetailSkeleton />;
+  const paidSuccessOverlay = showPaidOverlay ? (
+    <PaymentOutcomeOverlay
+      variant="success"
+      title="¡Pago recibido!"
+      description={paymentSuccessDescription(order?.customer.email)}
+    />
+  ) : null;
+
+  if (loading) {
+    return (
+      <>
+        {paidSuccessOverlay}
+        <OrderDetailSkeleton />
+      </>
+    );
+  }
 
   if (needsVerification) {
     return (
@@ -137,13 +159,16 @@ function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) 
   if (!order) return <OrderDetailSkeleton />;
 
   return (
-    <OrderDetailView
-      order={order}
-      showThankYou={paid}
-      variant={variant}
-      backHref={variant === "account" ? "/cuenta/pedidos" : "/seguimiento"}
-      backLabel={variant === "account" ? "Mis pedidos" : "Seguimiento"}
-    />
+    <>
+      {paidSuccessOverlay}
+      <OrderDetailView
+        order={order}
+        showThankYou={paid && !showPaidOverlay}
+        variant={variant}
+        backHref={variant === "account" ? "/cuenta/pedidos" : "/seguimiento"}
+        backLabel={variant === "account" ? "Mis pedidos" : "Seguimiento"}
+      />
+    </>
   );
 }
 

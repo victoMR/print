@@ -79,6 +79,7 @@ function InnerPaymentForm({
 
     setBusy(true);
     setMessage(null);
+    let paymentSucceeded = false;
 
     try {
       const { error: submitError } = await elements.submit();
@@ -122,13 +123,14 @@ function InnerPaymentForm({
         return;
       }
 
+      paymentSucceeded = true;
       onSuccess();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error inesperado al pagar";
       setMessage(msg);
       onError(msg);
     } finally {
-      setBusy(false);
+      if (!paymentSucceeded) setBusy(false);
     }
   }
 

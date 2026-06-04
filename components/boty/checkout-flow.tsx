@@ -14,7 +14,8 @@ import { cn, formatMxn } from "@/lib/utils";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { StripePaymentForm } from "./stripe-payment-form";
 import { PaymentOutcomeOverlay } from "./payment-outcome-overlay";
-import { scrollToTop } from "@/lib/scroll-to-top";
+import { PAYMENT_OUTCOME_VISIBLE_MS, paymentSuccessDescription } from "@/lib/payment-outcome-timing";
+import { scrollToTop, scrollToTopAfterNav } from "@/lib/scroll-to-top";
 import {
   Check,
   ChevronRight,
@@ -231,22 +232,21 @@ export function BotyCheckoutFlow() {
     }
   }
 
-  async function handlePaymentSuccess() {
-    clearCart();
+  function handlePaymentSuccess() {
     setError(null);
     setPaymentOutcome("success");
+    scrollToTop();
     if (publicOrderId) {
-      try {
-        await finalizeOrderPayment(publicOrderId);
-      } catch {
+      void finalizeOrderPayment(publicOrderId).catch(() => {
         // El webhook puede completar después; no bloquear la UX de éxito
-      }
+      });
     }
   }
 
   function handlePaymentError(msg: string) {
     setError(msg);
     setPaymentOutcome("error");
+    scrollToTop();
   }
 
   useEffect(() => {
@@ -257,14 +257,18 @@ export function BotyCheckoutFlow() {
       : `/pedido/${encodeURIComponent(publicOrderId)}?paid=1`;
 
     const timer = window.setTimeout(() => {
-      router.push(path, { scroll: false });
-      scrollToTop();
-      requestAnimationFrame(() => scrollToTop());
+      clearCart();
       setPaymentOutcome(null);
-    }, 2400);
+      router.push(path);
+      scrollToTopAfterNav();
+    }, PAYMENT_OUTCOME_VISIBLE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [paymentOutcome, publicOrderId, user, router]);
+  }, [paymentOutcome, publicOrderId, user, router, clearCart]);
+
+  useEffect(() => {
+    if (paymentOutcome) scrollToTop();
+  }, [paymentOutcome]);
 
   useEffect(() => {
     if (step === "payment") scrollToTop();
@@ -279,7 +283,10 @@ export function BotyCheckoutFlow() {
     );
   }
 
-  if (items.length === 0) {
+  const completingCheckout =
+    paymentOutcome != null || (step === "payment" && publicOrderId != null);
+
+  if (items.length === 0 && !completingCheckout) {
     return (
       <div className="max-w-md mx-auto text-center py-20 bg-card rounded-3xl boty-shadow px-8">
         <Package className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
@@ -777,7 +784,8 @@ export function BotyCheckoutFlow() {
       <PaymentOutcomeOverlay
         variant="success"
         title="¡Pago recibido!"
-        description="Tu pedido quedó registrado. En un momento verás todos los detalles."
+        description={paymentSuccessDescription(recipient.email)}
+        showRedirectProgress
       />
     )}
 

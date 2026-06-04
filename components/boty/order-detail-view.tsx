@@ -58,7 +58,9 @@ export function OrderDetailView({
           <p className="text-sm text-primary font-medium">Pago confirmado</p>
           <h1 className="font-serif text-3xl md:text-4xl mt-2">Gracias por tu compra</h1>
           <p className="text-muted-foreground text-sm mt-2">
-            Te enviamos confirmación a <span className="text-foreground">{order.customer.email}</span>
+            Te enviamos la confirmación de pago y los detalles del pedido a{" "}
+            <span className="text-foreground">{order.customer.email}</span>.
+            Si no lo ves, revisa spam o correo no deseado.
           </p>
           <p className="text-sm mt-4 bg-muted/50 rounded-2xl px-4 py-3 inline-block">
             Código de seguimiento:{" "}

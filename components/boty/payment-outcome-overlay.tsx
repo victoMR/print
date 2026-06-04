@@ -1,7 +1,10 @@
 "use client";
 
-import { Check, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { Check, Loader2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PAYMENT_OUTCOME_VISIBLE_MS } from "@/lib/payment-outcome-timing";
 
 type PaymentOutcomeOverlayProps = {
   variant: "success" | "error";
@@ -10,6 +13,8 @@ type PaymentOutcomeOverlayProps = {
   detail?: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** Si true, muestra barra de progreso hasta redirigir (solo éxito en checkout). */
+  showRedirectProgress?: boolean;
 };
 
 export function PaymentOutcomeOverlay({
@@ -19,19 +24,32 @@ export function PaymentOutcomeOverlay({
   detail,
   actionLabel,
   onAction,
+  showRedirectProgress = false,
 }: PaymentOutcomeOverlayProps) {
+  const [mounted, setMounted] = useState(false);
   const isSuccess = variant === "success";
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-background/75 backdrop-blur-md px-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 animate-payment-backdrop-in"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="payment-outcome-title"
     >
       <div
         className={cn(
-          "bg-card rounded-3xl p-8 md:p-10 max-w-md w-full text-center boty-shadow animate-scale-fade-in",
+          "bg-card rounded-3xl p-8 md:p-10 max-w-md w-full text-center boty-shadow border border-border/40 animate-scale-fade-in",
           !isSuccess && "animate-payment-shake",
         )}
       >
@@ -73,9 +91,28 @@ export function PaymentOutcomeOverlay({
         )}
 
         {isSuccess && (
-          <p className="text-xs text-muted-foreground mt-6">Redirigiendo a tu pedido…</p>
+          <div className="mt-6 flex flex-col items-center gap-3">
+            {showRedirectProgress ? (
+              <div
+                className="h-1 w-full max-w-[200px] rounded-full bg-muted overflow-hidden"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Redirigiendo"
+              >
+                <div
+                  className="h-full bg-primary rounded-full origin-left animate-payment-progress"
+                  style={{ animationDuration: `${PAYMENT_OUTCOME_VISIBLE_MS}ms` }}
+                />
+              </div>
+            ) : (
+              <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" aria-hidden />
+            )}
+            <p className="text-xs text-muted-foreground">Redirigiendo a los detalles de tu pedido…</p>
+          </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
