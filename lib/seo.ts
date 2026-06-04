@@ -7,11 +7,45 @@ export const DEFAULT_DESCRIPTION =
   "Productos personalizados impresos bajo demanda con envío a todo México.";
 export const DEFAULT_OG_IMAGE_PATH = "/images/posters/hero.jpg";
 
+const PRODUCTION_SITE_URL = "https://mrpapshop.com";
+
+function isLocalhostUrl(url: string): boolean {
+  try {
+    const { hostname } = new URL(url.startsWith("http") ? url : `https://${url}`);
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname.endsWith(".local")
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * URL pública del storefront. Ignora localhost en producción (builds con .env dev).
+ * Prioridad: NEXT_PUBLIC_SITE_URL válida → Vercel production URL → fallback mrpapshop.com.
+ */
 export function getSiteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+
+  if (envUrl && !(process.env.NODE_ENV === "production" && isLocalhostUrl(envUrl))) {
+    return envUrl;
+  }
+
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.replace(/\/$/, "")}`;
+  }
+
+  if (process.env.VERCEL_URL && process.env.VERCEL_ENV === "production") {
+    return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return PRODUCTION_SITE_URL;
+  }
+
+  return envUrl ?? "http://localhost:3000";
 }
 
 export function absoluteUrl(path: string): string {

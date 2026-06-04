@@ -45,9 +45,6 @@ function BillingSummary({ billing }: { billing: StripeCheckoutBilling }) {
       <p className="text-muted-foreground">
         {billing.city}, {stateName} {billing.postalCode}, {billing.country}
       </p>
-      <p className="text-xs text-muted-foreground pt-1">
-        Solo ingresa los datos de tu tarjeta abajo; no hace falta repetir nombre ni dirección.
-      </p>
     </div>
   );
 }

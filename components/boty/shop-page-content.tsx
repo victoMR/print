@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import type { CatalogProductSummary } from "@/lib/api-types";
 import type { ProductCategory } from "@/lib/product-categories";
@@ -25,6 +26,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 /** Página Shop — productos del API con filtro por categoría y búsqueda. */
 export function ShopPageContent({ products: initialProducts }: ShopPageContentProps) {
+  const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<FilterValue>("all");
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,6 +41,16 @@ export function ShopPageContent({ products: initialProducts }: ShopPageContentPr
   useEffect(() => {
     setProducts(initialProducts);
   }, [initialProducts]);
+
+  useEffect(() => {
+    const cat = searchParams.get("category");
+    if (
+      cat &&
+      PRODUCT_CATEGORIES.some((c) => c.value === cat)
+    ) {
+      setSelectedCategory(cat as ProductCategory);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

@@ -1,5 +1,7 @@
 import type { MrpapsShippingRatesBody } from '../../schemas/mrpaps.schema.js';
 import { BadRequestError } from '../../types/errors.js';
+import { CacheTTL, shippingQuoteKey } from '../../lib/cache-keys.js';
+import { stableHash, wrapCache } from '../../lib/cache.js';
 import {
   getConfiguredCarriers,
   getDefaultPackage,
@@ -122,6 +124,22 @@ export function applyCustomerShippingMarkup(costMxn: number): number {
 }
 
 export async function quoteShipping(
+  input: MrpapsShippingRatesBody,
+  options?: { forCustomer?: boolean },
+): Promise<ShippingQuoteResult> {
+  const forCustomer = options?.forCustomer ?? false;
+  const cachePayload = {
+    address: input.address,
+    items: input.items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+    provider: process.env.SHIPPING_PROVIDER ?? 'envia',
+    markup: forCustomer ? process.env.SHIPPING_CUSTOMER_MARKUP_PERCENT ?? '12' : '0',
+  };
+  const cacheKey = shippingQuoteKey(stableHash(cachePayload), forCustomer);
+
+  return wrapCache(cacheKey, CacheTTL.shipping(), () => quoteShippingUncached(input, options));
+}
+
+async function quoteShippingUncached(
   input: MrpapsShippingRatesBody,
   options?: { forCustomer?: boolean },
 ): Promise<ShippingQuoteResult> {

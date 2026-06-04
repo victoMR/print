@@ -64,7 +64,7 @@ export async function connectRedis(): Promise<boolean> {
     });
 
     redisReady = true;
-    logger.info('Redis conectado');
+    logger.info('Redis conectado (cache + BullMQ)');
     return true;
   } catch (err) {
     redis.disconnect();

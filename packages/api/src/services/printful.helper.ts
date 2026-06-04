@@ -1,4 +1,5 @@
 import type { AxiosResponse } from 'axios';
+import { acquirePrintfulRateLimit } from '../lib/printful-rate-limit.js';
 import { logger } from '../lib/logger.js';
 import type { PrintfulResponse } from '../types/printful.types.js';
 import {
@@ -21,6 +22,8 @@ export async function callPrintful<T>(
   fn: () => Promise<AxiosResponse<PrintfulResponse<T>>>,
   context: CallPrintfulContext,
 ): Promise<T> {
+  await acquirePrintfulRateLimit();
+
   try {
     const { data } = await fn();
     if (data.code !== 200) {

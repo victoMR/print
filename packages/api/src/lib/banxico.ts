@@ -1,6 +1,7 @@
+import { CacheTTL, fxKey } from './cache-keys.js';
+import { cacheDel, wrapCache } from './cache.js';
 import { logger } from './logger.js';
 
-const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 const FX_BUFFER = 1.05; // 5% cushion per project rules
 
 interface FxCache {
@@ -8,35 +9,48 @@ interface FxCache {
   fetchedAt: number;
 }
 
-let cache: FxCache | null = null;
+/** Fallback in-memory cuando Redis no está disponible. */
+let localCache: FxCache | null = null;
 
 /** Stub FIX rate — replace with Banxico SieAPI when BANXICO_API_TOKEN is set. */
 const STUB_USD_MXN = 17.5;
 
-/**
- * Returns USD→MXN rate with 5% buffer applied (for retail pricing).
- */
-export async function getUsdToMxnRate(): Promise<number> {
-  const now = Date.now();
-  if (cache && now - cache.fetchedAt < CACHE_TTL_MS) {
-    return cache.rate;
-  }
-
-  let baseRate = STUB_USD_MXN;
-
+async function fetchBaseUsdMxnRate(): Promise<number> {
   if (process.env.BANXICO_API_TOKEN) {
     try {
-      baseRate = await fetchBanxicoFix();
+      return await fetchBanxicoFix();
     } catch (err) {
       logger.warn({ err }, 'Banxico fetch failed; using stub rate');
     }
   } else {
     logger.debug('BANXICO_API_TOKEN not set; using stub FX rate');
   }
+  return STUB_USD_MXN;
+}
 
-  const rate = baseRate * FX_BUFFER;
-  cache = { rate, fetchedAt: now };
-  return rate;
+/**
+ * Returns USD→MXN rate with 5% buffer applied (for retail pricing).
+ * Redis (4 h TTL) → memoria local → Banxico API.
+ */
+export async function getUsdToMxnRate(): Promise<number> {
+  const ttlSec = CacheTTL.fx();
+  const now = Date.now();
+
+  if (localCache && now - localCache.fetchedAt < ttlSec * 1000) {
+    return localCache.rate;
+  }
+
+  const result = await wrapCache<{ rate: number; fetchedAt: number }>(
+    fxKey(),
+    ttlSec,
+    async () => {
+      const baseRate = await fetchBaseUsdMxnRate();
+      return { rate: baseRate * FX_BUFFER, fetchedAt: Date.now() };
+    },
+  );
+
+  localCache = result;
+  return result.rate;
 }
 
 /** Converts USD amount to MXN string with 2 decimals. */
@@ -69,6 +83,12 @@ async function fetchBanxicoFix(): Promise<number> {
   return parseFloat(dato.replace(/,/g, ''));
 }
 
-export function clearFxCache(): void {
-  cache = null;
+export function clearFxCacheLocal(): void {
+  localCache = null;
+}
+
+/** Limpia FX en memoria y Redis. */
+export async function clearFxCache(): Promise<void> {
+  clearFxCacheLocal();
+  await cacheDel(fxKey());
 }

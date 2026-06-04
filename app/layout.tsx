@@ -9,7 +9,6 @@ import {
   DEFAULT_DESCRIPTION,
   SITE_NAME,
   SITE_TAGLINE,
-  absoluteUrl,
   buildDefaultMetadata,
   getSiteUrl,
   organizationJsonLd,
@@ -59,12 +58,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const heroPoster = absoluteUrl(MEDIA.hero.poster);
-
   return (
     <html lang="es">
       <head>
-        <link rel="preload" as="image" href={heroPoster} fetchPriority="high" />
+        {/* Ruta relativa — evita localhost en preload si NEXT_PUBLIC_SITE_URL es de dev */}
+        <link
+          rel="preload"
+          as="image"
+          href={MEDIA.hero.poster}
+          fetchPriority="high"
+        />
       </head>
       <body
         className={`${dmSans.variable} ${playfairDisplay.variable} font-sans antialiased`}
@@ -73,7 +76,7 @@ export default function RootLayout({
         <CustomerProvider>
           <CartProvider>{children}</CartProvider>
         </CustomerProvider>
-        <Analytics />
+        {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" ? <Analytics /> : null}
       </body>
     </html>
   );

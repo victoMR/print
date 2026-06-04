@@ -27,7 +27,15 @@ async function main(): Promise<void> {
   }
 
   const { connectRedis } = await import('./lib/queue.js');
-  await connectRedis();
+  const redisOk = await connectRedis();
+
+  if (redisOk) {
+    const { startWebhookWorker } = await import('./workers/webhook.worker.js');
+    const worker = startWebhookWorker();
+    if (worker) {
+      logger.info('Worker BullMQ printful-webhook activo');
+    }
+  }
 
   const { createApp } = await import('./app.js');
 

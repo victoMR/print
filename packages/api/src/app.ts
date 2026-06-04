@@ -10,6 +10,8 @@ import {
   stripeWebhookHealth,
   stripeWebhookRawBody,
 } from './routes/v1/stripe-webhook.routes.js';
+import { isRedisReady } from './lib/queue.js';
+import { getCacheStats } from './lib/cache.js';
 
 const STRIPE_WEBHOOK_PATHS = [
   '/api/v1/webhooks/stripe',
@@ -36,7 +38,13 @@ export function createApp(): express.Application {
   }));
 
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', service: '@print/api' });
+    const cache = getCacheStats();
+    res.json({
+      status: 'ok',
+      service: '@print/api',
+      redis: isRedisReady() ? 'connected' : 'disabled',
+      cache: { hits: cache.hits, misses: cache.misses },
+    });
   });
 
   app.use('/api/v1', v1Router);

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { pauseBackgroundVideo, playBackgroundVideo } from "@/lib/video-playback-manager";
 
 type BackgroundVideoProps = {
   src: string;
@@ -9,14 +10,21 @@ type BackgroundVideoProps = {
   poster: string;
   className?: string;
   videoClassName?: string;
-  /** Hero / above-the-fold — loads immediately */
+  /** Hero / above-the-fold — observa visibilidad desde el montaje */
   priority?: boolean;
   preload?: "none" | "metadata" | "auto";
 };
 
-function setWebkitPlaysInline(video: HTMLVideoElement) {
+function configureSafariVideo(video: HTMLVideoElement) {
+  video.muted = true;
+  video.defaultMuted = true;
+  video.playsInline = true;
   video.setAttribute("playsinline", "true");
   video.setAttribute("webkit-playsinline", "true");
+  video.setAttribute("x-webkit-airplay", "deny");
+  video.controls = false;
+  video.disablePictureInPicture = true;
+  video.disableRemotePlayback = true;
 }
 
 export function BackgroundVideo({
@@ -28,12 +36,13 @@ export function BackgroundVideo({
   priority = false,
   preload = "none",
 }: BackgroundVideoProps) {
+  const instanceId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [active, setActive] = useState(priority);
-  const [failed, setFailed] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [hdSrc, setHdSrc] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const resolvedSrc = hdSrc && srcHd ? srcHd : src;
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -53,41 +62,43 @@ export function BackgroundVideo({
   }, [srcHd, reducedMotion]);
 
   useEffect(() => {
-    if (priority || reducedMotion) return;
-    const el = containerRef.current;
-    if (!el) return;
+    const container = containerRef.current;
+    const video = videoRef.current;
+    if (!container || !video || reducedMotion) return;
+
+    configureSafariVideo(video);
+
+    const onVisible = async (visible: boolean) => {
+      if (visible) {
+        const ok = await playBackgroundVideo(video);
+        setPlaying(ok);
+      } else {
+        pauseBackgroundVideo(video);
+        setPlaying(false);
+      }
+    };
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setActive(true);
-          observer.disconnect();
-        }
+        const visible =
+          entry.isIntersecting &&
+          entry.intersectionRatio >= (priority ? 0.05 : 0.12);
+        void onVisible(visible);
       },
-      { rootMargin: "120px", threshold: 0.01 },
+      {
+        rootMargin: priority ? "0px" : "80px 0px",
+        threshold: [0, 0.05, 0.12, 0.25],
+      },
     );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [priority, reducedMotion]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !active || reducedMotion || failed) return;
+    observer.observe(container);
 
-    setWebkitPlaysInline(video);
-
-    const tryPlay = () => {
-      video.play().catch(() => setFailed(true));
+    return () => {
+      observer.disconnect();
+      pauseBackgroundVideo(video);
+      setPlaying(false);
     };
-
-    if (video.readyState >= 2) tryPlay();
-    else video.addEventListener("canplay", tryPlay, { once: true });
-
-    return () => video.removeEventListener("canplay", tryPlay);
-  }, [active, reducedMotion, failed, hdSrc]);
-
-  const showVideo = active && !failed && !reducedMotion;
-  const resolvedSrc = hdSrc && srcHd ? srcHd : src;
+  }, [reducedMotion, priority, resolvedSrc, instanceId]);
 
   return (
     <div ref={containerRef} className={cn("absolute inset-0 overflow-hidden", className)}>
@@ -96,18 +107,21 @@ export function BackgroundVideo({
         style={{ backgroundImage: `url(${poster})` }}
         aria-hidden
       />
-      {showVideo && (
+      {!reducedMotion && (
         <video
           ref={videoRef}
           muted
           loop
           playsInline
-          autoPlay={priority}
+          controls={false}
+          disablePictureInPicture
+          disableRemotePlayback
           preload={priority ? "metadata" : preload}
           poster={poster}
-          onError={() => setFailed(true)}
+          aria-hidden
           className={cn(
-            "absolute inset-0 h-full w-full object-cover object-center",
+            "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-500",
+            playing ? "opacity-100" : "opacity-0",
             videoClassName,
           )}
         >

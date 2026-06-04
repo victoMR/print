@@ -3,6 +3,8 @@ import * as templatesRepo from '../db/mrpaps-garment-templates.repository.js';
 import type { MrpapsProductCategory } from '../db/mrpaps.types.js';
 import { catalogProductsQuerySchema } from '../schemas/api.schema.js';
 import { productCategorySchema } from '../lib/product-categories.js';
+import { CacheTTL, catalogListKey, catalogProductKey } from '../lib/cache-keys.js';
+import { wrapCache } from '../lib/cache.js';
 import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { logger } from '../lib/logger.js';
 
@@ -42,19 +44,16 @@ async function buildProductPreview(product: Awaited<ReturnType<typeof productsRe
   };
 }
 
-export async function listPublicProducts(
-  page = 1,
-  limit = 24,
+async function listPublicProductsUncached(
+  page: number,
+  limit: number,
   category?: MrpapsProductCategory,
   search?: string,
 ) {
-  const safeLimit = Math.min(Math.max(limit, 1), 48);
-  const safePage = Math.max(page, 1);
-
   const products = await productsRepo.listActiveProducts(category, search);
   const total = products.length;
-  const start = (safePage - 1) * safeLimit;
-  const pageProducts = products.slice(start, start + safeLimit);
+  const start = (page - 1) * limit;
+  const pageProducts = products.slice(start, start + limit);
 
   const data = (
     await Promise.all(
@@ -83,10 +82,27 @@ export async function listPublicProducts(
     )
   ).filter((p): p is NonNullable<typeof p> => p !== null);
 
-  return { data, meta: { page: safePage, limit: safeLimit, total } };
+  return { data, meta: { page, limit, total } };
 }
 
-export async function getPublicProduct(idOrSlug: string) {
+export async function listPublicProducts(
+  page = 1,
+  limit = 24,
+  category?: MrpapsProductCategory,
+  search?: string,
+) {
+  const safeLimit = Math.min(Math.max(limit, 1), 48);
+  const safePage = Math.max(page, 1);
+  const normalizedSearch = search?.trim() || undefined;
+
+  return wrapCache(
+    catalogListKey(category, normalizedSearch, safePage, safeLimit),
+    CacheTTL.catalogList(),
+    () => listPublicProductsUncached(safePage, safeLimit, category, normalizedSearch),
+  );
+}
+
+async function getPublicProductUncached(idOrSlug: string) {
   let product = await productsRepo.getProductBySlug(idOrSlug);
   if (!product) {
     product = await productsRepo.getProductById(idOrSlug);
@@ -115,6 +131,18 @@ export async function getPublicProduct(idOrSlug: string) {
       inStock: true,
     })),
   };
+}
+
+export async function getPublicProduct(idOrSlug: string) {
+  const key = catalogProductKey(idOrSlug);
+
+  try {
+    return await wrapCache(key, CacheTTL.catalogProduct(), () => getPublicProductUncached(idOrSlug));
+  } catch (err) {
+    if (err instanceof NotFoundError) throw err;
+    logger.warn({ err, idOrSlug }, 'Catalog cache miss with error; retrying uncached');
+    return getPublicProductUncached(idOrSlug);
+  }
 }
 
 export function parseProductCategoryQuery(value: unknown): MrpapsProductCategory | undefined {

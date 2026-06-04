@@ -22,6 +22,7 @@ import * as storage from '../../services/mrpaps-storage.service.js';
 import { isEnviaConfigured } from '../../services/shipping/envia.client.js';
 import { quoteShipping } from '../../services/shipping/shipping-quote.service.js';
 import * as variantsAdmin from '../../services/mrpaps-variants-admin.service.js';
+import { invalidateCatalogCache } from '../../services/cache-invalidation.service.js';
 import * as mailTest from '../../services/mail-test.service.js';
 import { BadRequestError } from '../../types/errors.js';
 
@@ -302,6 +303,7 @@ v1MrpapsAdminRouter.patch('/variants/:variantId', async (req, res, next) => {
       status: body.status,
     });
     res.json({ data });
+    void invalidateCatalogCache();
   } catch (err) {
     next(err);
   }
@@ -433,6 +435,7 @@ v1MrpapsAdminRouter.post('/products', async (req, res, next) => {
         category: row.category,
       },
     });
+    void invalidateCatalogCache(row.slug);
   } catch (err) {
     next(err);
   }
@@ -460,6 +463,7 @@ v1MrpapsAdminRouter.patch('/products/:productId', async (req, res, next) => {
         status: row.status,
       },
     });
+    void invalidateCatalogCache(row.slug);
   } catch (err) {
     next(err);
   }
@@ -477,6 +481,7 @@ v1MrpapsAdminRouter.post('/products/:productId/variants', async (req, res, next)
       garmentColorHex: body.garmentColorHex,
     });
     res.status(201).json({ data });
+    void invalidateCatalogCache();
   } catch (err) {
     next(err);
   }
