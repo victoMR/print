@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { ChevronLeft, Minus, Plus, Check } from "lucide-react";
 import type { CatalogProductDetail } from "@/lib/api-types";
@@ -14,6 +15,7 @@ type ProductDetailProps = {
 };
 
 export function ProductDetail({ product }: ProductDetailProps) {
+  const router = useRouter();
   const { addItem } = useCart();
   const [variantId, setVariantId] = useState(product.variants[0]?.variantId);
   const [quantity, setQuantity] = useState(1);
@@ -39,7 +41,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
     if (match) setVariantId(match.variantId);
   }
 
-  function addSelectedToCart() {
+  function addSelectedToCart(openDrawer = true) {
     if (!selected) return false;
     addItem(
       {
@@ -51,18 +53,20 @@ export function ProductDetail({ product }: ProductDetailProps) {
         thumbnail: product.thumbnail,
       },
       quantity,
+      { openDrawer },
     );
     return true;
   }
 
   function handleAddToCart() {
-    if (!addSelectedToCart()) return;
+    if (!addSelectedToCart(true)) return;
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
   }
 
   function handleBuyNow() {
-    addSelectedToCart();
+    if (!addSelectedToCart(false)) return;
+    router.push("/checkout");
   }
 
   return (

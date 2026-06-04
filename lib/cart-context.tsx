@@ -21,7 +21,11 @@ type CartContextValue = {
   hydrated: boolean;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
+  addItem: (
+    item: Omit<CartItem, "quantity">,
+    quantity?: number,
+    options?: { openDrawer?: boolean },
+  ) => void;
   removeItem: (variantId: string) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   clearCart: () => void;
@@ -58,7 +62,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, hydrated]);
 
   const addItem = useCallback(
-    (item: Omit<CartItem, "quantity">, quantity = 1) => {
+    (
+      item: Omit<CartItem, "quantity">,
+      quantity = 1,
+      options?: { openDrawer?: boolean },
+    ) => {
       setItems((prev) => {
         const existing = prev.find((i) => i.variantId === item.variantId);
         if (existing) {
@@ -70,7 +78,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
         return [...prev, { ...item, quantity }];
       });
-      setIsOpen(true);
+      if (options?.openDrawer !== false) {
+        setIsOpen(true);
+      }
     },
     [],
   );
