@@ -15,9 +15,9 @@ import {
   BotyButton,
   BotyInput,
   BotyLabel,
-  BotySelect,
   BotySurface,
 } from "@/components/boty/ui-patterns";
+import { AdminSelect } from "@/components/admin/admin-select";
 import { AlertCircle, Plus } from "lucide-react";
 
 type AdminProductVariantsEditorProps = {
@@ -312,15 +312,12 @@ export function AdminProductVariantsEditor({
         <form onSubmit={(e) => void handleAddOne(e)} className="grid gap-4 sm:grid-cols-3">
           <div>
             <BotyLabel>Talla</BotyLabel>
-            <BotySelect
+            <AdminSelect
               value={newSize}
-              onChange={(e) => setNewSize(e.target.value)}
+              onValueChange={setNewSize}
               disabled={busy}
-            >
-              {GARMENT_SIZES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </BotySelect>
+              options={GARMENT_SIZES.map((s) => ({ value: s, label: s }))}
+            />
           </div>
           <div>
             <BotyLabel>Color</BotyLabel>

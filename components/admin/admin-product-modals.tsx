@@ -21,12 +21,13 @@ import {
   BotyInput,
   BotyLabel,
   BotyModal,
-  BotySelect,
   BotySurface,
   BotyTabs,
   BotyTextarea,
 } from "@/components/boty/ui-patterns";
+import { AdminDrawer } from "@/components/admin/admin-drawer";
 import { AdminProductVariantsEditor } from "@/components/admin/admin-product-variants-editor";
+import { AdminSelect } from "@/components/admin/admin-select";
 import { ImagePlus } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -261,17 +262,12 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
             </div>
             <div className="sm:col-span-2">
               <BotyLabel>Categoría *</BotyLabel>
-              <BotySelect
+              <AdminSelect
                 value={category}
-                onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                onValueChange={(v) => setCategory(v as ProductCategory)}
                 disabled={isBusy}
-              >
-                {PRODUCT_CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </BotySelect>
+                options={PRODUCT_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+              />
             </div>
           </div>
 
@@ -298,15 +294,12 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
             <form onSubmit={handleAddToQueue} className="grid gap-3 sm:grid-cols-3">
               <div>
                 <BotyLabel>Talla *</BotyLabel>
-                <BotySelect
+                <AdminSelect
                   value={addSize}
-                  onChange={(e) => setAddSize(e.target.value)}
+                  onValueChange={setAddSize}
                   disabled={isBusy}
-                >
-                  {GARMENT_SIZES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </BotySelect>
+                  options={GARMENT_SIZES.map((s) => ({ value: s, label: s }))}
+                />
               </div>
               <div>
                 <BotyLabel>Color</BotyLabel>
@@ -471,10 +464,9 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
   }
 
   return (
-    <BotyModal
+    <AdminDrawer
       open={open}
-      onClose={onClose}
-      size="xl"
+      onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}
       title={`Editar — ${product.name}`}
       description={`/${product.slug}`}
     >
@@ -528,17 +520,12 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
 
               <div>
                 <BotyLabel>Categoría</BotyLabel>
-                <BotySelect
+                <AdminSelect
                   value={category}
-                  onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                  onValueChange={(v) => setCategory(v as ProductCategory)}
                   disabled={busy}
-                >
-                  {PRODUCT_CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </BotySelect>
+                  options={PRODUCT_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+                />
               </div>
 
               {/* Status toggle */}
@@ -612,6 +599,6 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
       {tab === "variants" && error && (
         <p className="mt-3 text-sm text-destructive rounded-xl bg-destructive/5 px-3 py-2">{error}</p>
       )}
-    </BotyModal>
+    </AdminDrawer>
   );
 }

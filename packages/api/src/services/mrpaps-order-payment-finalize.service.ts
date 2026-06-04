@@ -5,6 +5,7 @@ import { normalizeTrackingCode } from '../lib/order-tracking-code.js';
 import {
   getOrderForPaymentFinalize,
   updateOrderPaymentByPublicId,
+  updateOrderStatus,
 } from '../db/mrpaps-orders.repository.js';
 import { sendOrderConfirmationEmail } from './order-confirmation-email.service.js';
 import { NotFoundError } from '../types/errors.js';
@@ -110,6 +111,17 @@ export async function finalizeOrderPayment(
 
   await updateOrderPaymentByPublicId(publicId, { payment_status: 'paid' });
   logger.info({ publicOrderId: publicId }, 'Finalizar pago: marcado como paid');
+
+  const orderAfterPay = await getOrderForPaymentFinalize(publicId);
+  if (orderAfterPay?.status === 'pendiente_pago') {
+    await updateOrderStatus(
+      publicId,
+      'pedido',
+      {},
+      { note: 'Pago confirmado en Stripe', createdBy: 'system' },
+    );
+    logger.info({ publicOrderId: publicId }, 'Finalizar pago: estado → pedido recibido');
+  }
 
   try {
     await sendOrderConfirmationEmail(publicId);

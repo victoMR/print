@@ -225,6 +225,7 @@ v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
         publicId: o.public_id,
         orderNumber: o.order_number,
         status: o.status,
+        paymentStatus: o.payment_status ?? null,
         customerName: o.customer_name,
         customerEmail: o.customer_email,
         customerPhone: o.customer_phone,

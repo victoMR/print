@@ -5,6 +5,7 @@ import { assetUrlSchema } from './asset-url.schema.js';
 import { productCategorySchema } from '../lib/product-categories.js';
 
 export const mrpapsOrderStatusSchema = z.enum([
+  'pendiente_pago',
   'pedido',
   'solicitado_imprenta',
   'recibido_imprenta',

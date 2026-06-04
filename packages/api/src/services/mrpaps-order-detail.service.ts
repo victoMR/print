@@ -17,6 +17,7 @@ export type OrderDetailDto = {
   status: MrpapsOrderStatus;
   orderedAt: string;
   paymentStatus: string | null;
+  stripePaymentIntentId?: string | null;
   customer: {
     name: string;
     email: string;
@@ -74,6 +75,7 @@ export type OrderDetailDto = {
 };
 
 const STATUS_LABELS: Record<MrpapsOrderStatus, string> = {
+  pendiente_pago: 'Pago pendiente',
   pedido: 'Pedido recibido',
   solicitado_imprenta: 'Solicitado a imprenta',
   recibido_imprenta: 'Recibido de imprenta',
@@ -91,6 +93,18 @@ function buildTimeline(
     recibido_imprenta: order.received_at ?? null,
     enviado: order.shipped_at,
   };
+
+  if (status === 'pendiente_pago') {
+    return [
+      {
+        status: 'pendiente_pago',
+        label: STATUS_LABELS.pendiente_pago,
+        at: order.ordered_at,
+        done: false,
+        current: true,
+      },
+    ];
+  }
 
   if (status === 'cancelado') {
     return [
@@ -189,6 +203,7 @@ function mapOrder(
 
   if (options?.includeInternal) {
     detail.internalNotes = order.internal_notes;
+    detail.stripePaymentIntentId = order.stripe_payment_intent_id;
   }
 
   return detail;

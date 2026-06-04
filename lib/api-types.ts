@@ -106,6 +106,7 @@ export type OrderDetail = {
   status: MrpapsOrderStatus;
   orderedAt: string;
   paymentStatus: string | null;
+  stripePaymentIntentId?: string | null;
   customer: {
     name: string;
     email: string;
@@ -168,6 +169,7 @@ export type OrderDetailResponse = { data: OrderDetail };
 export type OrderStatusResponse = OrderDetailResponse;
 
 export type MrpapsOrderStatus =
+  | "pendiente_pago"
   | "pedido"
   | "solicitado_imprenta"
   | "recibido_imprenta"
@@ -175,6 +177,7 @@ export type MrpapsOrderStatus =
   | "cancelado";
 
 export const ORDER_STATUS_LABELS: Record<MrpapsOrderStatus, string> = {
+  pendiente_pago: "Pago pendiente",
   pedido: "Pedido recibido",
   solicitado_imprenta: "Solicitado a imprenta",
   recibido_imprenta: "Recibido de imprenta",
@@ -184,6 +187,7 @@ export const ORDER_STATUS_LABELS: Record<MrpapsOrderStatus, string> = {
 
 /** Transiciones permitidas en el panel admin (fulfillment manual). */
 export const ORDER_STATUS_NEXT: Record<MrpapsOrderStatus, MrpapsOrderStatus[]> = {
+  pendiente_pago: ["cancelado"],
   pedido: ["solicitado_imprenta", "cancelado"],
   solicitado_imprenta: ["recibido_imprenta", "cancelado"],
   recibido_imprenta: ["enviado", "cancelado"],
@@ -221,6 +225,7 @@ export type AdminOrderSummary = {
   publicId: string;
   orderNumber: string;
   status: MrpapsOrderStatus;
+  paymentStatus: string | null;
   customerName: string;
   customerEmail: string;
   customerPhone: string;

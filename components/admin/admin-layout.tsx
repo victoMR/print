@@ -2,23 +2,22 @@
 
 import {
   ClipboardList,
-  ImageIcon,
   LogOut,
   RefreshCw,
   Shirt,
-  Sparkles,
   LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AdminSessionUser } from "@/lib/admin-session";
 
-export type AdminTab = "orders" | "products" | "prototypes" | "designs";
+export type AdminTab = "orders" | "products";
+// | "prototypes" | "designs" — ocultos temporalmente
 
 const TABS: { id: AdminTab; label: string; icon: typeof ClipboardList; description: string }[] = [
   { id: "orders", label: "Pedidos", icon: ClipboardList, description: "Gestión y envíos" },
   { id: "products", label: "Productos", icon: Shirt, description: "Catálogo tienda" },
-  { id: "prototypes", label: "Prototipos", icon: Sparkles, description: "Referencias imprenta" },
-  { id: "designs", label: "Diseños", icon: ImageIcon, description: "Biblioteca de arte" },
+  // { id: "prototypes", label: "Prototipos", icon: Sparkles, description: "Referencias imprenta" },
+  // { id: "designs", label: "Diseños", icon: ImageIcon, description: "Biblioteca de arte" },
 ];
 
 type AdminLayoutProps = {

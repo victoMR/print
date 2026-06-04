@@ -13,9 +13,10 @@ import {
   BotyBadge,
   BotyButton,
   BotyLabel,
-  BotySelect,
   BotySurface,
 } from "@/components/boty/ui-patterns";
+import { AdminSelect } from "@/components/admin/admin-select";
+import { AdminViewToggle, useAdminViewMode } from "@/components/admin/admin-view-toggle";
 import { RemoteImage } from "@/components/ui/remote-image";
 import {
   ArrowLeft,
@@ -32,6 +33,7 @@ import {
 import { mxStateLabel } from "@/lib/mx-state-label";
 
 const ALL_ORDER_STATUSES: MrpapsOrderStatus[] = [
+  "pendiente_pago",
   "pedido",
   "solicitado_imprenta",
   "recibido_imprenta",
@@ -39,7 +41,22 @@ const ALL_ORDER_STATUSES: MrpapsOrderStatus[] = [
   "cancelado",
 ];
 
+const PAYMENT_BADGE: Record<string, string> = {
+  pending: "bg-amber-500/15 text-amber-900",
+  paid: "bg-emerald-500/15 text-emerald-800",
+  failed: "bg-destructive/15 text-destructive",
+  refunded: "bg-muted text-muted-foreground",
+};
+
+const PAYMENT_LABELS: Record<string, string> = {
+  pending: "Pago pendiente",
+  paid: "Pagado",
+  failed: "Pago fallido",
+  refunded: "Reembolsado",
+};
+
 const STATUS_BADGE: Record<MrpapsOrderStatus, string> = {
+  pendiente_pago: "bg-amber-500/15 text-amber-900",
   pedido: "bg-blue-500/15 text-blue-800",
   solicitado_imprenta: "bg-amber-500/15 text-amber-900",
   recibido_imprenta: "bg-violet-500/15 text-violet-900",
@@ -63,6 +80,7 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<OrderDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [viewMode, setViewMode] = useAdminViewMode("admin-orders-view", "grid");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounce the search input → searchQuery
@@ -190,24 +208,25 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
         {/* Status filter */}
         <div className="flex items-center gap-2 shrink-0">
           <BotyLabel className="shrink-0">Estado</BotyLabel>
-          <BotySelect
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as MrpapsOrderStatus | "")}
-            className="max-w-[180px]"
-          >
-            <option value="">Todos</option>
-            {ALL_ORDER_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {ORDER_STATUS_LABELS[s]}
-              </option>
-            ))}
-          </BotySelect>
+          <AdminSelect
+            value={filterStatus || "__all__"}
+            onValueChange={(v) => setFilterStatus(v === "__all__" ? "" : (v as MrpapsOrderStatus))}
+            className="max-w-[220px]"
+            placeholder="Todos"
+            options={[
+              { value: "__all__", label: "Todos" },
+              ...ALL_ORDER_STATUSES.map((s) => ({ value: s, label: ORDER_STATUS_LABELS[s] })),
+            ]}
+          />
         </div>
 
-        <span className="text-xs text-muted-foreground sm:ml-auto flex items-center gap-1.5">
-          {listLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-          {orders.length} pedido{orders.length !== 1 ? "s" : ""}
-        </span>
+        <div className="flex items-center gap-3 sm:ml-auto">
+          <AdminViewToggle value={viewMode} onChange={setViewMode} />
+          <span className="text-xs text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
+            {listLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+            {orders.length} pedido{orders.length !== 1 ? "s" : ""}
+          </span>
+        </div>
       </BotySurface>
 
       {orders.length === 0 ? (
@@ -216,41 +235,20 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
             ? `No se encontraron pedidos para "${searchQuery}".`
             : "No hay pedidos con este filtro."}
         </BotySurface>
-      ) : (
+      ) : viewMode === "grid" ? (
         <ul className="grid gap-3 sm:grid-cols-2">
           {orders.map((order) => (
             <li key={order.publicId}>
-              <button
-                type="button"
-                onClick={() => void loadDetail(order.publicId)}
-                className="w-full text-left boty-transition hover:opacity-95"
-              >
-                <BotySurface className="p-4 hover:border-primary/40 h-full">
-                  <div className="flex gap-3">
-                    <OrderThumb items={order.items} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-serif text-lg">{order.orderNumber}</p>
-                        <BotyBadge className={STATUS_BADGE[order.status]}>
-                          {ORDER_STATUS_LABELS[order.status]}
-                        </BotyBadge>
-                      </div>
-                      <p className="text-sm font-medium mt-1 truncate">{order.customerName}</p>
-                      <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {new Date(order.orderedAt).toLocaleDateString("es-MX")} · {order.itemCount}{" "}
-                        {order.itemCount === 1 ? "pieza" : "piezas"}
-                      </p>
-                      <p className="font-semibold text-primary mt-2 tabular-nums">
-                        {formatMxn(order.totalMxn)}
-                      </p>
-                    </div>
-                  </div>
-                </BotySurface>
-              </button>
+              <OrderGridCard order={order} onOpen={() => void loadDetail(order.publicId)} />
             </li>
           ))}
         </ul>
+      ) : (
+        <BotySurface className="overflow-hidden divide-y divide-border/50">
+          {orders.map((order) => (
+            <OrderListRow key={order.publicId} order={order} onOpen={() => void loadDetail(order.publicId)} />
+          ))}
+        </BotySurface>
       )}
 
       {detailLoading && (
@@ -262,18 +260,111 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
   );
 }
 
-function OrderThumb({ items }: { items: AdminOrderSummary["items"] }) {
+function OrderStatusBadges({ order }: { order: AdminOrderSummary }) {
+  return (
+    <>
+      <BotyBadge className={STATUS_BADGE[order.status]}>
+        {ORDER_STATUS_LABELS[order.status]}
+      </BotyBadge>
+      {order.paymentStatus && order.paymentStatus !== "paid" && (
+        <BotyBadge className={PAYMENT_BADGE[order.paymentStatus] ?? "bg-muted text-muted-foreground"}>
+          {PAYMENT_LABELS[order.paymentStatus] ?? order.paymentStatus}
+        </BotyBadge>
+      )}
+    </>
+  );
+}
+
+function OrderGridCard({
+  order,
+  onOpen,
+}: {
+  order: AdminOrderSummary;
+  onOpen: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full text-left boty-transition hover:opacity-95"
+    >
+      <BotySurface className="p-4 hover:border-primary/40 h-full">
+        <div className="flex gap-3">
+          <OrderThumb items={order.items} />
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-serif text-lg">{order.orderNumber}</p>
+              <OrderStatusBadges order={order} />
+            </div>
+            <p className="text-sm font-medium mt-1 truncate">{order.customerName}</p>
+            <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              {new Date(order.orderedAt).toLocaleDateString("es-MX")} · {order.itemCount}{" "}
+              {order.itemCount === 1 ? "pieza" : "piezas"}
+            </p>
+            <p className="font-semibold text-primary mt-2 tabular-nums">
+              {formatMxn(order.totalMxn)}
+            </p>
+          </div>
+        </div>
+      </BotySurface>
+    </button>
+  );
+}
+
+function OrderListRow({
+  order,
+  onOpen,
+}: {
+  order: AdminOrderSummary;
+  onOpen: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full text-left px-4 py-3 hover:bg-muted/30 boty-transition flex items-center gap-3 sm:gap-4"
+    >
+      <OrderThumb items={order.items} size="sm" />
+      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto_auto] md:items-center gap-1 md:gap-4">
+        <div className="min-w-0">
+          <p className="font-serif text-base truncate">{order.orderNumber}</p>
+          <p className="text-sm truncate">{order.customerName}</p>
+          <p className="text-xs text-muted-foreground truncate hidden sm:block">{order.customerEmail}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <OrderStatusBadges order={order} />
+        </div>
+        <p className="text-xs text-muted-foreground whitespace-nowrap hidden lg:block">
+          {new Date(order.orderedAt).toLocaleDateString("es-MX")} · {order.itemCount} pza.
+        </p>
+        <p className="font-semibold text-primary tabular-nums text-sm md:text-base whitespace-nowrap md:text-right">
+          {formatMxn(order.totalMxn)}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function OrderThumb({
+  items,
+  size = "md",
+}: {
+  items: AdminOrderSummary["items"];
+  size?: "sm" | "md";
+}) {
+  const dim = size === "sm" ? "w-10 h-10" : "w-14 h-14";
   const thumb = items[0];
   if (!thumb) {
     return (
-      <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center shrink-0">
+      <div className={cn(dim, "rounded-xl bg-muted flex items-center justify-center shrink-0")}>
         <Package className="w-5 h-5 text-muted-foreground" />
       </div>
     );
   }
   const url = thumb.thumbnailUrl;
   return (
-    <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-muted shrink-0 ring-1 ring-border/60">
+    <div className={cn("relative rounded-xl overflow-hidden bg-muted shrink-0 ring-1 ring-border/60", dim)}>
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt="" className="w-full h-full object-cover" />
@@ -315,11 +406,39 @@ function AdminOrderDetail({
               {order.customer.phone}
             </p>
           </div>
-          <div className="text-right">
+          <div className="text-right space-y-2">
             <BotyBadge className={STATUS_BADGE[order.status]}>{ORDER_STATUS_LABELS[order.status]}</BotyBadge>
-            <p className="font-serif text-2xl text-primary mt-2 tabular-nums">{formatMxn(order.totals.totalMxn)}</p>
+            {order.paymentStatus && (
+              <BotyBadge className={PAYMENT_BADGE[order.paymentStatus] ?? "bg-muted text-muted-foreground"}>
+                {PAYMENT_LABELS[order.paymentStatus] ?? order.paymentStatus}
+              </BotyBadge>
+            )}
+            <p className="font-serif text-2xl text-primary tabular-nums">{formatMxn(order.totals.totalMxn)}</p>
           </div>
         </div>
+
+        {(order.stripePaymentIntentId || order.paymentStatus) && (
+          <BotySurface className="p-4 mt-6 bg-muted/30">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Stripe</p>
+            {order.stripePaymentIntentId ? (
+              <p className="text-sm font-mono break-all">
+                PaymentIntent:{" "}
+                <a
+                  href={`https://dashboard.stripe.com/search?query=${encodeURIComponent(order.stripePaymentIntentId)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {order.stripePaymentIntentId}
+                </a>
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Sin PaymentIntent — el cliente no llegó al paso de pago o Stripe no está configurado.
+              </p>
+            )}
+          </BotySurface>
+        )}
 
         <ol className="flex flex-wrap gap-4 mt-8">
           {order.timeline.map((step, idx) => (

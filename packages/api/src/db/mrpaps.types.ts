@@ -1,4 +1,5 @@
 export type MrpapsOrderStatus =
+  | 'pendiente_pago'
   | 'pedido'
   | 'solicitado_imprenta'
   | 'recibido_imprenta'

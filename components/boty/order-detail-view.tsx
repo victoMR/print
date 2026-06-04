@@ -18,6 +18,7 @@ import { RemoteImage } from "@/components/ui/remote-image";
 import { BotyBadge, BotySurface } from "@/components/boty/ui-patterns";
 
 const STATUS_BADGE: Record<MrpapsOrderStatus, string> = {
+  pendiente_pago: "bg-amber-500/15 text-amber-900",
   pedido: "bg-blue-500/15 text-blue-800",
   solicitado_imprenta: "bg-amber-500/15 text-amber-900",
   recibido_imprenta: "bg-violet-500/15 text-violet-900",

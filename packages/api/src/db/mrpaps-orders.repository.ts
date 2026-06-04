@@ -69,7 +69,7 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
        ship_country_code, ship_zip, shipping_method, shipping_label,
        subtotal_mxn, shipping_mxn, tax_mxn, total_mxn, status
      ) VALUES (
-       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'pedido'
+       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'pendiente_pago'
      ) RETURNING *`,
     [
       order.public_id,
@@ -120,7 +120,7 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
 
   await query(
     `INSERT INTO mrpaps_order_status_events (order_id, from_status, to_status, note, created_by)
-     VALUES ($1, NULL, 'pedido', 'Pedido creado', 'system')`,
+     VALUES ($1, NULL, 'pendiente_pago', 'Pedido creado, pendiente de pago', 'system')`,
     [orderRow.id],
   );
 
@@ -276,6 +276,7 @@ export async function updateOrderPaymentByPublicId(
 export async function getOrderForPaymentFinalize(rawPublicId: string): Promise<{
   id: string;
   public_id: string;
+  status: MrpapsOrderStatus;
   total_mxn: string;
   customer_email: string;
   payment_status: string | null;
@@ -286,7 +287,7 @@ export async function getOrderForPaymentFinalize(rawPublicId: string): Promise<{
   if (!publicId) return null;
 
   return queryOne(
-    `SELECT id, public_id, total_mxn::text, customer_email, payment_status,
+    `SELECT id, public_id, status, total_mxn::text, customer_email, payment_status,
             stripe_payment_intent_id, confirmation_email_sent_at
      FROM mrpaps_orders WHERE public_id = $1`,
     [publicId],

@@ -7,6 +7,7 @@ import { mxStateCodeSchema } from '../../schemas/order.schema.js';
 import { getCustomerOrderDetail } from '../../services/mrpaps-order-tracking.service.js';
 import { formatTrackingCodeDisplay } from '../../lib/order-tracking-code.js';
 const ORDER_STATUS_LABELS: Record<string, string> = {
+  pendiente_pago: 'Pago pendiente',
   pedido: 'Pedido recibido',
   solicitado_imprenta: 'Solicitado a imprenta',
   recibido_imprenta: 'Recibido de imprenta',
