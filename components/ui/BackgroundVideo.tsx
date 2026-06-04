@@ -2,7 +2,12 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { pauseBackgroundVideo, playBackgroundVideo } from "@/lib/video-playback-manager";
+import {
+  registerBackgroundVideo,
+  unregisterBackgroundVideo,
+  updateBackgroundVideoVisibility,
+  type VideoTier,
+} from "@/lib/video-playback-manager";
 
 type BackgroundVideoProps = {
   src: string;
@@ -10,8 +15,8 @@ type BackgroundVideoProps = {
   poster: string;
   className?: string;
   videoClassName?: string;
-  /** Hero / above-the-fold — observa visibilidad desde el montaje */
-  priority?: boolean;
+  /** hero = viewport inicial; feature = secciones inferiores con 3+ videos */
+  tier?: VideoTier;
   preload?: "none" | "metadata" | "auto";
 };
 
@@ -33,7 +38,7 @@ export function BackgroundVideo({
   poster,
   className,
   videoClassName,
-  priority = false,
+  tier = "feature",
   preload = "none",
 }: BackgroundVideoProps) {
   const instanceId = useId();
@@ -67,27 +72,23 @@ export function BackgroundVideo({
     if (!container || !video || reducedMotion) return;
 
     configureSafariVideo(video);
+    registerBackgroundVideo(instanceId, video, 0, tier);
 
-    const onVisible = async (visible: boolean) => {
-      if (visible) {
-        const ok = await playBackgroundVideo(video);
-        setPlaying(ok);
-      } else {
-        pauseBackgroundVideo(video);
-        setPlaying(false);
-      }
+    const syncOpacity = () => {
+      setPlaying(!video.paused && video.readyState >= 2);
     };
+    video.addEventListener("playing", syncOpacity);
+    video.addEventListener("pause", syncOpacity);
+    video.addEventListener("loadeddata", syncOpacity);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        const visible =
-          entry.isIntersecting &&
-          entry.intersectionRatio >= (priority ? 0.05 : 0.12);
-        void onVisible(visible);
+        const ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
+        updateBackgroundVideoVisibility(instanceId, ratio);
       },
       {
-        rootMargin: priority ? "0px" : "80px 0px",
-        threshold: [0, 0.05, 0.12, 0.25],
+        rootMargin: tier === "hero" ? "0px" : "60px 0px",
+        threshold: [0, 0.06, 0.15, 0.35, 0.5, 0.75, 1],
       },
     );
 
@@ -95,10 +96,13 @@ export function BackgroundVideo({
 
     return () => {
       observer.disconnect();
-      pauseBackgroundVideo(video);
+      video.removeEventListener("playing", syncOpacity);
+      video.removeEventListener("pause", syncOpacity);
+      video.removeEventListener("loadeddata", syncOpacity);
+      unregisterBackgroundVideo(instanceId);
       setPlaying(false);
     };
-  }, [reducedMotion, priority, resolvedSrc, instanceId]);
+  }, [reducedMotion, tier, resolvedSrc, instanceId]);
 
   return (
     <div ref={containerRef} className={cn("absolute inset-0 overflow-hidden", className)}>
@@ -116,11 +120,11 @@ export function BackgroundVideo({
           controls={false}
           disablePictureInPicture
           disableRemotePlayback
-          preload={priority ? "metadata" : preload}
+          preload={tier === "hero" ? "metadata" : preload}
           poster={poster}
           aria-hidden
           className={cn(
-            "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-500",
+            "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700",
             playing ? "opacity-100" : "opacity-0",
             videoClassName,
           )}

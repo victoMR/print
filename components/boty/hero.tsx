@@ -13,7 +13,7 @@ export function Hero() {
           src={MEDIA.hero.src}
           srcHd={MEDIA.hero.srcHd}
           poster={MEDIA.hero.poster}
-          priority
+          tier="hero"
           preload="metadata"
         />
         <div className="absolute inset-0 bg-[#F0E4E6]/15 sm:bg-[#F0E4E6]/10" />
