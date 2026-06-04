@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { adminGetProduct, adminListProducts, adminUpdateProduct } from "@/lib/api";
 import type { AdminProductDetail, AdminProductSummary } from "@/lib/api-types";
+import { PRODUCT_CATEGORY_LABELS } from "@/lib/product-categories";
 import { CreateProductModal, EditProductModal } from "@/components/admin/admin-product-modals";
 import { cn, formatMxn } from "@/lib/utils";
 import { BotyButton, BotyPageHeader } from "@/components/boty/ui-patterns";
@@ -155,6 +156,13 @@ function ProductCard({
           alt={product.name}
           className="w-full h-full object-cover boty-transition group-hover:scale-105"
         />
+        <span
+          className={cn(
+            "absolute top-3 left-3 text-xs font-medium px-2.5 py-1 rounded-full bg-black/40 text-white backdrop-blur-sm",
+          )}
+        >
+          {PRODUCT_CATEGORY_LABELS[product.category ?? "camiseta"] ?? product.category}
+        </span>
         {/* Status badge */}
         <span
           className={cn(

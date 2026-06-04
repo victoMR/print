@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { mxStateCodeSchema } from './order.schema.js';
 import { CUSTOMER_PASSWORD_MAX, CUSTOMER_PASSWORD_MIN } from './customer-auth.schema.js';
 import { assetUrlSchema } from './asset-url.schema.js';
+import { productCategorySchema } from '../lib/product-categories.js';
 
 export const mrpapsOrderStatusSchema = z.enum([
   'pedido',
@@ -150,6 +151,7 @@ export const createProductSchema = z.object({
   templateId: z.string().uuid().optional(),
   composition: productCompositionSchema.optional(),
   defaultGarmentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  category: productCategorySchema.optional(),
 });
 
 export const updateProductSchema = z.object({
@@ -161,6 +163,7 @@ export const updateProductSchema = z.object({
   templateId: z.string().uuid().nullable().optional(),
   composition: productCompositionSchema.optional(),
   defaultGarmentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  category: productCategorySchema.optional(),
 });
 
 export const createVariantSchema = z.object({

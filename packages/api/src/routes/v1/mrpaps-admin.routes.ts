@@ -351,6 +351,7 @@ v1MrpapsAdminRouter.get('/products', async (_req, res, next) => {
           description: p.description,
           thumbnailUrl: p.thumbnail_url,
           status: p.status,
+          category: p.category,
           variantCount: variants.length,
         };
       }),
@@ -383,6 +384,7 @@ v1MrpapsAdminRouter.post('/products', async (req, res, next) => {
       template_id: body.templateId ?? null,
       composition: body.composition ?? {},
       default_garment_color: body.defaultGarmentColor ?? body.composition?.garmentColor ?? '#FFFFFF',
+      category: body.category ?? 'camiseta',
     });
 
     if (body.retailPriceMxn) {
@@ -405,6 +407,7 @@ v1MrpapsAdminRouter.post('/products', async (req, res, next) => {
         name: row.name,
         thumbnailUrl: row.thumbnail_url,
         status: row.status,
+        category: row.category,
       },
     });
   } catch (err) {
@@ -424,6 +427,7 @@ v1MrpapsAdminRouter.patch('/products/:productId', async (req, res, next) => {
       template_id: body.templateId,
       composition: body.composition,
       default_garment_color: body.defaultGarmentColor,
+      category: body.category,
     });
     res.json({
       data: {

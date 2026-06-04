@@ -1,5 +1,7 @@
 import * as productsRepo from '../db/mrpaps-products.repository.js';
 import * as templatesRepo from '../db/mrpaps-garment-templates.repository.js';
+import type { MrpapsProductCategory } from '../db/mrpaps.types.js';
+import { productCategorySchema } from '../lib/product-categories.js';
 import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { logger } from '../lib/logger.js';
 
@@ -39,11 +41,15 @@ async function buildProductPreview(product: Awaited<ReturnType<typeof productsRe
   };
 }
 
-export async function listPublicProducts(page = 1, limit = 24) {
+export async function listPublicProducts(
+  page = 1,
+  limit = 24,
+  category?: MrpapsProductCategory,
+) {
   const safeLimit = Math.min(Math.max(limit, 1), 48);
   const safePage = Math.max(page, 1);
 
-  const products = await productsRepo.listActiveProducts();
+  const products = await productsRepo.listActiveProducts(category);
   const total = products.length;
   const start = (safePage - 1) * safeLimit;
   const pageProducts = products.slice(start, start + safeLimit);
@@ -62,6 +68,7 @@ export async function listPublicProducts(page = 1, limit = 24) {
           slug: product.slug,
           name: product.name,
           thumbnail: product.thumbnail_url,
+          category: product.category,
           priceFromMxn,
           variantCount: variants.length,
           hasComposition: Boolean(
@@ -95,6 +102,7 @@ export async function getPublicProduct(idOrSlug: string) {
     name: product.name,
     description: product.description,
     thumbnail: product.thumbnail_url,
+    category: product.category,
     preview,
     variants: variants.map((v) => ({
       variantId: v.id,
@@ -105,6 +113,13 @@ export async function getPublicProduct(idOrSlug: string) {
       inStock: true,
     })),
   };
+}
+
+export function parseProductCategoryQuery(value: unknown): MrpapsProductCategory | undefined {
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  const parsed = productCategorySchema.safeParse(value.trim());
+  if (!parsed.success) throw new BadRequestError('Categoría de producto inválida');
+  return parsed.data;
 }
 
 export async function resolveLineItems(

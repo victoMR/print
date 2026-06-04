@@ -2,11 +2,20 @@ import { query, queryOne, queryRequired, buildUpdateSet } from '../lib/db-helper
 import type {
   MrpapsProductRow,
   MrpapsProductStatus,
+  MrpapsProductCategory,
   MrpapsProductVariantRow,
   MrpapsVariantWithProduct,
 } from './mrpaps.types.js';
 
-export async function listActiveProducts(): Promise<MrpapsProductRow[]> {
+export async function listActiveProducts(
+  category?: MrpapsProductCategory,
+): Promise<MrpapsProductRow[]> {
+  if (category) {
+    return query<MrpapsProductRow>(
+      `SELECT * FROM mrpaps_products WHERE status = 'active' AND category = $1 ORDER BY name`,
+      [category],
+    );
+  }
   return query<MrpapsProductRow>(
     `SELECT * FROM mrpaps_products WHERE status = 'active' ORDER BY name`,
   );
@@ -60,6 +69,7 @@ export async function updateProductAdmin(
     template_id: string | null;
     composition: Record<string, unknown>;
     default_garment_color: string;
+    category?: MrpapsProductCategory;
   }>,
 ): Promise<MrpapsProductRow> {
   const { clause, values } = buildUpdateSet(patch);
@@ -167,11 +177,13 @@ export async function upsertProduct(input: {
   template_id?: string | null;
   composition?: Record<string, unknown>;
   default_garment_color?: string;
+  category?: MrpapsProductCategory;
 }): Promise<MrpapsProductRow> {
   return queryRequired<MrpapsProductRow>(
     `INSERT INTO mrpaps_products (
-       slug, name, description, thumbnail_url, status, template_id, composition, default_garment_color
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       slug, name, description, thumbnail_url, status, template_id, composition,
+       default_garment_color, category
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      ON CONFLICT (slug) DO UPDATE SET
        name = EXCLUDED.name,
        description = EXCLUDED.description,
@@ -180,6 +192,7 @@ export async function upsertProduct(input: {
        template_id = EXCLUDED.template_id,
        composition = EXCLUDED.composition,
        default_garment_color = EXCLUDED.default_garment_color,
+       category = EXCLUDED.category,
        updated_at = NOW()
      RETURNING *`,
     [
@@ -191,6 +204,7 @@ export async function upsertProduct(input: {
       input.template_id ?? null,
       JSON.stringify(input.composition ?? {}),
       input.default_garment_color ?? '#FFFFFF',
+      input.category ?? 'camiseta',
     ],
   );
 }

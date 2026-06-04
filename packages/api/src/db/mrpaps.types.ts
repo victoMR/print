@@ -6,6 +6,8 @@ export type MrpapsOrderStatus =
   | 'cancelado';
 export type MrpapsProductStatus = 'active' | 'inactive' | 'archived';
 
+export type MrpapsProductCategory = 'camiseta' | 'sudadera' | 'gorra' | 'tenis';
+
 export type MrpapsUserRole = 'customer' | 'admin';
 
 export type MrpapsUserRow = {
@@ -86,6 +88,7 @@ export type MrpapsProductRow = {
   template_id: string | null;
   composition: Record<string, unknown>;
   default_garment_color: string;
+  category: MrpapsProductCategory;
   created_at: string;
   updated_at: string;
 };

@@ -77,6 +77,7 @@ export async function getAdminProductWithVariants(productId: string) {
     description: product.description,
     thumbnailUrl: product.thumbnail_url,
     status: product.status,
+    category: product.category,
     templateId: product.template_id,
     defaultGarmentColor: product.default_garment_color,
     composition: product.composition,

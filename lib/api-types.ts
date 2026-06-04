@@ -1,8 +1,11 @@
+import type { ProductCategory } from "./product-categories";
+
 export type CatalogProductSummary = {
   id: string;
   slug: string;
   name: string;
   thumbnail: string;
+  category: ProductCategory;
   priceFromMxn: string;
   variantCount: number;
   hasComposition?: boolean;
@@ -26,6 +29,7 @@ export type CatalogProductDetail = {
   name: string;
   description: string;
   thumbnail: string;
+  category: ProductCategory;
   preview?: ProductPreviewData | null;
   variants: Array<{
     variantId: string;
@@ -302,6 +306,7 @@ export type AdminProductSummary = {
   description: string;
   thumbnailUrl: string;
   status: string;
+  category: ProductCategory;
   variantCount: number;
 };
 

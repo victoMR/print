@@ -16,6 +16,7 @@ import type {
   ShippingRatesResponse,
 } from "./api-types";
 import type { CheckoutRecipient } from "./api-types";
+import type { ProductCategory } from "./product-categories";
 import { getAdminToken } from "./admin-session";
 import { getCustomerToken } from "./customer-session";
 
@@ -105,10 +106,11 @@ export function isApiConfigured(): boolean {
   return Boolean(SERVER_BASE || typeof window !== "undefined");
 }
 
-export async function fetchCatalogProducts(): Promise<CatalogListResponse | null> {
+export async function fetchCatalogProducts(category?: ProductCategory): Promise<CatalogListResponse | null> {
   if (!isApiConfigured()) return null;
   try {
-    return await apiFetch<CatalogListResponse>(`${V1}/catalog/products`);
+    const qs = category ? `?category=${encodeURIComponent(category)}` : "";
+    return await apiFetch<CatalogListResponse>(`${V1}/catalog/products${qs}`);
   } catch {
     return null;
   }
@@ -465,6 +467,7 @@ export async function adminCreateProduct(body: {
   templateId?: string;
   composition?: ProductComposition;
   defaultGarmentColor?: string;
+  category?: ProductCategory;
 }) {
   return apiFetch<{ data: AdminProductSummary }>(`${V1}/admin/products`, {
     method: "POST",
@@ -485,6 +488,7 @@ export async function adminUpdateProduct(
     templateId?: string;
     composition?: ProductComposition;
     defaultGarmentColor?: string;
+    category?: ProductCategory;
   },
 ) {
   return apiFetch(`${V1}/admin/products/${encodeURIComponent(productId)}`, {

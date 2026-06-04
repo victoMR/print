@@ -10,6 +10,11 @@ import {
 import type { AdminProductDetail } from "@/lib/api-types";
 import { GARMENT_SIZES } from "@/lib/garment-sizes";
 import { slugifyName } from "@/lib/composer-export";
+import {
+  PRODUCT_CATEGORIES,
+  PRODUCT_CATEGORY_LABELS,
+  type ProductCategory,
+} from "@/lib/product-categories";
 import { cn, formatMxn } from "@/lib/utils";
 import {
   BotyButton,
@@ -71,6 +76,7 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
   // Step 1 state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<ProductCategory>("camiseta");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
@@ -91,6 +97,7 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
       setStep("info");
       setName("");
       setDescription("");
+      setCategory("camiseta");
       setPhotoFile(null);
       setPhotoPreview(null);
       setCreatedId(null);
@@ -119,6 +126,7 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
         name: name.trim(),
         slug,
         description: description.trim() || undefined,
+        category,
       });
       const uploaded = await adminUploadAsset(photoFile, {
         kind: "thumbnails",
@@ -250,6 +258,20 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
+            </div>
+            <div className="sm:col-span-2">
+              <BotyLabel>Categoría *</BotyLabel>
+              <BotySelect
+                value={category}
+                onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                disabled={isBusy}
+              >
+                {PRODUCT_CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </BotySelect>
             </div>
           </div>
 
@@ -386,6 +408,7 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<ProductCategory>("camiseta");
   const [status, setStatus] = useState<"active" | "inactive">("active");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -407,6 +430,7 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
     // Always sync latest name/description/status (in case they changed)
     setName(product.name);
     setDescription(product.description ?? "");
+    setCategory(product.category ?? "camiseta");
     setStatus(product.status === "active" ? "active" : "inactive");
   }, [product]);
 
@@ -435,6 +459,7 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
         name: name.trim(),
         description: description.trim() || undefined,
         status,
+        category,
         ...(thumbnailUrl && { thumbnailUrl }),
       });
       onSaved();
@@ -499,6 +524,21 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
                   onChange={(e) => setName(e.target.value)}
                   disabled={busy}
                 />
+              </div>
+
+              <div>
+                <BotyLabel>Categoría</BotyLabel>
+                <BotySelect
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                  disabled={busy}
+                >
+                  {PRODUCT_CATEGORIES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </BotySelect>
               </div>
 
               {/* Status toggle */}

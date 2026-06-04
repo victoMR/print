@@ -24,6 +24,11 @@ import {
 } from "@/lib/composer-export";
 import { MockupCanvas } from "@/components/admin/MockupCanvas";
 import { GARMENT_SIZES } from "@/lib/garment-sizes";
+import {
+  PRODUCT_CATEGORIES,
+  type ProductCategory,
+  categoryFromGarmentType,
+} from "@/lib/product-categories";
 import { cn } from "@/lib/utils";
 import {
   mockupAspectRatio,
@@ -82,6 +87,7 @@ export function ProductComposer({
   const [editProductSlug, setEditProductSlug] = useState("");
 
   const [productName, setProductName] = useState("");
+  const [category, setCategory] = useState<ProductCategory>("camiseta");
   const [sku, setSku] = useState("");
   const [selectedSizes, setSelectedSizes] = useState<string[]>(["M"]);
   const [colorLabel, setColorLabel] = useState("Blanco");
@@ -108,6 +114,7 @@ export function ProductComposer({
     if (!editProductId && tRes.data[0]) {
       setTemplateId((prev) => prev || tRes.data[0].id);
       setViewId((prev) => prev || (tRes.data[0].views[0]?.id ?? ""));
+      setCategory((prev) => (prev === "camiseta" ? categoryFromGarmentType(tRes.data[0].garmentType) : prev));
     }
   }, [onError, editProductId]);
 
@@ -118,6 +125,7 @@ export function ProductComposer({
       const res = await adminGetProduct(editProductId);
       const product = res.data;
       setProductName(product.name);
+      setCategory(product.category ?? "camiseta");
       setEditProductSlug(product.slug);
       setExistingVariantIds(product.variants.map((v) => v.id));
 
@@ -328,6 +336,7 @@ export function ProductComposer({
           templateId: template.id,
           defaultGarmentColor: garmentColor,
           retailPriceMxn: price,
+          category,
         });
         productId = product.data.id;
       }
@@ -375,6 +384,7 @@ export function ProductComposer({
           templateId: template.id,
           composition,
           defaultGarmentColor: garmentColor,
+          category,
         });
 
         if (existingVariantIds.length === 0) {
@@ -496,6 +506,7 @@ export function ProductComposer({
                 setTemplateId(e.target.value);
                 const t = templates.find((x) => x.id === e.target.value);
                 setViewId(t?.views[0]?.id ?? "");
+                if (t) setCategory(categoryFromGarmentType(t.garmentType));
               }}
               className="w-full rounded-xl border border-border px-3 py-2 bg-background text-sm"
             >
@@ -538,6 +549,21 @@ export function ProductComposer({
                 className="flex-1 rounded-xl border border-border px-3 py-2 text-sm font-mono"
               />
             </div>
+          </label>
+
+          <label className="text-sm space-y-1">
+            <span className="text-muted-foreground">Categoría tienda</span>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as ProductCategory)}
+              className="w-full rounded-xl border border-border px-3 py-2 bg-background text-sm"
+            >
+              {PRODUCT_CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
