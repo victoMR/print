@@ -53,6 +53,12 @@ export async function signAdminToken(user: Pick<MrpapsUserRow, 'id' | 'email' | 
     .sign(getJwtSecret());
 }
 
+function customerJwtSecret(): Uint8Array | null {
+  const secret = process.env.CUSTOMER_JWT_SECRET;
+  if (!secret || secret.length < 32) return null;
+  return new TextEncoder().encode(secret);
+}
+
 export async function verifyAdminToken(token: string): Promise<AdminTokenPayload> {
   try {
     const { payload } = await jwtVerify(token, getJwtSecret(), {
@@ -68,7 +74,23 @@ export async function verifyAdminToken(token: string): Promise<AdminTokenPayload
       email: payload.email,
       role: 'admin',
     };
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthError) throw err;
+
+    const customerSecret = customerJwtSecret();
+    if (customerSecret) {
+      try {
+        const { payload } = await jwtVerify(token, customerSecret, { algorithms: ['HS256'] });
+        if (payload.role === 'customer') {
+          throw new AuthError(
+            'Este token es de cuenta cliente (tienda). Para /admin/* inicia sesión en el panel admin: POST /api/v1/admin/auth/login',
+          );
+        }
+      } catch (inner) {
+        if (inner instanceof AuthError) throw inner;
+      }
+    }
+
     throw new AuthError('Sesión expirada o inválida');
   }
 }
