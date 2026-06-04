@@ -7,8 +7,9 @@ export async function listPublicProducts(
   page = 1,
   limit = 24,
   category?: MrpapsProductCategory,
+  search?: string,
 ) {
-  const result = await mrpapsCatalog.listPublicProducts(page, limit, category);
+  const result = await mrpapsCatalog.listPublicProducts(page, limit, category, search);
   return {
     data: result.data.map((p) => ({
       id: p.id,

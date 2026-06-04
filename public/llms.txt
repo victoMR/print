@@ -1,0 +1,43 @@
+# Mr. Paps — Tienda POD México
+
+> Productos personalizados print-on-demand. Fulfillment Printful desde Tijuana, MX.
+> Precios al cliente en MXN (incluye IVA). Envío estimado a México: 5–14 días.
+
+## Sitio (frontend Next.js)
+
+- / — Página de inicio y marca
+- /shop — Catálogo de productos (búsqueda y filtros)
+- /product/{slug} — Detalle de producto (URL canónica para SEO)
+- /privacidad — Aviso de privacidad (LFPDPPP, derechos ARCO)
+
+## API pública (solo lectura, sin autenticación de tienda)
+
+Base: configurar `NEXT_PUBLIC_API_URL` (ej. https://api.tu-tienda.mx/api/v1)
+
+- GET /api/v1/health — Liveness
+- GET /api/v1/catalog/products — Listado de productos
+- GET /api/v1/catalog/products/:id — Detalle por id o slug
+
+Contratos completos: docs/ORCHESTRATION.md en el repositorio.
+
+## No indexar / no scrapear
+
+- /admin — Panel administración
+- /api — Rutas internas Next y proxies
+- /cuenta — Área de cliente autenticada
+- /checkout, /carrito — Flujo de compra
+- /login, /registro — Autenticación
+- /pedido, /seguimiento — Estado de pedidos privados
+- /producto — Alias redirigido a /product (evitar duplicados)
+
+## Políticas
+
+- No incluir tokens, claves Stripe ni Printful en este archivo.
+- RFC del cliente solo si solicita factura (CFDI vía PAC del comercio).
+- Aviso de privacidad: https://mrpaps.mx/privacidad (ajustar `NEXT_PUBLIC_SITE_URL` en despliegue)
+
+## Contacto
+
+- Marca: Mr. Paps
+- Privacidad: privacidad@mrpaps.mx
+- Idioma principal: español (México)

@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { RegisterForm } from "@/components/boty/register-form";
+import { noIndexRobots } from "@/lib/seo";
 
-export const metadata = { title: "Crear cuenta — Mr. Paps" };
+export const metadata: Metadata = {
+  title: "Crear cuenta",
+  robots: noIndexRobots,
+};
 
 export default function RegisterPage() {
   return (

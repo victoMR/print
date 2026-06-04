@@ -100,6 +100,20 @@ export const syncProductUpdateBodySchema = z
     { message: 'Envía name, thumbnail o al menos una variante a actualizar' },
   );
 
+/** GET /api/v1/catalog/products query */
+export const catalogProductsQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().max(48).optional(),
+  q: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : undefined)),
+});
+
+export type CatalogProductsQuery = z.infer<typeof catalogProductsQuerySchema>;
+
 export type ShippingRatesBody = z.infer<typeof shippingRatesBodySchema>;
 export type EstimateBody = z.infer<typeof estimateBodySchema>;
 export type CreateOrderBody = z.infer<typeof createOrderBodySchema>;

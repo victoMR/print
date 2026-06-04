@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LoginForm } from "@/components/boty/login-form";
+import { noIndexRobots } from "@/lib/seo";
 
-export const metadata = { title: "Iniciar sesión — Mr. Paps" };
+export const metadata: Metadata = {
+  title: "Iniciar sesión",
+  robots: noIndexRobots,
+};
 
 export default function LoginPage() {
   return (

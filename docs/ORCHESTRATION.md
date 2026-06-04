@@ -114,7 +114,7 @@ Sin prefijo `/api/v1`.
 
 Lista productos activos para la tienda.
 
-**Query:** `page` (default 1), `limit` (default 24, max 48)
+**Query:** `page` (default 1), `limit` (default 24, max 48), `category` (slug de categoría), `q` (búsqueda por nombre/slug/descripción, max 100 chars)
 
 **Response 200**
 

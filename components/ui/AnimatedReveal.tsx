@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -24,7 +24,12 @@ export function AnimatedReveal({
   delay = 0,
   direction = "up",
 }: AnimatedRevealProps) {
+  const prefersReducedMotion = useReducedMotion();
   const { x, y } = offsets[direction];
+
+  if (prefersReducedMotion) {
+    return <div className={cn(className)}>{children}</div>;
+  }
 
   const variants: Variants = {
     hidden: { opacity: 0, x, y },

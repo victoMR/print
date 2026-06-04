@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
 import { BotyCheckoutFlow } from "@/components/boty/checkout-flow";
+import { noIndexRobots } from "@/lib/seo";
 
-export const metadata = {
-  title: "Checkout — Mr. Paps",
+export const metadata: Metadata = {
+  title: "Checkout",
+  description: "Finaliza tu compra de forma segura en Mr. Paps.",
+  robots: noIndexRobots,
 };
 
 export default function CheckoutPage() {

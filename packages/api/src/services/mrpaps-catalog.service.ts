@@ -1,6 +1,7 @@
 import * as productsRepo from '../db/mrpaps-products.repository.js';
 import * as templatesRepo from '../db/mrpaps-garment-templates.repository.js';
 import type { MrpapsProductCategory } from '../db/mrpaps.types.js';
+import { catalogProductsQuerySchema } from '../schemas/api.schema.js';
 import { productCategorySchema } from '../lib/product-categories.js';
 import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { logger } from '../lib/logger.js';
@@ -45,11 +46,12 @@ export async function listPublicProducts(
   page = 1,
   limit = 24,
   category?: MrpapsProductCategory,
+  search?: string,
 ) {
   const safeLimit = Math.min(Math.max(limit, 1), 48);
   const safePage = Math.max(page, 1);
 
-  const products = await productsRepo.listActiveProducts(category);
+  const products = await productsRepo.listActiveProducts(category, search);
   const total = products.length;
   const start = (safePage - 1) * safeLimit;
   const pageProducts = products.slice(start, start + safeLimit);
@@ -119,6 +121,14 @@ export function parseProductCategoryQuery(value: unknown): MrpapsProductCategory
   if (typeof value !== 'string' || !value.trim()) return undefined;
   const parsed = productCategorySchema.safeParse(value.trim());
   if (!parsed.success) throw new BadRequestError('Categoría de producto inválida');
+  return parsed.data;
+}
+
+export function parseCatalogProductsQuery(query: Record<string, unknown>) {
+  const parsed = catalogProductsQuerySchema.safeParse(query);
+  if (!parsed.success) {
+    throw new BadRequestError('Parámetros de catálogo inválidos');
+  }
   return parsed.data;
 }
 

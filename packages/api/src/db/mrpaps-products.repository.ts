@@ -7,18 +7,31 @@ import type {
   MrpapsVariantWithProduct,
 } from './mrpaps.types.js';
 
+function escapeIlikePattern(term: string): string {
+  return term.replace(/[%_\\]/g, (ch) => `\\${ch}`);
+}
+
 export async function listActiveProducts(
   category?: MrpapsProductCategory,
+  search?: string,
 ): Promise<MrpapsProductRow[]> {
+  const params: unknown[] = [];
+  let sql = `SELECT * FROM mrpaps_products WHERE status = 'active'`;
+
   if (category) {
-    return query<MrpapsProductRow>(
-      `SELECT * FROM mrpaps_products WHERE status = 'active' AND category = $1 ORDER BY name`,
-      [category],
-    );
+    params.push(category);
+    sql += ` AND category = $${params.length}`;
   }
-  return query<MrpapsProductRow>(
-    `SELECT * FROM mrpaps_products WHERE status = 'active' ORDER BY name`,
-  );
+
+  const trimmedSearch = search?.trim();
+  if (trimmedSearch) {
+    params.push(`%${escapeIlikePattern(trimmedSearch)}%`);
+    const idx = params.length;
+    sql += ` AND (name ILIKE $${idx} ESCAPE '\\' OR slug ILIKE $${idx} ESCAPE '\\' OR COALESCE(description, '') ILIKE $${idx} ESCAPE '\\')`;
+  }
+
+  sql += ` ORDER BY name`;
+  return query<MrpapsProductRow>(sql, params);
 }
 
 export async function listProductsAdmin(): Promise<MrpapsProductRow[]> {

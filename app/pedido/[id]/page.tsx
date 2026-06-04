@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
 import { PedidoDetailContent } from "./pedido-detail-content";
+import { noIndexRobots } from "@/lib/seo";
 
 type PedidoPageProps = { params: Promise<{ id: string }> };
+
+export const metadata: Metadata = {
+  title: "Detalle del pedido",
+  robots: noIndexRobots,
+};
 
 export default async function PedidoPage({ params }: PedidoPageProps) {
   const { id } = await params;

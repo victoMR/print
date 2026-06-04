@@ -89,11 +89,11 @@ export function Footer({ variant = "full" }: FooterProps) {
               © {new Date().getFullYear()} Mr. Paps. Todos los derechos reservados.
             </p>
             <div className="flex flex-wrap justify-center gap-6">
-              <Link href="/" className="text-sm text-white/60 hover:text-white boty-transition">
-                Política de Privacidad
+              <Link href="/privacidad" className="text-sm text-white/60 hover:text-white boty-transition">
+                Aviso de privacidad
               </Link>
-              <Link href="/" className="text-sm text-white/60 hover:text-white boty-transition">
-                Términos de Servicio
+              <Link href="/shop" className="text-sm text-white/60 hover:text-white boty-transition">
+                Tienda
               </Link>
             </div>
           </div>

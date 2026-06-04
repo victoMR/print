@@ -1,19 +1,28 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
 import { ProductDetail } from "@/components/boty/product-detail";
 import { ProductUnavailable } from "@/components/boty/product-unavailable";
+import { JsonLd } from "@/components/seo/json-ld";
 import { fetchCatalogProduct } from "@/lib/api";
+import {
+  productBreadcrumbJsonLd,
+  productJsonLd,
+  productMetadata,
+} from "@/lib/seo";
 
 type ProductPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export async function generateMetadata({ params }: ProductPageProps) {
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
   const res = await fetchCatalogProduct(slug);
-  if (!res?.data) return { title: "Producto — Mr. Paps" };
-  return { title: `${res.data.name} — Mr. Paps` };
+  if (!res?.data) {
+    return { title: "Producto no encontrado" };
+  }
+  return productMetadata(res.data);
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -30,10 +39,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
     );
   }
 
+  const product = res.data;
+
   return (
     <main className="min-h-screen">
+      <JsonLd data={[productJsonLd(product), productBreadcrumbJsonLd(product)]} />
       <Header />
-      <ProductDetail product={res.data} />
+      <ProductDetail product={product} />
       <Footer />
     </main>
   );

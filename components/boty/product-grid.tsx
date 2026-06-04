@@ -202,7 +202,7 @@ export function ProductGrid() {
             Nuestra Colección
           </span>
           <h2
-            className={`font-serif leading-tight text-white mb-4 text-balance text-7xl ${headerVisible ? "animate-blur-in opacity-0" : "opacity-0"}`}
+            className={`font-serif leading-tight text-white mb-4 text-balance text-4xl sm:text-5xl md:text-6xl lg:text-7xl ${headerVisible ? "animate-blur-in opacity-0" : "opacity-0"}`}
             style={
               headerVisible
                 ? { animationDelay: "0.4s", animationFillMode: "forwards" }

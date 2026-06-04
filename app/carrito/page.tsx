@@ -1,8 +1,11 @@
 import { CartView } from "@/components/cart/CartView";
 import type { Metadata } from "next";
+import { noIndexRobots } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Carrito",
+  description: "Revisa los productos en tu carrito antes de pagar.",
+  robots: noIndexRobots,
 };
 
 export default function CarritoPage() {

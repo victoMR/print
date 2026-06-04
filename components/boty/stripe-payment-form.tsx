@@ -142,6 +142,21 @@ function InnerPaymentForm({
         onReady={() => setElementReady(true)}
         options={{
           layout: "accordion",
+          defaultValues: {
+            billingDetails: {
+              email: billing.email,
+              name: billing.name,
+              phone: billing.phone,
+              address: {
+                country: billing.country,
+                line1: billing.address1,
+                line2: billing.address2 || undefined,
+                city: billing.city,
+                state: billing.state,
+                postal_code: billing.postalCode,
+              },
+            },
+          },
           fields: {
             billingDetails: {
               name: "never",

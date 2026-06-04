@@ -4,11 +4,12 @@ import { AnimatedReveal } from "@/components/ui/AnimatedReveal";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ParallaxSection } from "@/components/ui/ParallaxSection";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 
 export function HeroParallax() {
   const ref = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
@@ -16,15 +17,28 @@ export function HeroParallax() {
   const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.3]);
 
+  const bgGlow = (
+    <div className="h-[420px] w-[420px] rounded-full bg-gradient-to-br from-indigo-400/30 to-pink-400/30 blur-3xl" />
+  );
+
   return (
     <div ref={ref} className="relative min-h-[85vh] flex items-center px-4 md:px-6">
-      <motion.div
-        style={{ y: bgY, opacity }}
-        className="pointer-events-none absolute inset-0 flex items-center justify-center"
-        aria-hidden
-      >
-        <div className="h-[420px] w-[420px] rounded-full bg-gradient-to-br from-indigo-400/30 to-pink-400/30 blur-3xl" />
-      </motion.div>
+      {prefersReducedMotion ? (
+        <div
+          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+          aria-hidden
+        >
+          {bgGlow}
+        </div>
+      ) : (
+        <motion.div
+          style={{ y: bgY, opacity }}
+          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+          aria-hidden
+        >
+          {bgGlow}
+        </motion.div>
+      )}
 
       <ParallaxSection className="mx-auto w-full max-w-6xl" speed={0.2}>
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">

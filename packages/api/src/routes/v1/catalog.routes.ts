@@ -1,15 +1,24 @@
 import { Router } from 'express';
 import * as catalogPresenter from '../../services/catalog-presenter.service.js';
-import { parseProductCategoryQuery } from '../../services/mrpaps-catalog.service.js';
+import {
+  parseCatalogProductsQuery,
+  parseProductCategoryQuery,
+} from '../../services/mrpaps-catalog.service.js';
 
 export const v1CatalogRouter: Router = Router();
 
 v1CatalogRouter.get('/products', async (req, res, next) => {
   try {
-    const page = Number(req.query.page ?? 1);
-    const limit = Number(req.query.limit ?? 24);
+    const { page, limit, q } = parseCatalogProductsQuery(
+      req.query as Record<string, unknown>,
+    );
     const category = parseProductCategoryQuery(req.query.category);
-    const result = await catalogPresenter.listPublicProducts(page, limit, category);
+    const result = await catalogPresenter.listPublicProducts(
+      page ?? 1,
+      limit ?? 24,
+      category,
+      q,
+    );
     res.json(result);
   } catch (err) {
     next(err);

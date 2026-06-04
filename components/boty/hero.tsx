@@ -2,33 +2,26 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-
-const HERO_VIDEO =
-  "https://videos.pexels.com/video-files/20136155/20136155-hd_1920_1080_60fps.mp4";
+import { BackgroundVideo } from "@/components/ui/BackgroundVideo";
+import { MEDIA } from "@/lib/media-urls";
 
 export function Hero() {
   return (
     <section className="relative flex min-h-[100svh] min-h-screen items-center overflow-hidden bg-[#F0E4E6]">
-      {/* Video de fondo */}
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
+        <BackgroundVideo
+          src={MEDIA.hero.src}
+          srcHd={MEDIA.hero.srcHd}
+          poster={MEDIA.hero.poster}
+          priority
           preload="metadata"
-          className="absolute inset-0 h-full w-full object-cover object-center"
-        >
-          <source src={HERO_VIDEO} type="video/mp4" />
-        </video>
-        {/* Overlays suaves para legibilidad sin tapar el video */}
+        />
         <div className="absolute inset-0 bg-[#F0E4E6]/15 sm:bg-[#F0E4E6]/10" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent sm:via-background/15" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/35 via-transparent to-transparent lg:from-background/30" />
       </div>
 
-      {/* Contenido */}
-      <div className="relative z-10 w-full px-4 pb-20 pt-28 sm:px-6 sm:pb-24 sm:pt-32 md:px-8 lg:pt-36">
+      <div className="relative z-10 w-full px-4 pb-20 pt-[calc(env(safe-area-inset-top,0px)+7rem)] sm:px-6 sm:pb-24 sm:pt-[calc(env(safe-area-inset-top,0px)+8rem)] md:px-8 lg:pt-[calc(env(safe-area-inset-top,0px)+9rem)]">
         <div className="mx-auto w-full max-w-7xl">
           <div className="mx-auto w-full max-w-xl text-center lg:mx-0 lg:max-w-2xl lg:text-left">
             <span
@@ -67,7 +60,7 @@ export function Hero() {
             >
               <Link
                 href="/shop"
-                className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-primary px-8 py-3.5 text-sm font-medium tracking-wide text-primary-foreground boty-shadow boty-transition hover:bg-primary/90 sm:w-auto sm:py-4"
+                className="group inline-flex min-h-11 w-full items-center justify-center gap-3 rounded-full bg-primary px-8 py-3.5 text-sm font-medium tracking-wide text-primary-foreground boty-shadow boty-transition hover:bg-primary/90 sm:w-auto sm:py-4"
               >
                 Ver colección
                 <ArrowRight className="h-4 w-4 shrink-0 group-hover:translate-x-1 boty-transition" />
@@ -77,9 +70,8 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Indicador scroll — oculto en pantallas muy bajas */}
       <div
-        className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-foreground/70 sm:bottom-8 sm:flex"
+        className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-foreground/70 sm:flex"
         aria-hidden
       >
         <span className="text-[10px] font-bold uppercase tracking-widest sm:text-xs">Scroll</span>

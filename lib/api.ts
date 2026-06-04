@@ -106,10 +106,24 @@ export function isApiConfigured(): boolean {
   return Boolean(SERVER_BASE || typeof window !== "undefined");
 }
 
-export async function fetchCatalogProducts(category?: ProductCategory): Promise<CatalogListResponse | null> {
+export type CatalogProductsParams = {
+  category?: ProductCategory;
+  q?: string;
+  page?: number;
+  limit?: number;
+};
+
+export async function fetchCatalogProducts(
+  params?: CatalogProductsParams,
+): Promise<CatalogListResponse | null> {
   if (!isApiConfigured()) return null;
   try {
-    const qs = category ? `?category=${encodeURIComponent(category)}` : "";
+    const search = new URLSearchParams();
+    if (params?.category) search.set("category", params.category);
+    if (params?.q?.trim()) search.set("q", params.q.trim());
+    if (params?.page) search.set("page", String(params.page));
+    if (params?.limit) search.set("limit", String(params.limit));
+    const qs = search.size > 0 ? `?${search.toString()}` : "";
     return await apiFetch<CatalogListResponse>(`${V1}/catalog/products${qs}`);
   } catch {
     return null;

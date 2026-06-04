@@ -15,16 +15,19 @@ export async function createPaymentIntent(input: {
   const stripe = getStripe();
   const amountCents = Math.round(input.amountMxn * 100);
 
-  const intent = await stripe.paymentIntents.create({
-    amount: amountCents,
-    currency: 'mxn',
-    automatic_payment_methods: { enabled: true },
-    metadata: {
-      order_id: input.orderId,
-      public_order_id: input.publicOrderId,
+  const intent = await stripe.paymentIntents.create(
+    {
+      amount: amountCents,
+      currency: 'mxn',
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        order_id: input.orderId,
+        public_order_id: input.publicOrderId,
+      },
+      receipt_email: input.customerEmail,
     },
-    receipt_email: input.customerEmail,
-  });
+    { idempotencyKey: `pi-${input.publicOrderId}` },
+  );
 
   await updateOrderPaymentByPublicId(input.publicOrderId, {
     stripe_payment_intent_id: intent.id,

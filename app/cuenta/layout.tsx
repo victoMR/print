@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
 import { AccountShell } from "@/components/boty/account-shell";
+import { noIndexRobots } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Mi cuenta",
+  robots: noIndexRobots,
+};
 
 export default function CuentaRouteLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { Printer, Shirt, Palette, Package } from "lucide-react"
+import { BackgroundVideo } from "@/components/ui/BackgroundVideo"
+import { MEDIA } from "@/lib/media-urls"
 
 const features = [
   {
@@ -103,15 +105,11 @@ export function FeatureSection() {
             }`}
             style={{ transitionDelay: '0ms' }}
           >
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            >
-              <source src="https://www.pexels.com/es-es/download/video/36570934/" type="video/mp4" />
-            </video>
+            <BackgroundVideo
+              src={MEDIA.featurePersonalizable.src}
+              poster={MEDIA.featurePersonalizable.poster}
+              preload="none"
+            />
             {/* Overlay Card */}
             <div className="absolute bottom-8 left-8 right-8 bg-white p-6 shadow-lg rounded-xl">
               <div className="flex items-start gap-3">
@@ -178,16 +176,12 @@ export function FeatureSection() {
             }`}
             style={{ transitionDelay: '200ms' }}
           >
-            {/* Background Video */}
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover scale-[1.02]"
-            >
-              <source src="https://www.pexels.com/es-es/download/video/8738397/" type="video/mp4" />
-            </video>
+            <BackgroundVideo
+              src={MEDIA.featureProduction.src}
+              poster={MEDIA.featureProduction.poster}
+              preload="none"
+              videoClassName="scale-[1.02]"
+            />
             {/* Overlay for text readability */}
             <div className="absolute inset-0 bg-transparent" />
             
@@ -215,15 +209,11 @@ export function FeatureSection() {
               isVideoVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
             }`}
           >
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            >
-              <source src="https://www.pexels.com/es-es/download/video/5670882/" type="video/mp4" />
-            </video>
+            <BackgroundVideo
+              src={MEDIA.featureWhy.src}
+              poster={MEDIA.featureWhy.poster}
+              preload="none"
+            />
           </div>
 
           {/* Content */}

@@ -10,7 +10,7 @@ type ProductCardProps = {
 
 export function ProductCard({ product }: ProductCardProps) {
   return (
-    <Link href={`/producto/${product.slug}`} className="group block h-full">
+    <Link href={`/product/${product.slug}`} className="group block h-full">
       <GlassCard
         as="article"
         className="flex h-full flex-col overflow-hidden hover:shadow-xl hover:shadow-indigo-500/10 transition-shadow duration-500"
