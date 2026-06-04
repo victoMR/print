@@ -722,6 +722,17 @@ export function BotyCheckoutFlow() {
               <StripePaymentForm
                 publicOrderId={publicOrderId}
                 totalMxn={formatMxn(totals.total)}
+                billing={{
+                  name: recipient.name,
+                  email: recipient.email,
+                  phone: recipient.phone,
+                  country: recipient.countryCode,
+                  address1: recipient.address1,
+                  address2: recipient.address2,
+                  city: recipient.city,
+                  state: recipient.stateCode,
+                  postalCode: recipient.zip,
+                }}
                 onSuccess={handlePaymentSuccess}
                 onError={(msg) => setError(msg)}
               />

@@ -9,20 +9,59 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import { createPaymentIntent } from "@/lib/customer-api";
+import { mxStateLabel } from "@/lib/mx-state-label";
 
 const stripePromise =
   typeof window !== "undefined" && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
     ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
     : null;
 
+/** Datos de envío del checkout — se envían a Stripe al confirmar (no se piden otra vez en el Element). */
+export type StripeCheckoutBilling = {
+  name: string;
+  email: string;
+  phone: string;
+  country: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+};
+
+function BillingSummary({ billing }: { billing: StripeCheckoutBilling }) {
+  const stateName = mxStateLabel(billing.state) ?? billing.state;
+  return (
+    <div className="rounded-2xl bg-muted/40 border border-border/50 px-4 py-3 text-sm space-y-1">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        Datos de facturación (del paso de envío)
+      </p>
+      <p className="font-medium text-foreground">{billing.name}</p>
+      <p className="text-muted-foreground">{billing.email}</p>
+      <p className="text-muted-foreground">
+        {billing.address1}
+        {billing.address2 ? `, ${billing.address2}` : ""}
+      </p>
+      <p className="text-muted-foreground">
+        {billing.city}, {stateName} {billing.postalCode}, {billing.country}
+      </p>
+      <p className="text-xs text-muted-foreground pt-1">
+        Solo ingresa los datos de tu tarjeta abajo; no hace falta repetir nombre ni dirección.
+      </p>
+    </div>
+  );
+}
+
 // ── Inner form (must be inside <Elements>) ────────────────────────────────────
 
 function InnerPaymentForm({
   publicOrderId,
+  billing,
   onSuccess,
   onError,
 }: {
   publicOrderId: string;
+  billing: StripeCheckoutBilling;
   onSuccess: () => void;
   onError: (msg: string) => void;
 }) {
@@ -30,6 +69,7 @@ function InnerPaymentForm({
   const elements = useElements();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [elementReady, setElementReady] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,30 +78,77 @@ function InnerPaymentForm({
     setBusy(true);
     setMessage(null);
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/pedido/${publicOrderId}?paid=1`,
-      },
-      redirect: "if_required",
-    });
+    try {
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        const msg = submitError.message ?? "Revisa los datos de la tarjeta";
+        setMessage(msg);
+        onError(msg);
+        return;
+      }
 
-    if (error) {
-      const msg = error.message ?? "Error al procesar el pago";
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/pedido/${encodeURIComponent(publicOrderId)}?paid=1`,
+          receipt_email: billing.email,
+          payment_method_data: {
+            billing_details: {
+              name: billing.name,
+              email: billing.email,
+              phone: billing.phone,
+              address: {
+                country: billing.country,
+                line1: billing.address1,
+                line2: billing.address2 || undefined,
+                city: billing.city,
+                state: billing.state,
+                postal_code: billing.postalCode,
+              },
+            },
+          },
+        },
+        redirect: "if_required",
+      });
+
+      if (error) {
+        const msg = error.message ?? "Error al procesar el pago";
+        setMessage(msg);
+        onError(msg);
+        return;
+      }
+
+      onSuccess();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error inesperado al pagar";
       setMessage(msg);
       onError(msg);
+    } finally {
       setBusy(false);
-    } else {
-      onSuccess();
     }
   }
 
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
+      <BillingSummary billing={billing} />
+
       <PaymentElement
+        onReady={() => setElementReady(true)}
         options={{
-          layout: "tabs",
-          fields: { billingDetails: { address: "never" } },
+          layout: "accordion",
+          fields: {
+            billingDetails: {
+              name: "never",
+              email: "never",
+              phone: "never",
+              address: "never",
+            },
+          },
+          wallets: {
+            link: "never",
+            applePay: "never",
+            googlePay: "never",
+          },
         }}
       />
 
@@ -71,7 +158,7 @@ function InnerPaymentForm({
 
       <button
         type="submit"
-        disabled={busy || !stripe}
+        disabled={busy || !stripe || !elementReady}
         className="w-full bg-primary text-primary-foreground py-3 rounded-full font-medium hover:bg-primary/90 disabled:opacity-60 transition-opacity"
       >
         {busy ? "Procesando pago…" : "Pagar ahora"}
@@ -89,11 +176,13 @@ function InnerPaymentForm({
 export function StripePaymentForm({
   publicOrderId,
   totalMxn,
+  billing,
   onSuccess,
   onError,
 }: {
   publicOrderId: string;
   totalMxn: string;
+  billing: StripeCheckoutBilling;
   onSuccess: () => void;
   onError: (msg: string) => void;
 }) {
@@ -149,6 +238,7 @@ export function StripePaymentForm({
       >
         <InnerPaymentForm
           publicOrderId={publicOrderId}
+          billing={billing}
           onSuccess={onSuccess}
           onError={onError}
         />
