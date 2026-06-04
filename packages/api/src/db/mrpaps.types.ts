@@ -143,6 +143,7 @@ export type MrpapsOrderRow = {
   shipped_at: string | null;
   stripe_payment_intent_id: string | null;
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded' | null;
+  confirmation_email_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };

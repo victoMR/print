@@ -185,7 +185,7 @@ export function BotyCheckoutFlow() {
         }
       }
 
-      // El backend selecciona automáticamente la tarifa más barata + $10 MXN
+      // El backend selecciona automáticamente la tarifa más barata
       const res = await fetchEstimate({ items: cartItems, address });
       setTotals(res.data);
       setStep("confirm");

@@ -124,9 +124,9 @@ export function getOriginFromEnv(): EnviaAddress {
     name: process.env.SHIP_ORIGIN_NAME ?? 'Mr. Paps',
     phone: process.env.SHIP_ORIGIN_PHONE ?? '+525500000000',
     street: process.env.SHIP_ORIGIN_STREET ?? 'Av. Industrial',
-    city: process.env.SHIP_ORIGIN_CITY ?? 'Tijuana',
-    stateCode: process.env.SHIP_ORIGIN_STATE ?? 'BCN',
-    zip: process.env.SHIP_ORIGIN_ZIP ?? '22000',
+    city: process.env.SHIP_ORIGIN_CITY ?? 'Querétaro',
+    stateCode: process.env.SHIP_ORIGIN_STATE ?? 'QUE',
+    zip: process.env.SHIP_ORIGIN_ZIP ?? '76000',
     country: 'MX',
   };
 }

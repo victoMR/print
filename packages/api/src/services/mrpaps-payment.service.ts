@@ -4,6 +4,7 @@ import {
   getOrderPaymentSnapshot,
   updateOrderPaymentByPublicId,
 } from '../db/mrpaps-orders.repository.js';
+import { sendOrderConfirmationEmail } from './order-confirmation-email.service.js';
 import type Stripe from 'stripe';
 
 export { isStripeConfigured };
@@ -84,6 +85,7 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string): P
     try {
       await updateOrderPaymentByPublicId(publicOrderId, { payment_status: 'paid' });
       logger.info({ publicOrderId, amountMxn: order.total_mxn }, 'Pedido marcado como pagado');
+      await sendOrderConfirmationEmail(publicOrderId);
     } catch (error) {
       logger.error({ publicOrderId, error }, 'Error al marcar pedido como pagado');
     }

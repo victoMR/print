@@ -270,6 +270,18 @@ export async function updateOrderPaymentByPublicId(
   await query(`UPDATE mrpaps_orders SET ${clause} WHERE public_id = $1`, [publicId, ...values]);
 }
 
+export async function markConfirmationEmailSent(rawPublicId: string): Promise<void> {
+  const publicId = normalizeTrackingCode(rawPublicId);
+  if (!publicId) return;
+
+  await query(
+    `UPDATE mrpaps_orders
+     SET confirmation_email_sent_at = NOW(), updated_at = NOW()
+     WHERE public_id = $1 AND confirmation_email_sent_at IS NULL`,
+    [publicId],
+  );
+}
+
 export async function listOrdersAdmin(filters?: {
   status?: MrpapsOrderStatus;
   search?: string;

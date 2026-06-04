@@ -66,7 +66,7 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
     address: addressFromRecipient(body.recipient),
   };
 
-  // Auto-select cheapest rate + $10 MXN; ignore client-supplied shippingMethod
+  // Tarifa más barata automática; ignore client-supplied shippingMethod
   const auto = await resolveAutoShippingMxn(shippingInput);
   const expected = computeRetailTotals(subtotal, auto.priceMxn);
 
