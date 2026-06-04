@@ -27,14 +27,17 @@ async function main(): Promise<void> {
   }
 
   const { connectRedis } = await import('./lib/queue.js');
+  const { isPrintfulConfigured } = await import('./lib/printful.js');
   const redisOk = await connectRedis();
 
-  if (redisOk) {
+  if (redisOk && isPrintfulConfigured()) {
     const { startWebhookWorker } = await import('./workers/webhook.worker.js');
     const worker = startWebhookWorker();
     if (worker) {
       logger.info('Worker BullMQ printful-webhook activo');
     }
+  } else if (redisOk) {
+    logger.info('Printful no configurado; worker de webhooks omitido');
   }
 
   const { createApp } = await import('./app.js');
