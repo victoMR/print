@@ -70,7 +70,7 @@ function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) 
 
   async function handleVerify(input: { trackingCode: string; email: string }) {
     const res = await trackGuestOrder(input.trackingCode, input.email);
-    saveGuestOrderAccess(input.trackingCode, input.email);
+    saveGuestOrderAccess(res.data.publicId, input.email);
     setNeedsVerification(false);
     setError(null);
     setOrder(res.data);

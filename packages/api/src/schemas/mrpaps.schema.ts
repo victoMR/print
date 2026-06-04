@@ -40,7 +40,7 @@ export const estimateBodySchema = z.object({
     quantity: z.number().int().positive(),
     retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/),
   })).min(1),
-  shippingMethod: shippingMethodSchema.default('STANDARD'),
+  shippingMethod: shippingMethodSchema.optional(),
   address: shippingRatesBodySchema.shape.address,
 });
 
@@ -50,7 +50,7 @@ export const createOrderBodySchema = z.object({
     quantity: z.number().int().positive(),
     retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/),
   })).min(1),
-  shippingMethod: shippingMethodSchema.default('STANDARD'),
+  shippingMethod: shippingMethodSchema.optional(),
   recipient: z.object({
     name: z.string().min(1),
     phone: z.string().min(10),

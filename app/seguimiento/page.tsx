@@ -12,9 +12,9 @@ export default function SeguimientoPage() {
   const router = useRouter();
 
   async function handleTrack(input: { trackingCode: string; email: string }) {
-    await trackGuestOrder(input.trackingCode, input.email);
-    saveGuestOrderAccess(input.trackingCode, input.email);
-    router.push(`/pedido/${encodeURIComponent(input.trackingCode)}`);
+    const res = await trackGuestOrder(input.trackingCode, input.email);
+    saveGuestOrderAccess(res.data.publicId, input.email);
+    router.push(`/pedido/${encodeURIComponent(res.data.publicId)}`);
   }
 
   return (

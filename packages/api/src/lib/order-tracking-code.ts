@@ -10,6 +10,13 @@ export const TRACKING_CODE_PATTERN = new RegExp(
 
 const LEGACY_HEX_PATTERN = /^[0-9a-f]{32}$/i;
 
+/** Número interno secuencial (solo admin / soporte; no usar para seguimiento público). */
+export const INTERNAL_ORDER_NUMBER_PATTERN = /^MRP-\d{4}-\d{5}$/;
+
+export type GuestTrackingLookup =
+  | { kind: 'public_id'; value: string }
+  | { kind: 'order_number'; value: string };
+
 function randomSegment(length: number): string {
   let segment = '';
   for (let i = 0; i < length; i++) {
@@ -43,6 +50,25 @@ export function normalizeTrackingCode(input: string): string | null {
 
   const legacy = trimmed.toLowerCase();
   if (LEGACY_HEX_PATTERN.test(legacy)) return legacy;
+
+  return null;
+}
+
+/**
+ * Interpreta lo que escribe el cliente en /seguimiento.
+ * Prioriza código aleatorio (public_id); acepta número interno MRP-2026-00001 por compatibilidad.
+ */
+export function parseGuestTrackingInput(input: string): GuestTrackingLookup | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  const asPublicId = normalizeTrackingCode(trimmed);
+  if (asPublicId) return { kind: 'public_id', value: asPublicId };
+
+  const upper = trimmed.toUpperCase();
+  if (INTERNAL_ORDER_NUMBER_PATTERN.test(upper)) {
+    return { kind: 'order_number', value: upper };
+  }
 
   return null;
 }

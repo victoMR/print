@@ -72,7 +72,9 @@ export default function OrdersPage() {
                     <Package className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-lg">#{order.orderNumber}</p>
+                    <p className="font-mono font-semibold text-base tracking-wide">
+                      {order.trackingCode}
+                    </p>
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {new Date(order.orderedAt).toLocaleDateString("es-MX", {
                         day: "numeric",

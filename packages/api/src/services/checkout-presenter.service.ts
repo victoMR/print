@@ -37,7 +37,6 @@ export async function getShippingRatesMxn(input: ShippingRatesBody) {
 export async function estimateCostsMxn(input: EstimateBody) {
   return mrpapsCheckout.estimateCosts({
     items: mapPricedItems(input.items),
-    shippingMethod: input.shippingMethod as 'STANDARD' | 'EXPRESS',
     address: input.address,
   });
 }
@@ -45,7 +44,6 @@ export async function estimateCostsMxn(input: EstimateBody) {
 export async function createDraftOrderPublic(body: CreateOrderBody, customerUserId?: string) {
   return mrpapsCheckout.createOrder({
     items: mapPricedItems(body.items),
-    shippingMethod: body.shippingMethod as 'STANDARD' | 'EXPRESS',
     recipient: body.recipient,
     retailCosts: body.retailCosts,
     saveAccount: (body as CreateOrderBody & { saveAccount?: boolean }).saveAccount,

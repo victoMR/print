@@ -98,6 +98,7 @@ export async function deleteAddress(id: string) {
 
 export type AccountOrder = {
   publicId: string;
+  trackingCode: string;
   orderNumber: string;
   status: string;
   statusLabel: string;

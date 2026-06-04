@@ -207,7 +207,9 @@ function stripGuestFields(detail: OrderDetailDto): OrderDetailDto {
 
 export async function mapGuestOrderDetail(order: MrpapsOrderWithItems): Promise<OrderDetailDto> {
   const events = await ordersRepo.listOrderStatusEvents(order.id);
-  return stripGuestFields(mapOrder(order, events));
+  const detail = stripGuestFields(mapOrder(order, events));
+  // No exponer el número secuencial predecible (MRP-2026-00006) a invitados.
+  return { ...detail, orderNumber: detail.trackingCode };
 }
 
 export async function getOrderDetail(

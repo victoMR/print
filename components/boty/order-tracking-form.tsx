@@ -52,7 +52,8 @@ export function OrderTrackingForm({
           className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm font-mono tracking-wide uppercase"
         />
         <p className="text-xs text-muted-foreground mt-1.5">
-          Lo recibiste al confirmar tu compra. Tiene el formato MRP-XXXX-XXXX-XXXX.
+          Es el código con letras y números (ej. MRP-K7NH-9P2W-X7M8), no el número interno
+          tipo MRP-2026-00006 de la lista de pedidos.
         </p>
       </div>
 

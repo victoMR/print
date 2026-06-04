@@ -194,3 +194,27 @@ export function getLocalShippingPriceMxn(method: string, itemCount: number): num
   const count = Math.max(1, itemCount);
   return opt.baseMxn + opt.perItemMxn * Math.max(0, count - 1);
 }
+
+const AUTO_SHIPPING_SURCHARGE_MXN = 10;
+
+/**
+ * Selects the cheapest available rate (raw cost, no percentage markup)
+ * and adds a flat $10 MXN surcharge for the customer.
+ */
+export async function resolveAutoShippingMxn(
+  input: MrpapsShippingRatesBody,
+): Promise<{ priceMxn: number; method: string; label: string }> {
+  const itemCount = input.items.reduce((s, i) => s + i.quantity, 0);
+
+  // Get raw rates without percentage markup so we pick the true cheapest
+  const { rates } = await quoteShipping(input, { forCustomer: false });
+
+  const fallback = localRates(itemCount)[0]!;
+  const cheapest = rates[0] ?? fallback; // already sorted ascending by price
+
+  return {
+    priceMxn: Number.parseFloat(cheapest.priceMxn) + AUTO_SHIPPING_SURCHARGE_MXN,
+    method: cheapest.id,
+    label: cheapest.name,
+  };
+}

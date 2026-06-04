@@ -228,7 +228,6 @@ export async function fetchEstimate(body: {
     quantity: number;
     retailPriceMxn: string;
   }>;
-  shippingMethod: string;
   address: {
     address1: string;
     address2?: string;
@@ -251,7 +250,6 @@ export async function createDraftOrder(body: {
     quantity: number;
     retailPriceMxn: string;
   }>;
-  shippingMethod: string;
   recipient: CheckoutRecipient;
   retailCosts: {
     currency: "MXN";

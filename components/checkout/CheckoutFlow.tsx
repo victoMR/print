@@ -89,7 +89,7 @@ export function CheckoutFlow() {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetchEstimate({ items: cartItems, shippingMethod, address });
+      const res = await fetchEstimate({ items: cartItems, address });
       setTotals(res.data);
       setStep("confirm");
     } catch (err) {
@@ -105,7 +105,6 @@ export function CheckoutFlow() {
     try {
       const res = await createDraftOrder({
         items: cartItems,
-        shippingMethod,
         recipient,
         retailCosts: { currency: "MXN", ...totals },
       });

@@ -165,6 +165,19 @@ export async function getOrderByPublicId(rawPublicId: string): Promise<MrpapsOrd
   return loadOrderWithItems(order);
 }
 
+export async function getOrderByOrderNumberAndEmail(
+  orderNumber: string,
+  email: string,
+): Promise<MrpapsOrderWithItems | null> {
+  const order = await queryOne<MrpapsOrderRow>(
+    `SELECT * FROM mrpaps_orders
+     WHERE order_number = $1 AND lower(customer_email) = lower($2)`,
+    [orderNumber.trim().toUpperCase(), email.trim()],
+  );
+  if (!order) return null;
+  return loadOrderWithItems(order);
+}
+
 export async function getOrderByPublicIdAndEmail(
   rawPublicId: string,
   email: string,
@@ -182,21 +195,32 @@ export async function getOrderByPublicIdAndEmail(
 }
 
 export async function getOrderForCustomer(
-  rawPublicId: string,
+  rawCode: string,
   userId: string,
   email: string,
 ): Promise<MrpapsOrderWithItems | null> {
-  const publicId = normalizeTrackingCode(rawPublicId);
-  if (!publicId) return null;
+  const publicId = normalizeTrackingCode(rawCode);
+  if (publicId) {
+    const order = await queryOne<MrpapsOrderRow>(
+      `SELECT * FROM mrpaps_orders
+       WHERE public_id = $1
+         AND (user_id = $2::uuid OR lower(customer_email) = lower($3))`,
+      [publicId, userId, email.trim()],
+    );
+    if (order) return loadOrderWithItems(order);
+  }
 
-  const order = await queryOne<MrpapsOrderRow>(
+  const orderNumber = rawCode.trim().toUpperCase();
+  if (!/^MRP-\d{4}-\d{5}$/.test(orderNumber)) return null;
+
+  const byNumber = await queryOne<MrpapsOrderRow>(
     `SELECT * FROM mrpaps_orders
-     WHERE public_id = $1
+     WHERE order_number = $1
        AND (user_id = $2::uuid OR lower(customer_email) = lower($3))`,
-    [publicId, userId, email.trim()],
+    [orderNumber, userId, email.trim()],
   );
-  if (!order) return null;
-  return loadOrderWithItems(order);
+  if (!byNumber) return null;
+  return loadOrderWithItems(byNumber);
 }
 
 export async function getOrderForPayment(rawPublicId: string): Promise<{

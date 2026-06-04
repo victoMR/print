@@ -5,6 +5,7 @@ import * as usersRepo from '../../db/mrpaps-users.repository.js';
 import { publicCustomer } from '../../services/customer-auth.service.js';
 import { mxStateCodeSchema } from '../../schemas/order.schema.js';
 import { getCustomerOrderDetail } from '../../services/mrpaps-order-tracking.service.js';
+import { formatTrackingCodeDisplay } from '../../lib/order-tracking-code.js';
 const ORDER_STATUS_LABELS: Record<string, string> = {
   pedido: 'Pedido recibido',
   solicitado_imprenta: 'Solicitado a imprenta',
@@ -132,6 +133,7 @@ v1AccountRouter.get('/orders', async (req, res, next) => {
     res.json({
       data: orders.map((o) => ({
         publicId: o.public_id,
+        trackingCode: formatTrackingCodeDisplay(o.public_id),
         orderNumber: o.order_number,
         status: o.status,
         statusLabel: (ORDER_STATUS_LABELS as Record<string, string>)[o.status] ?? o.status,

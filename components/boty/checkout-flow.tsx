@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { createDraftOrder, fetchEstimate, fetchShippingRates } from "@/lib/api";
-import type { CheckoutRecipient, ShippingRate } from "@/lib/api-types";
+import { createDraftOrder, fetchEstimate } from "@/lib/api";
+import type { CheckoutRecipient } from "@/lib/api-types";
 import { useCart } from "@/lib/cart-context";
 import { useCustomer } from "@/lib/customer-context";
 import { saveGuestOrderAccess } from "@/lib/order-guest-session";
@@ -26,16 +26,15 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Step = "address" | "rates" | "confirm" | "payment";
+type Step = "address" | "confirm" | "payment";
 
 const STEPS: { key: Step; label: string; icon: React.ElementType }[] = [
   { key: "address", label: "Dirección", icon: MapPin },
-  { key: "rates", label: "Envío", icon: Truck },
   { key: "confirm", label: "Confirmar", icon: Package },
   { key: "payment", label: "Pago", icon: CreditCard },
 ];
 
-const STEP_ORDER: Step[] = ["address", "rates", "confirm", "payment"];
+const STEP_ORDER: Step[] = ["address", "confirm", "payment"];
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -56,8 +55,6 @@ export function BotyCheckoutFlow() {
   const [saveAddress, setSaveAddress] = useState(true);
   const [addressLabel, setAddressLabel] = useState("Casa");
 
-  const [rates, setRates] = useState<ShippingRate[]>([]);
-  const [shippingMethod, setShippingMethod] = useState("STANDARD");
   const [totals, setTotals] = useState({ subtotal: "0.00", shipping: "0.00", tax: "0.00", total: "0.00" });
   const [publicOrderId, setPublicOrderId] = useState<string | null>(null);
   const [trackingCode, setTrackingCode] = useState<string | null>(null);
@@ -141,7 +138,6 @@ export function BotyCheckoutFlow() {
   };
 
   const currentStateName = MX_STATES.find((s) => s.code === recipient.stateCode)?.name ?? recipient.stateCode;
-  const selectedRate = rates.find((r) => r.id === shippingMethod);
 
   function handleClearStaleCart() {
     clearCart();
@@ -155,7 +151,7 @@ export function BotyCheckoutFlow() {
     if (step === "confirm" || step === "payment") return totals;
     return {
       subtotal: productSubtotal.toFixed(2),
-      shipping: step === "rates" ? totals.shipping : "—",
+      shipping: "—",
       tax: "—",
       total: productSubtotal.toFixed(2),
     };
@@ -189,34 +185,12 @@ export function BotyCheckoutFlow() {
         }
       }
 
-      const res = await fetchShippingRates({
-        items: cartItems,
-        address,
-        recipient: { name: recipient.name, phone: recipient.phone, email: recipient.email },
-      });
-      if (res.data.rates.length === 0) {
-        setError("No hay opciones de envío disponibles para esta dirección. Verifica el código postal.");
-        return;
-      }
-      setRates(res.data.rates);
-      setShippingMethod(res.data.rates[0]?.id ?? "STANDARD");
-      setStep("rates");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cotizar el envío. Intenta de nuevo.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleRatesContinue() {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetchEstimate({ items: cartItems, shippingMethod, address });
+      // El backend selecciona automáticamente la tarifa más barata + $10 MXN
+      const res = await fetchEstimate({ items: cartItems, address });
       setTotals(res.data);
       setStep("confirm");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al calcular totales");
+      setError(err instanceof Error ? err.message : "No se pudo calcular el envío. Verifica la dirección e intenta de nuevo.");
     } finally {
       setBusy(false);
     }
@@ -227,7 +201,7 @@ export function BotyCheckoutFlow() {
     setError(null);
     try {
       const res = await createDraftOrder({
-        items: cartItems, shippingMethod, recipient,
+        items: cartItems, recipient,
         retailCosts: { currency: "MXN", ...totals },
         saveAccount: !user,
       });
@@ -555,75 +529,11 @@ export function BotyCheckoutFlow() {
                 disabled={busy || (!user && !recipient.address1) || (!!user && !selectedAddressId)}
                 className="w-full bg-primary text-primary-foreground py-3.5 rounded-full font-medium hover:bg-primary/90 boty-transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {busy ? "Cotizando…" : (
-                  <>Cotizar envío <ChevronRight className="w-4 h-4" /></>
+                {busy ? "Calculando envío…" : (
+                  <>Siguiente <ChevronRight className="w-4 h-4" /></>
                 )}
               </button>
             </form>
-          )}
-
-          {/* ── STEP: RATES ────────────────────────────────────────────── */}
-          {step === "rates" && (
-            <div className="bg-card rounded-3xl p-6 boty-shadow space-y-4">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => { setStep("address"); setError(null); }}
-                  className="rounded-full p-2 hover:bg-muted boty-transition text-muted-foreground"
-                  aria-label="Volver a dirección"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-                <h2 className="font-serif text-xl">Opciones de envío</h2>
-              </div>
-
-              <AddressConfirmBanner recipient={recipient} stateName={currentStateName} />
-
-              <div className="space-y-2">
-                {rates.map((rate) => (
-                  <button
-                    key={rate.id}
-                    type="button"
-                    onClick={() => setShippingMethod(rate.id)}
-                    className={cn(
-                      "w-full flex items-center justify-between rounded-2xl border-2 p-4 text-left boty-transition",
-                      shippingMethod === rate.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/40",
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center",
-                        shippingMethod === rate.id ? "border-primary bg-primary" : "border-border",
-                      )}>
-                        {shippingMethod === rate.id && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{rate.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {rate.minDays}–{rate.maxDays} días hábiles
-                          {rate.carrier && ` · ${rate.carrier}`}
-                          {rate.estimated && " · tarifa estimada"}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-semibold text-sm">{formatMxn(rate.priceMxn)}</span>
-                  </button>
-                ))}
-              </div>
-
-              {error && <ErrorBanner message={error} onClearCart={staleCartAction} />}
-
-              <button
-                type="button"
-                onClick={() => void handleRatesContinue()}
-                disabled={busy}
-                className="w-full bg-primary text-primary-foreground py-3.5 rounded-full font-medium hover:bg-primary/90 boty-transition disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {busy ? "Calculando…" : (<>Continuar al resumen <ChevronRight className="w-4 h-4" /></>)}
-              </button>
-            </div>
           )}
 
           {/* ── STEP: CONFIRM ──────────────────────────────────────────── */}
@@ -632,9 +542,9 @@ export function BotyCheckoutFlow() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => { setStep("rates"); setError(null); }}
+                  onClick={() => { setStep("address"); setError(null); }}
                   className="rounded-full p-2 hover:bg-muted boty-transition text-muted-foreground"
-                  aria-label="Volver a opciones de envío"
+                  aria-label="Volver a dirección"
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </button>
@@ -652,21 +562,16 @@ export function BotyCheckoutFlow() {
                 <p className="text-sm text-muted-foreground">{recipient.phone}</p>
               </div>
 
-              {/* Shipping method */}
-              {selectedRate && (
-                <div className="rounded-2xl bg-muted/40 p-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                    <Truck className="w-3.5 h-3.5" /> Método de envío
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{selectedRate.name}</p>
-                      <p className="text-xs text-muted-foreground">{selectedRate.minDays}–{selectedRate.maxDays} días hábiles</p>
-                    </div>
-                    <span className="text-sm font-semibold">{formatMxn(selectedRate.priceMxn)}</span>
-                  </div>
+              {/* Shipping info */}
+              <div className="rounded-2xl bg-muted/40 p-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <Truck className="w-3.5 h-3.5" /> Envío
+                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">Calculado automáticamente</p>
+                  <span className="text-sm font-semibold">{formatMxn(totals.shipping)}</span>
                 </div>
-              )}
+              </div>
 
               {/* Totals breakdown */}
               <div className="space-y-2 text-sm border-t border-border/50 pt-4">
@@ -804,9 +709,9 @@ export function BotyCheckoutFlow() {
               </div>
             </div>
 
-            {(step === "address" || step === "rates") && (
+            {step === "address" && (
               <p className="text-xs text-muted-foreground text-center">
-                Envío e IVA se calculan al ingresar tu dirección
+                Envío e IVA se calculan al confirmar tu dirección
               </p>
             )}
           </div>

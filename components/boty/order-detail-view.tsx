@@ -81,13 +81,15 @@ export function OrderDetailView({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider">
-              {variant === "public" ? "Código de seguimiento" : "Pedido"}
+              Código de seguimiento
             </p>
             <h2 className="font-serif text-2xl md:text-3xl mt-1 font-mono tracking-wide">
-              {variant === "public" ? order.trackingCode : `#${order.orderNumber}`}
+              {order.trackingCode}
             </h2>
             {variant === "account" && (
-              <p className="text-xs text-muted-foreground mt-1 font-mono">{order.trackingCode}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Ref. interna (solo soporte): {order.orderNumber}
+              </p>
             )}
             <p className="text-xs text-muted-foreground mt-2">
               {new Date(order.orderedAt).toLocaleString("es-MX", {

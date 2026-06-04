@@ -5,7 +5,7 @@ import {
   quoteShipping,
 } from './shipping/shipping-quote.service.js';
 
-export { quoteShipping, resolveShippingPriceMxn } from './shipping/shipping-quote.service.js';
+export { quoteShipping, resolveShippingPriceMxn, resolveAutoShippingMxn } from './shipping/shipping-quote.service.js';
 export type { ShippingQuoteRate, ShippingQuoteResult } from './shipping/shipping-quote.types.js';
 
 export async function getShippingRates(input: MrpapsShippingRatesBody) {

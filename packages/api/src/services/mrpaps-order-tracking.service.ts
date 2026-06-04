@@ -1,24 +1,33 @@
 import * as ordersRepo from '../db/mrpaps-orders.repository.js';
-import { normalizeTrackingCode } from '../lib/order-tracking-code.js';
+import { parseGuestTrackingInput } from '../lib/order-tracking-code.js';
 import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { getOrderDetail, mapGuestOrderDetail, type OrderDetailDto } from './mrpaps-order-detail.service.js';
 
 const GUEST_LOOKUP_MESSAGE = 'No encontramos un pedido con ese código y correo.';
 
-function assertValidTrackingCode(raw: string): string {
-  const normalized = normalizeTrackingCode(raw);
-  if (!normalized) {
-    throw new BadRequestError('Código de seguimiento inválido. Debe tener el formato MRP-XXXX-XXXX-XXXX.');
+const INVALID_CODE_MESSAGE =
+  'Código no reconocido. Usa el código de seguimiento que recibiste al comprar (formato MRP-XXXX-XXXX-XXXX con letras y números). ' +
+  'El número MRP-2026-00006 es solo referencia interna en "Mis pedidos"; si lo tienes, también puedes usarlo junto con tu correo.';
+
+async function findOrderByGuestCodeAndEmail(code: string, email: string) {
+  const parsed = parseGuestTrackingInput(code);
+  if (!parsed) return null;
+
+  if (parsed.kind === 'public_id') {
+    return ordersRepo.getOrderByPublicIdAndEmail(parsed.value, email);
   }
-  return normalized;
+
+  return ordersRepo.getOrderByOrderNumberAndEmail(parsed.value, email);
 }
 
 export async function trackGuestOrder(input: {
   trackingCode: string;
   email: string;
 }): Promise<OrderDetailDto> {
-  const publicId = assertValidTrackingCode(input.trackingCode);
-  const order = await ordersRepo.getOrderByPublicIdAndEmail(publicId, input.email);
+  const parsed = parseGuestTrackingInput(input.trackingCode);
+  if (!parsed) throw new BadRequestError(INVALID_CODE_MESSAGE);
+
+  const order = await findOrderByGuestCodeAndEmail(input.trackingCode, input.email);
   if (!order) throw new NotFoundError(GUEST_LOOKUP_MESSAGE);
   return mapGuestOrderDetail(order);
 }
@@ -35,8 +44,7 @@ export async function getCustomerOrderDetail(
   userId: string,
   email: string,
 ): Promise<OrderDetailDto> {
-  const publicId = assertValidTrackingCode(trackingCode);
-  const order = await ordersRepo.getOrderForCustomer(publicId, userId, email);
+  const order = await ordersRepo.getOrderForCustomer(trackingCode, userId, email);
   if (!order) throw new NotFoundError('Pedido no encontrado');
-  return getOrderDetail(publicId, order);
+  return getOrderDetail(order.public_id, order);
 }

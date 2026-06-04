@@ -1,6 +1,5 @@
 import type {
   MrpapsCreateOrderBody,
-  MrpapsEstimateBody,
   MrpapsShippingRatesBody,
 } from '../schemas/mrpaps.schema.js';
 import * as catalog from './mrpaps-catalog.service.js';
@@ -8,9 +7,8 @@ import * as ordersRepo from '../db/mrpaps-orders.repository.js';
 import * as usersRepo from '../db/mrpaps-users.repository.js';
 import { resolvePrintFileUrl } from './mrpaps-print.service.js';
 import {
-  getShippingLabel,
   getShippingRates as fetchShippingRates,
-  resolveShippingPriceMxn,
+  resolveAutoShippingMxn,
 } from './mrpaps-shipping.service.js';
 import { BadRequestError } from '../types/errors.js';
 import { getGuestOrderByCodeAndEmail } from './mrpaps-order-tracking.service.js';
@@ -44,20 +42,19 @@ export async function getShippingRates(input: MrpapsShippingRatesBody) {
   return fetchShippingRates(input);
 }
 
-export async function estimateCosts(input: MrpapsEstimateBody) {
+type EstimateInput = { items: MrpapsShippingRatesBody['items']; address: MrpapsShippingRatesBody['address'] };
+
+export async function estimateCosts(input: EstimateInput) {
   const lines = await catalog.resolveLineItems(input.items);
   const subtotal = lines.reduce((sum, l) => sum + l.unitPriceMxn * l.quantity, 0);
-  const shipping = await resolveShippingPriceMxn(
-    { items: input.items, address: input.address },
-    input.shippingMethod,
-    true,
-  );
-  const totals = computeRetailTotals(subtotal, shipping);
+
+  const auto = await resolveAutoShippingMxn({ items: input.items, address: input.address });
+  const totals = computeRetailTotals(subtotal, auto.priceMxn);
 
   return {
     currency: 'MXN' as const,
     ...totals,
-    shippingMethod: input.shippingMethod,
+    shippingMethod: auto.method,
   };
 }
 
@@ -68,12 +65,10 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
     items: body.items,
     address: addressFromRecipient(body.recipient),
   };
-  const shipping = await resolveShippingPriceMxn(
-    shippingInput,
-    body.shippingMethod,
-    true,
-  );
-  const expected = computeRetailTotals(subtotal, shipping);
+
+  // Auto-select cheapest rate + $10 MXN; ignore client-supplied shippingMethod
+  const auto = await resolveAutoShippingMxn(shippingInput);
+  const expected = computeRetailTotals(subtotal, auto.priceMxn);
 
   if (
     body.retailCosts.subtotal !== expected.subtotal ||
@@ -147,8 +142,8 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
     ship_state_code: body.recipient.stateCode,
     ship_country_code: body.recipient.countryCode,
     ship_zip: body.recipient.zip,
-    shipping_method: body.shippingMethod,
-    shipping_label: await getShippingLabel(shippingInput, body.shippingMethod),
+    shipping_method: auto.method,
+    shipping_label: auto.label,
     subtotal_mxn: Number(expected.subtotal),
     shipping_mxn: Number(expected.shipping),
     tax_mxn: Number(expected.tax),
