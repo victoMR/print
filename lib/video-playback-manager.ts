@@ -1,4 +1,8 @@
-/** Orquestador global: reproduce el video más visible (Safari solo tolera uno activo). */
+/**
+ * Orquestador global de videos de fondo.
+ * Safari/iOS solo reproduce de forma fiable un video a la vez, así que
+ * elegimos el más visible del viewport y pausamos el resto.
+ */
 
 export type VideoTier = "hero" | "feature";
 
@@ -13,9 +17,10 @@ const registry = new Map<string, VideoEntry>();
 let activeId: string | null = null;
 let syncScheduled = false;
 
-const MIN_RATIO = 0.06;
-/** Hero conserva prioridad si aún ocupa gran parte del viewport. */
-const HERO_HANDOFF_RATIO = 0.35;
+/** Visibilidad mínima para considerar un video reproducible. */
+const MIN_RATIO = 0.05;
+/** El hero mantiene prioridad mientras ocupe buena parte de la pantalla. */
+const HERO_HANDOFF_RATIO = 0.3;
 
 function pickWinner(): VideoEntry | null {
   let hero: VideoEntry | null = null;
@@ -35,30 +40,49 @@ function pickWinner(): VideoEntry | null {
   return hero;
 }
 
+function ensurePlaying(video: HTMLVideoElement): void {
+  if (!video.paused) return;
+
+  const attempt = video.play();
+  if (attempt && typeof attempt.then === "function") {
+    attempt.catch(() => {
+      // Autoplay puede fallar si aún no hay datos: reintenta una vez al poder reproducir.
+      const retry = () => {
+        video.removeEventListener("canplay", retry);
+        video.play().catch(() => {});
+      };
+      video.addEventListener("canplay", retry, { once: true });
+    });
+  }
+}
+
+function ensurePaused(video: HTMLVideoElement): void {
+  if (!video.paused) video.pause();
+}
+
 function syncPlayback(): void {
   syncScheduled = false;
   const winner = pickWinner();
 
   for (const entry of registry.values()) {
     if (winner && entry.id === winner.id) {
-      if (activeId !== entry.id) {
-        activeId = entry.id;
-        void entry.video.play().catch(() => {
-          if (activeId === entry.id) activeId = null;
-        });
-      }
-    } else if (!entry.video.paused) {
-      entry.video.pause();
+      ensurePlaying(entry.video);
+    } else {
+      ensurePaused(entry.video);
     }
   }
 
-  if (!winner) activeId = null;
+  activeId = winner?.id ?? null;
 }
 
 function scheduleSync(): void {
   if (syncScheduled) return;
   syncScheduled = true;
-  requestAnimationFrame(syncPlayback);
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(syncPlayback);
+  } else {
+    setTimeout(syncPlayback, 16);
+  }
 }
 
 export function registerBackgroundVideo(
@@ -73,18 +97,15 @@ export function registerBackgroundVideo(
 
 export function unregisterBackgroundVideo(id: string): void {
   const entry = registry.get(id);
-  if (entry && !entry.video.paused) entry.video.pause();
+  if (entry) ensurePaused(entry.video);
   registry.delete(id);
   if (activeId === id) activeId = null;
   scheduleSync();
 }
 
-export function updateBackgroundVideoVisibility(
-  id: string,
-  ratio: number,
-): void {
+export function updateBackgroundVideoVisibility(id: string, ratio: number): void {
   const entry = registry.get(id);
-  if (!entry) return;
+  if (!entry || entry.ratio === ratio) return;
   entry.ratio = ratio;
   scheduleSync();
 }

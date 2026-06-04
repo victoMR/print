@@ -47,9 +47,6 @@ export function Header({ className }: { className?: string }) {
             <Link href="/seguimiento" className="text-sm tracking-wide text-foreground/70 hover:text-foreground boty-transition">
               Seguimiento
             </Link>
-            <Link href="/" className="text-sm tracking-wide text-foreground/70 hover:text-foreground boty-transition">
-              About
-            </Link>
           </div>
 
           <Link href="/" className="absolute left-1/2 -translate-x-1/2">

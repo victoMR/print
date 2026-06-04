@@ -10,11 +10,6 @@ const footerLinks = {
     { name: "Checkout", href: "/checkout" },
     { name: "Mi cuenta", href: "/cuenta" },
   ],
-  about: [
-    { name: "Nuestra Historia", href: "/" },
-    { name: "Cómo Funciona", href: "/" },
-    { name: "Calidad", href: "/" },
-  ],
   support: [
     { name: "Contacto", href: "/" },
     { name: "Preguntas Frecuentes", href: "/" },

@@ -15,7 +15,7 @@ type BackgroundVideoProps = {
   poster: string;
   className?: string;
   videoClassName?: string;
-  /** hero = viewport inicial; feature = secciones inferiores con 3+ videos */
+  /** hero = viewport inicial; feature = secciones inferiores con varios videos */
   tier?: VideoTier;
   preload?: "none" | "metadata" | "auto";
 };
@@ -39,14 +39,14 @@ export function BackgroundVideo({
   className,
   videoClassName,
   tier = "feature",
-  preload = "none",
+  preload = "metadata",
 }: BackgroundVideoProps) {
   const instanceId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [hdSrc, setHdSrc] = useState(false);
-  const [playing, setPlaying] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
   const resolvedSrc = hdSrc && srcHd ? srcHd : src;
 
   useEffect(() => {
@@ -72,35 +72,43 @@ export function BackgroundVideo({
     if (!container || !video || reducedMotion) return;
 
     configureSafariVideo(video);
+    // Asegura que el <video> tome el src actual (SD/HD) antes de reproducir.
+    if (video.getAttribute("src") !== resolvedSrc) {
+      video.setAttribute("src", resolvedSrc);
+      video.load();
+    }
+
     registerBackgroundVideo(instanceId, video, 0, tier);
 
-    const syncOpacity = () => {
-      setPlaying(!video.paused && video.readyState >= 2);
-    };
-    video.addEventListener("playing", syncOpacity);
-    video.addEventListener("pause", syncOpacity);
-    video.addEventListener("loadeddata", syncOpacity);
+    const onPlaying = () => setShowVideo(true);
+    const onPause = () => setShowVideo(false);
+    const onEnded = () => setShowVideo(false);
+    video.addEventListener("playing", onPlaying);
+    video.addEventListener("timeupdate", onPlaying);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("emptied", onEnded);
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
+      (entries) => {
+        const entry = entries[0];
         const ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
         updateBackgroundVideoVisibility(instanceId, ratio);
       },
       {
-        rootMargin: tier === "hero" ? "0px" : "60px 0px",
-        threshold: [0, 0.06, 0.15, 0.35, 0.5, 0.75, 1],
+        rootMargin: tier === "hero" ? "0px" : "100px 0px",
+        threshold: [0, 0.05, 0.15, 0.3, 0.5, 0.75, 1],
       },
     );
-
     observer.observe(container);
 
     return () => {
       observer.disconnect();
-      video.removeEventListener("playing", syncOpacity);
-      video.removeEventListener("pause", syncOpacity);
-      video.removeEventListener("loadeddata", syncOpacity);
+      video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("timeupdate", onPlaying);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("emptied", onEnded);
       unregisterBackgroundVideo(instanceId);
-      setPlaying(false);
+      setShowVideo(false);
     };
   }, [reducedMotion, tier, resolvedSrc, instanceId]);
 
@@ -114,26 +122,22 @@ export function BackgroundVideo({
       {!reducedMotion && (
         <video
           ref={videoRef}
+          // src se asigna en el efecto para controlar SD/HD y forzar load()
           muted
           loop
           playsInline
           controls={false}
           disablePictureInPicture
           disableRemotePlayback
-          preload={tier === "hero" ? "metadata" : preload}
+          preload={tier === "hero" ? "auto" : preload}
           poster={poster}
           aria-hidden
           className={cn(
             "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700",
-            playing ? "opacity-100" : "opacity-0",
+            showVideo ? "opacity-100" : "opacity-0",
             videoClassName,
           )}
-        >
-          <source
-            src={resolvedSrc}
-            type="video/mp4; codecs=avc1.42E01E, mp4a.40.2"
-          />
-        </video>
+        />
       )}
     </div>
   );
