@@ -108,10 +108,10 @@ export function FeatureSection() {
             <BackgroundVideo
               src={MEDIA.featurePersonalizable.src}
               poster={MEDIA.featurePersonalizable.poster}
-              preload="none"
+              preload="metadata"
             />
-            {/* Overlay Card */}
-            <div className="absolute bottom-8 left-8 right-8 bg-white p-6 shadow-lg rounded-xl">
+            {/* Overlay Card — pointer-events-none para no bloquear hover/tap del video */}
+            <div className="pointer-events-none absolute bottom-8 left-8 right-8 bg-white p-6 shadow-lg rounded-xl">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
                   
@@ -179,13 +179,13 @@ export function FeatureSection() {
             <BackgroundVideo
               src={MEDIA.featureProduction.src}
               poster={MEDIA.featureProduction.poster}
-              preload="none"
+              preload="metadata"
               videoClassName="scale-[1.02]"
             />
             {/* Overlay for text readability */}
             <div className="absolute inset-0 bg-transparent" />
             
-            <div className="relative z-10 flex flex-col justify-center h-full text-left items-start">
+            <div className="relative z-10 flex flex-col justify-center h-full text-left items-start pointer-events-none">
               <div className="inline-flex items-center justify-center w-10 h-10 mb-3">
                 <Printer className="w-8 h-8 text-black" />
               </div>
@@ -212,7 +212,7 @@ export function FeatureSection() {
             <BackgroundVideo
               src={MEDIA.featureWhy.src}
               poster={MEDIA.featureWhy.poster}
-              preload="none"
+              preload="metadata"
             />
           </div>
 

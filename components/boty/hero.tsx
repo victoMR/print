@@ -8,17 +8,17 @@ import { MEDIA } from "@/lib/media-urls";
 export function Hero() {
   return (
     <section className="relative flex min-h-[100svh] min-h-screen items-center overflow-hidden bg-[#F0E4E6]">
-      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+      <div className="absolute inset-0 z-0" aria-hidden>
         <BackgroundVideo
           src={MEDIA.hero.src}
           srcHd={MEDIA.hero.srcHd}
           poster={MEDIA.hero.poster}
-          tier="hero"
+          pauseOnLeave={false}
           preload="metadata"
         />
-        <div className="absolute inset-0 bg-[#F0E4E6]/15 sm:bg-[#F0E4E6]/10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent sm:via-background/15" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/35 via-transparent to-transparent lg:from-background/30" />
+        <div className="pointer-events-none absolute inset-0 bg-[#F0E4E6]/15 sm:bg-[#F0E4E6]/10" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent sm:via-background/15" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background/35 via-transparent to-transparent lg:from-background/30" />
       </div>
 
       <div className="relative z-10 w-full px-4 pb-20 pt-[calc(env(safe-area-inset-top,0px)+7rem)] sm:px-6 sm:pb-24 sm:pt-[calc(env(safe-area-inset-top,0px)+8rem)] md:px-8 lg:pt-[calc(env(safe-area-inset-top,0px)+9rem)]">

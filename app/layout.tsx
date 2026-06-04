@@ -4,7 +4,6 @@ import { Analytics } from "@vercel/analytics/next";
 import { CartProvider } from "@/lib/cart-context";
 import { CustomerProvider } from "@/lib/customer-context";
 import { JsonLd } from "@/components/seo/json-ld";
-import { MEDIA } from "@/lib/media-urls";
 import {
   DEFAULT_DESCRIPTION,
   SITE_NAME,
@@ -60,15 +59,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <head>
-        {/* Ruta relativa — evita localhost en preload si NEXT_PUBLIC_SITE_URL es de dev */}
-        <link
-          rel="preload"
-          as="image"
-          href={MEDIA.hero.poster}
-          fetchPriority="high"
-        />
-      </head>
       <body
         className={`${dmSans.variable} ${playfairDisplay.variable} font-sans antialiased`}
       >
