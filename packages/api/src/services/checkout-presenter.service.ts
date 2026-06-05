@@ -47,6 +47,7 @@ export async function createDraftOrderPublic(body: CreateOrderBody, customerUser
     recipient: body.recipient,
     retailCosts: body.retailCosts,
     saveAccount: (body as CreateOrderBody & { saveAccount?: boolean }).saveAccount,
+    acceptedLegal: body.acceptedLegal,
     customerUserId,
   });
 }

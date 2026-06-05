@@ -19,4 +19,5 @@ export type CustomerSessionUser = {
   fullName: string;
   phone: string | null;
   role: "customer";
+  emailVerified?: boolean;
 };

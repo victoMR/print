@@ -13,6 +13,7 @@ export type RegisterFormInput = {
   confirmPassword: string;
   fullName: string;
   phone: string;
+  acceptedLegal: boolean;
 };
 
 export function normalizeRegisterPayload(form: RegisterFormInput) {
@@ -21,6 +22,8 @@ export function normalizeRegisterPayload(form: RegisterFormInput) {
     password: form.password,
     fullName: form.fullName.trim(),
     phone: form.phone.trim() || undefined,
+    acceptedTerms: true as const,
+    acceptedPrivacy: true as const,
   };
 }
 
@@ -50,6 +53,10 @@ export function validateRegisterForm(form: RegisterFormInput): string | null {
   const phone = form.phone.trim();
   if (phone && phone.length < 10) {
     return "Si agregas teléfono, debe tener al menos 10 dígitos.";
+  }
+
+  if (!form.acceptedLegal) {
+    return "Debes aceptar los Términos y Condiciones y el Aviso de Privacidad.";
   }
 
   return null;

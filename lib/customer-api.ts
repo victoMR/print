@@ -21,14 +21,41 @@ async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
 // Contraseña en texto plano solo por HTTPS → API aplica bcrypt y responde JWT.
 // No hashear en el cliente (bcrypt/SHA256 aquí rompería el login).
 
-export async function customerRegister(body: { email: string; password: string; fullName: string; phone?: string }) {
-  const result = await apiFetch<{ data: { token: string; user: CustomerSessionUser } }>(`${V1}/auth/register`, {
+export type RegisterResult = {
+  requiresEmailVerification: true;
+  email: string;
+};
+
+export async function customerRegister(body: {
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string;
+  acceptedTerms: true;
+  acceptedPrivacy: true;
+}): Promise<RegisterResult> {
+  const result = await apiFetch<{ data: RegisterResult; message?: string }>(`${V1}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  setCustomerToken(result.data.token);
-  return result.data.user;
+  return result.data;
+}
+
+export async function verifyCustomerEmail(token: string) {
+  return apiFetch<{ data: { email: string }; message?: string }>(`${V1}/auth/verify-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function resendVerificationEmail(email: string) {
+  return apiFetch<{ message: string }>(`${V1}/auth/resend-verification`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
 }
 
 export async function customerLogin(email: string, password: string) {

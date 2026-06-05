@@ -72,6 +72,9 @@ export const createOrderBodySchema = z.object({
     total: z.string().regex(/^\d+\.\d{2}$/),
   }),
   saveAccount: z.boolean().optional(),
+  acceptedLegal: z.literal(true, {
+    errorMap: () => ({ message: 'Debes aceptar los Términos y el Aviso de Privacidad' }),
+  }).optional(),
   /** Solo desde JWT en checkout; no enviar desde el cliente */
   customerUserId: z.string().uuid().optional(),
 });

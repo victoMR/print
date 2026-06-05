@@ -12,6 +12,7 @@ import {
 } from './mrpaps-shipping.service.js';
 import { BadRequestError } from '../types/errors.js';
 import { getGuestOrderByCodeAndEmail } from './mrpaps-order-tracking.service.js';
+import { LEGAL_VERSION } from './email-verification.service.js';
 
 function addressFromRecipient(recipient: MrpapsCreateOrderBody['recipient']) {
   return {
@@ -59,6 +60,23 @@ export async function estimateCosts(input: EstimateInput) {
 }
 
 export async function createOrder(body: MrpapsCreateOrderBody) {
+  const now = new Date().toISOString();
+
+  if (body.customerUserId) {
+    const account = await usersRepo.findUserById(body.customerUserId);
+    if (!account || account.role !== 'customer') {
+      throw new BadRequestError('Sesión de cliente no válida');
+    }
+    if (!account.email_verified_at) {
+      throw new BadRequestError('Verifica tu correo antes de realizar un pedido.');
+    }
+    if (!account.terms_accepted_at || !account.privacy_accepted_at) {
+      throw new BadRequestError('Debes aceptar los Términos y el Aviso de Privacidad en tu cuenta.');
+    }
+  } else if (!body.acceptedLegal) {
+    throw new BadRequestError('Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para continuar.');
+  }
+
   const lines = await catalog.resolveLineItems(body.items);
   const subtotal = lines.reduce((sum, l) => sum + l.unitPriceMxn * l.quantity, 0);
   const shippingInput = {
@@ -91,6 +109,10 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
       tax_number: body.recipient.taxNumber ?? null,
     });
     userId = user.id;
+
+    if (body.acceptedLegal) {
+      await usersRepo.recordLegalAcceptance(user.id, LEGAL_VERSION);
+    }
 
     await usersRepo.saveAddress({
       user_id: user.id,
@@ -132,6 +154,8 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
     public_id: publicId,
     order_number: orderNumber,
     user_id: userId,
+    terms_accepted_at: body.customerUserId || body.acceptedLegal ? now : null,
+    legal_accepted_version: body.customerUserId || body.acceptedLegal ? LEGAL_VERSION : null,
     customer_name: body.recipient.name,
     customer_email: body.recipient.email.toLowerCase(),
     customer_phone: body.recipient.phone,

@@ -1,0 +1,235 @@
+MR. PAPS
+
+mrpapshop.com
+
+TÉRMINOS Y CONDICIONES DE USO Y COMPRA
+
+Versión 1.0 · Última actualización: Junio de 2026
+
+1. Generalidades y Aceptación
+
+Los presentes Términos y Condiciones (en adelante "Términos") regulan el acceso, navegación y uso del sitio web mrpapshop.com (en adelante el "Sitio"), así como la adquisición de productos a través del mismo, operado por [RAZÓN SOCIAL COMPLETA], RFC [RFC], con domicilio en [DOMICILIO FISCAL] (en adelante "Mr. Paps").
+
+Al acceder al Sitio, registrarse como usuario o realizar una compra, el usuario (en adelante el "Comprador" o "Usuario") acepta de manera plena, expresa e irrevocable los presentes Términos en su totalidad. Si el Usuario no está de acuerdo con alguna de las disposiciones aquí contenidas, deberá abstenerse de utilizar el Sitio o adquirir productos.
+
+Mr. Paps se reserva el derecho de modificar los presentes Términos en cualquier momento. Las modificaciones entrarán en vigor en el momento de su publicación en el Sitio. El uso continuado del Sitio después de publicadas las modificaciones implica la aceptación de los Términos actualizados.
+
+2. Descripción del Servicio
+
+Mr. Paps es una tienda en línea especializada en la venta de productos personalizados impresos bajo demanda (print-on-demand), con envíos a territorio mexicano. Los productos se fabrican de forma artesanal o mediante proveedores de impresión locales, pudiendo también utilizar servicios de terceros especializados según disponibilidad y necesidades de producción.
+
+La oferta de productos, precios, diseños y condiciones de servicio puede modificarse en cualquier momento sin previo aviso. La disponibilidad de productos está sujeta a existencias o capacidad de producción en el momento de la compra.
+
+3. Registro de Cuenta y Responsabilidad del Usuario
+
+El Usuario puede realizar compras como invitado o creando una cuenta de usuario. Al registrarse, el Usuario se compromete a:
+
+Proporcionar información veraz, completa y actualizada
+
+Mantener la confidencialidad de sus credenciales de acceso (correo electrónico y contraseña)
+
+Notificar de forma inmediata a Mr. Paps cualquier uso no autorizado de su cuenta
+
+No ceder ni transferir su cuenta a terceros
+
+Mr. Paps no será responsable por los daños o perjuicios derivados del acceso no autorizado a la cuenta del Usuario cuando este sea consecuencia de la negligencia del propio Usuario en el resguardo de sus credenciales.
+
+El Usuario es el único responsable de todas las actividades que se realicen desde su cuenta. Mr. Paps se reserva el derecho de suspender o cancelar cuentas que incumplan los presentes Términos.
+
+4. Proceso de Compra y Formación del Contrato
+
+4.1 Pasos del Proceso
+
+El Usuario selecciona los productos de su interés y los agrega al carrito de compras
+
+Proporciona sus datos de identificación, contacto y dirección de envío
+
+Selecciona el método de envío preferido según las opciones disponibles
+
+Revisa el resumen del pedido, incluyendo productos, precios, costo de envío e IVA (16%)
+
+Procede al pago a través de Stripe (plataforma segura de pago)
+
+Una vez confirmado el pago por Stripe, Mr. Paps genera el pedido y envía una confirmación por correo electrónico
+
+El contrato de compraventa se perfecciona en el momento en que Mr. Paps recibe la confirmación de pago exitoso por parte de Stripe y envía la confirmación de pedido al Comprador. Los pedidos en estado "pendiente de pago" no constituyen un contrato vinculante.
+
+4.2 Precio y Moneda
+
+Todos los precios publicados en el Sitio están expresados en pesos mexicanos (MXN) e incluyen el Impuesto al Valor Agregado (IVA) del 16%, salvo indicación expresa en contrario. Mr. Paps se reserva el derecho de modificar precios en cualquier momento, aplicándose siempre el precio vigente al momento de la confirmación del pedido.
+
+4.3 Disponibilidad
+
+La disponibilidad de los productos se verifica al momento de procesar el pedido. En caso de que un producto no esté disponible después de realizado el pago, Mr. Paps contactará al Comprador para ofrecer alternativas o proceder con el reembolso correspondiente.
+
+5. Medios de Pago
+
+Mr. Paps procesa todos los pagos a través de Stripe, Inc., plataforma certificada bajo estándares PCI DSS. Los datos de tarjeta de crédito o débito son capturados directamente por Stripe; Mr. Paps no almacena, procesa ni tiene acceso a los datos de las tarjetas bancarias del Comprador.
+
+Al realizar un pago, el Comprador declara que está autorizado para utilizar el medio de pago utilizado. En caso de detectarse un cargo no reconocido o fraude, el Comprador deberá contactar a su institución bancaria y notificar a Mr. Paps a la brevedad.
+
+Mr. Paps se reserva el derecho de cancelar pedidos cuando existan indicios razonables de fraude, datos incorrectos o actividad sospechosa, sin que ello genere responsabilidad alguna a cargo de Mr. Paps.
+
+6. Envíos y Entregas
+
+6.1 Cobertura de Envío
+
+Mr. Paps realiza envíos únicamente a territorio de los Estados Unidos Mexicanos. No se realizan envíos internacionales al momento de la publicación de los presentes Términos.
+
+6.2 Cotización y Costo
+
+El costo de envío se calcula de manera dinámica antes de confirmar la compra, con base en el destino, dimensiones y peso del pedido, mediante la plataforma Envia.com. El costo final se muestra al Comprador antes de proceder al pago.
+
+6.3 Tiempos de Entrega
+
+Los tiempos de entrega son estimados y pueden variar en función del carrier seleccionado, la ubicación del destino, la demanda de producción y factores ajenos al control de Mr. Paps (condiciones climáticas, contingencias, días no hábiles, etc.). Mr. Paps hará sus mejores esfuerzos por cumplir con los tiempos indicados, pero no garantiza fechas de entrega exactas.
+
+6.4 Seguimiento del Pedido
+
+Una vez generada la guía de envío, Mr. Paps proporcionará al Comprador el número de guía y la URL de rastreo del carrier correspondiente. El Comprador puede seguir el estado de su pedido en la sección /seguimiento del Sitio ingresando su código de pedido y correo electrónico.
+
+6.5 Dirección de Entrega
+
+El Comprador es responsable de proporcionar una dirección de entrega correcta y completa. Mr. Paps no se hace responsable por entregas fallidas, pérdidas o retrasos derivados de información de dirección incorrecta, incompleta o ilegible proporcionada por el Comprador.
+
+6.6 Riesgo de Pérdida
+
+El riesgo de pérdida, deterioro o daño del producto se transfiere al Comprador en el momento en que el carrier hace entrega del pedido en la dirección indicada. Una vez entregado, cualquier reclamación deberá dirigirse al carrier correspondiente, sin perjuicio del derecho de garantía aplicable.
+
+7. Política de Cancelaciones, Devoluciones y Garantías
+
+7.1 Cancelaciones
+
+El Comprador podrá solicitar la cancelación de su pedido únicamente cuando el pedido se encuentre en estado de producción o pendiente de envío. Una vez que el pedido haya sido enviado, no procederán cancelaciones, salvo los casos previstos en la Ley Federal de Protección al Consumidor (LFPC).
+
+Para solicitar la cancelación, el Comprador deberá contactar a Mr. Paps lo antes posible a través de contacto@mrpapshop.com.
+
+7.2 Devoluciones y Reembolsos
+
+Dado que los productos de Mr. Paps son personalizados y fabricados bajo demanda, no se aceptan devoluciones por cambio de opinión (arrepentimiento de compra) una vez iniciada la producción.
+
+Procederá la devolución o reposición del producto sin costo para el Comprador en los siguientes casos:
+
+El producto recibido presente defectos de fabricación o impresión imputables a Mr. Paps
+
+El producto recibido no corresponda al diseño o especificaciones del pedido confirmado
+
+El producto haya sido dañado durante el transporte (deberá documentarse con fotografías al momento de recibir el paquete)
+
+El Comprador deberá notificar el defecto o inconformidad dentro de los 5 días naturales siguientes a la recepción del producto, adjuntando fotografías que evidencien el problema. Mr. Paps evaluará cada caso y, de proceder, ofrecerá reposición del producto o reembolso, a su elección.
+
+7.3 Garantía Legal
+
+Los productos están sujetos a la garantía mínima obligatoria establecida en la Ley Federal de Protección al Consumidor y la Norma Oficial Mexicana aplicable. Para hacer válida la garantía, el Comprador deberá conservar el comprobante de compra.
+
+8. Facturación (CFDI)
+
+Mr. Paps pondrá a disposición del Comprador la emisión de Comprobante Fiscal Digital por Internet (CFDI) cuando este así lo solicite, conforme a las disposiciones del Código Fiscal de la Federación y las reglas del SAT.
+
+Para solicitar factura, el Comprador deberá proporcionar sus datos fiscales (RFC, régimen fiscal, domicilio fiscal y uso del CFDI) al momento de realizar el pedido o dentro de los 30 días naturales siguientes a la fecha del pago.
+
+Nota: La funcionalidad de emisión automática de CFDI se encuentra en proceso de implementación. Mientras tanto, las solicitudes de factura deben enviarse a contacto@mrpapshop.com con los datos fiscales completos.
+
+9. Propiedad Intelectual
+
+Todos los contenidos del Sitio, incluyendo pero no limitándose a textos, imágenes, logotipos, diseños, fotografías, software, código fuente y estructura del sitio web, son propiedad exclusiva de Mr. Paps o sus licenciantes y se encuentran protegidos por la Ley Federal del Derecho de Autor, la Ley de la Propiedad Industrial y los tratados internacionales aplicables.
+
+Queda expresamente prohibido:
+
+Reproducir, copiar, distribuir, transformar o comunicar públicamente cualquier contenido del Sitio sin autorización previa y por escrito de Mr. Paps
+
+Utilizar el nombre comercial, marcas o logotipos de Mr. Paps sin autorización
+
+Extraer o reutilizar de forma sistemática el contenido del Sitio para cualquier propósito
+
+El Comprador que adquiera un diseño personalizado de Mr. Paps obtiene una licencia de uso personal y no exclusiva sobre dicho diseño para los fines de la compra realizada. No se transfieren derechos de autor ni se otorgan licencias de uso comercial, salvo acuerdo expreso y por escrito.
+
+El Comprador garantiza que los diseños, imágenes o materiales que proporcione a Mr. Paps para la personalización de productos no infringen derechos de terceros. Mr. Paps no asume responsabilidad alguna por el uso de materiales proporcionados por el Comprador.
+
+10. Conducta del Usuario y Usos Prohibidos
+
+Al utilizar el Sitio, el Usuario se compromete a no:
+
+Proporcionar información falsa, inexacta o fraudulenta
+
+Utilizar el Sitio para actividades ilícitas o contrarias a la moral y las buenas costumbres
+
+Intentar acceder de forma no autorizada a sistemas, servidores o bases de datos de Mr. Paps
+
+Introducir virus, malware u otros elementos que puedan dañar o alterar el funcionamiento del Sitio
+
+Solicitar la fabricación de productos con contenido ilegal, discriminatorio, difamatorio, obsceno, que incite a la violencia, que vulnere derechos de terceros o que infrinja la legislación mexicana o internacional aplicable
+
+Hacer uso indebido o abusivo del sistema de devoluciones o reclamaciones
+
+Realizar compras fraudulentas mediante el uso de tarjetas robadas, clonadas o sin autorización del titular
+
+Mr. Paps se reserva el derecho de rechazar, cancelar o anular pedidos que incumplan las disposiciones anteriores, sin que ello genere responsabilidad por daños y perjuicios a cargo de Mr. Paps.
+
+11. Limitación de Responsabilidad
+
+En la máxima medida permitida por la legislación mexicana aplicable:
+
+Mr. Paps no garantiza la disponibilidad ininterrumpida del Sitio ni la ausencia de errores técnicos
+
+Mr. Paps no será responsable por daños indirectos, incidentales, especiales o consecuentes derivados del uso o imposibilidad de uso del Sitio o de los productos adquiridos
+
+La responsabilidad máxima de Mr. Paps frente al Comprador no excederá el monto total pagado en la transacción que dio origen al reclamo
+
+Mr. Paps no se hace responsable por retrasos, pérdidas o daños en el envío una vez que el paquete ha sido entregado al carrier, más allá de lo estipulado en la política de devoluciones
+
+Mr. Paps no es responsable por el contenido de sitios web de terceros vinculados desde el Sitio
+
+Nada de lo anterior limita los derechos que la Ley Federal de Protección al Consumidor reconoce al Comprador como consumidor.
+
+12. Privacidad y Protección de Datos
+
+El tratamiento de los datos personales proporcionados por el Usuario se rige por el Aviso de Privacidad Integral de Mr. Paps, publicado en mrpapshop.com/privacidad, el cual forma parte integrante de los presentes Términos.
+
+Al aceptar los presentes Términos, el Usuario declara haber leído y aceptado el Aviso de Privacidad en su totalidad.
+
+13. Legislación Aplicable y Jurisdicción
+
+Los presentes Términos y toda controversia que pudiera derivarse de su interpretación, cumplimiento o incumplimiento se regirán por las leyes aplicables en los Estados Unidos Mexicanos, incluyendo de manera enunciativa mas no limitativa:
+
+Código Civil Federal
+
+Código de Comercio
+
+Ley Federal de Protección al Consumidor (LFPC)
+
+Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)
+
+Ley Federal del Derecho de Autor
+
+Demás ordenamientos aplicables
+
+Para la resolución de cualquier controversia, las partes se someten a la jurisdicción de los tribunales competentes del estado de [ESTADO — por definir según domicilio del responsable], renunciando expresamente a cualquier otro fuero que pudiera corresponderles por razón de sus domicilios presentes o futuros.
+
+Sin perjuicio de lo anterior, el Comprador podrá presentar reclamaciones ante la Procuraduría Federal del Consumidor (PROFECO) a través de sus canales oficiales (www.profeco.gob.mx).
+
+14. Contacto
+
+Para cualquier duda, aclaración, reclamación o comunicación relacionada con los presentes Términos, el Usuario puede contactar a Mr. Paps a través de los siguientes medios:
+
+Correo electrónico
+
+contacto@mrpapshop.com
+
+Sitio web
+
+https://mrpapshop.com
+
+Asunto para reclamaciones
+
+"Reclamación / Soporte — [Número de pedido]"
+
+Asunto para dudas legales
+
+"Consulta legal / Términos"
+
+Mr. Paps atenderá las solicitudes en un plazo máximo de 5 días hábiles para consultas generales, y de conformidad con los plazos establecidos por la LFPC para reclamaciones formales de consumo.
+
+Mr. Paps · mrpapshop.com · contacto@mrpapshop.com
+
+Versión 1.0 — Junio 2026

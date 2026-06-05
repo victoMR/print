@@ -12,6 +12,7 @@ import { createAddress, listAddresses, type SavedAddress } from "@/lib/customer-
 import { MX_STATES } from "@/lib/mx-states";
 import { cn, formatMxn } from "@/lib/utils";
 import { RemoteImage } from "@/components/ui/remote-image";
+import { LegalConsentCheckbox } from "@/components/legal/legal-consent-checkbox";
 import { StripePaymentForm } from "./stripe-payment-form";
 import { PaymentOutcomeOverlay } from "./payment-outcome-overlay";
 import { PAYMENT_OUTCOME_VISIBLE_MS, paymentSuccessDescription } from "@/lib/payment-outcome-timing";
@@ -63,6 +64,7 @@ export function BotyCheckoutFlow() {
   const [trackingCode, setTrackingCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [paymentOutcome, setPaymentOutcome] = useState<"success" | "error" | null>(null);
 
   const paymentReturnUrl =
@@ -210,6 +212,10 @@ export function BotyCheckoutFlow() {
   }
 
   async function handleCreateOrder() {
+    if (!user && !acceptedLegal) {
+      setError("Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para continuar.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -217,6 +223,7 @@ export function BotyCheckoutFlow() {
         items: cartItems, recipient,
         retailCosts: { currency: "MXN", ...totals },
         saveAccount: !user,
+        ...(!user ? { acceptedLegal: true as const } : {}),
       });
       const code = res.data.trackingCode ?? res.data.internalOrderId;
       setPublicOrderId(code);
@@ -639,10 +646,19 @@ export function BotyCheckoutFlow() {
 
               {error && <ErrorBanner message={error} onClearCart={staleCartAction} />}
 
+              {!user && (
+                <LegalConsentCheckbox
+                  id="checkout-legal-consent"
+                  checked={acceptedLegal}
+                  onChange={setAcceptedLegal}
+                  disabled={busy}
+                />
+              )}
+
               <button
                 type="button"
                 onClick={() => void handleCreateOrder()}
-                disabled={busy}
+                disabled={busy || (!user && !acceptedLegal)}
                 className="w-full bg-primary text-primary-foreground py-4 rounded-full font-semibold hover:bg-primary/90 boty-transition disabled:opacity-50 text-base flex items-center justify-center gap-2"
               >
                 {busy ? "Procesando…" : (<><CreditCard className="w-4 h-4" /> Ir a pagar — {formatMxn(totals.total)}</>)}
@@ -778,11 +794,13 @@ export function BotyCheckoutFlow() {
               Compra 100 % segura · Stripe
             </p>
             <p>
-              Al continuar aceptas nuestro{" "}
-              <Link href="/privacidad" className="text-primary hover:underline">
-                aviso de privacidad
+              <Link href="/terminos" className="text-primary hover:underline">
+                Términos
               </Link>
-              .
+              {" · "}
+              <Link href="/privacidad" className="text-primary hover:underline">
+                Privacidad
+              </Link>
             </p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { verifyCustomerToken } from '../services/customer-auth.service.js';
+import * as usersRepo from '../db/mrpaps-users.repository.js';
 import { AuthError } from '../types/errors.js';
 
 declare global {
@@ -19,6 +20,11 @@ export async function requireCustomerAuth(req: Request, res: Response, next: Nex
   }
   try {
     const payload = await verifyCustomerToken(token);
+    const user = await usersRepo.findUserById(payload.sub);
+    if (!user || user.role !== 'customer' || !user.email_verified_at) {
+      res.status(401).json({ error: 'Verifica tu correo o inicia sesión de nuevo.' });
+      return;
+    }
     req.customerUser = { id: payload.sub, email: payload.email, role: 'customer' };
     next();
   } catch (err) {

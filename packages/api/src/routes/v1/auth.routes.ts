@@ -3,7 +3,13 @@ import * as customerAuth from '../../services/customer-auth.service.js';
 import * as bootstrapAuth from '../../services/bootstrap-auth.service.js';
 import { requireCustomerAuth } from '../../middleware/customer-auth.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
-import { customerLoginSchema, customerRegisterSchema } from '../../schemas/customer-auth.schema.js';
+import {
+  customerLoginSchema,
+  customerRegisterSchema,
+  resendVerificationSchema,
+  verifyEmailSchema,
+} from '../../schemas/customer-auth.schema.js';
+import { resendEmailVerification, verifyEmailByToken } from '../../services/email-verification.service.js';
 import { bootstrapPasswordSchema } from '../../schemas/mrpaps.schema.js';
 
 export const v1AuthRouter: Router = Router();
@@ -26,7 +32,30 @@ v1AuthRouter.post('/register', async (req, res, next) => {
   try {
     const body = customerRegisterSchema.parse(req.body);
     const result = await customerAuth.registerCustomer(body);
-    res.status(201).json({ data: result });
+    res.status(201).json({
+      data: result,
+      message: 'Revisa tu correo para verificar tu cuenta antes de iniciar sesión.',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1AuthRouter.post('/verify-email', async (req, res, next) => {
+  try {
+    const { token } = verifyEmailSchema.parse(req.body);
+    const data = await verifyEmailByToken(token);
+    res.json({ data, message: 'Correo verificado. Ya puedes iniciar sesión.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1AuthRouter.post('/resend-verification', async (req, res, next) => {
+  try {
+    const { email } = resendVerificationSchema.parse(req.body);
+    await resendEmailVerification(email);
+    res.json({ message: 'Si el correo está registrado y pendiente de verificación, enviamos un nuevo enlace.' });
   } catch (err) {
     next(err);
   }

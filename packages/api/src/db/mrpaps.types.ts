@@ -20,6 +20,13 @@ export type MrpapsUserRow = {
   tax_number: string | null;
   role: MrpapsUserRole;
   password_hash: string | null;
+  email_verified_at: string | null;
+  email_verification_token_hash: string | null;
+  email_verification_expires_at: string | null;
+  terms_accepted_at: string | null;
+  terms_accepted_version: string | null;
+  privacy_accepted_at: string | null;
+  privacy_accepted_version: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -145,6 +152,8 @@ export type MrpapsOrderRow = {
   stripe_payment_intent_id: string | null;
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded' | null;
   confirmation_email_sent_at: string | null;
+  terms_accepted_at: string | null;
+  legal_accepted_version: string | null;
   created_at: string;
   updated_at: string;
 };

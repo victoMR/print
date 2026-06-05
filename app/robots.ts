@@ -24,7 +24,7 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: ["GPTBot", "ClaudeBot", "Google-Extended"],
-        allow: ["/", "/shop", "/product/", "/privacidad", "/llms.txt"],
+        allow: ["/", "/shop", "/product/", "/privacidad", "/terminos", "/llms.txt"],
         disallow: [
           "/admin",
           "/api/",

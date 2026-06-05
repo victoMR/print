@@ -16,6 +16,20 @@ export const customerRegisterSchema = z.object({
     .trim()
     .optional()
     .transform((v) => (v && v.length > 0 ? v : undefined)),
+  acceptedTerms: z.literal(true, {
+    errorMap: () => ({ message: 'Debes aceptar los Términos y Condiciones' }),
+  }),
+  acceptedPrivacy: z.literal(true, {
+    errorMap: () => ({ message: 'Debes aceptar el Aviso de Privacidad' }),
+  }),
+});
+
+export const verifyEmailSchema = z.object({
+  token: z.string().min(16, 'Token inválido'),
+});
+
+export const resendVerificationSchema = z.object({
+  email: z.string().email('Correo inválido').transform((v) => v.trim().toLowerCase()),
 });
 
 export const customerLoginSchema = z.object({

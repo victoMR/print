@@ -13,6 +13,7 @@ const footerLinks = {
   about: [
     { name: "Inicio", href: "/" },
     { name: "Tienda", href: "/shop" },
+    { name: "Términos y condiciones", href: "/terminos" },
     { name: "Aviso de privacidad", href: "/privacidad" },
   ],
   support: [

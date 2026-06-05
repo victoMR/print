@@ -10,7 +10,7 @@ import {
   normalizeRegisterPayload,
   validateRegisterForm,
 } from "@/lib/customer-auth-rules";
-import { useCustomer } from "@/lib/customer-context";
+import { LegalConsentCheckbox } from "@/components/legal/legal-consent-checkbox";
 import { AuthCard, AuthShell } from "./auth-shell";
 import { BotyAlert, BotyButton, BotyInput, BotyLabel } from "./ui-patterns";
 
@@ -22,13 +22,13 @@ function buildAuthHref(path: string, redirect: string) {
 export function RegisterForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const { refresh } = useCustomer();
   const [form, setForm] = useState({
     email: "",
     password: "",
     confirmPassword: "",
     fullName: "",
     phone: "",
+    acceptedLegal: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -48,9 +48,8 @@ export function RegisterForm() {
     }
     setBusy(true);
     try {
-      await customerRegister(normalizeRegisterPayload(form));
-      await refresh();
-      router.push(redirect);
+      const result = await customerRegister(normalizeRegisterPayload(form));
+      router.push(`/registro/verificar?email=${encodeURIComponent(result.email)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear la cuenta");
     } finally {
@@ -119,7 +118,20 @@ export function RegisterForm() {
             onToggle={() => setShowConfirm((s) => !s)}
           />
 
-          <BotyButton type="submit" variant="primary" size="lg" className="w-full mt-2" disabled={busy}>
+          <LegalConsentCheckbox
+            id="register-legal-consent"
+            checked={form.acceptedLegal}
+            onChange={(acceptedLegal) => setForm({ ...form, acceptedLegal })}
+            disabled={busy}
+          />
+
+          <BotyButton
+            type="submit"
+            variant="primary"
+            size="lg"
+            className="w-full mt-2"
+            disabled={busy || !form.acceptedLegal}
+          >
             {busy ? "Creando cuenta…" : "Crear cuenta"}
           </BotyButton>
         </form>

@@ -8,6 +8,10 @@ export async function findUserByEmail(email: string): Promise<MrpapsUserRow | nu
   );
 }
 
+export async function findUserById(id: string): Promise<MrpapsUserRow | null> {
+  return queryOne<MrpapsUserRow>(`SELECT * FROM mrpaps_users WHERE id = $1`, [id]);
+}
+
 export async function findUserByEmailForAuth(email: string): Promise<MrpapsUserRow | null> {
   return findUserByEmail(email);
 }
@@ -212,6 +216,91 @@ export async function upsertUserByEmail(input: {
 export async function listAddresses(userId: string): Promise<MrpapsAddressRow[]> {
   return query<MrpapsAddressRow>(
     `SELECT * FROM mrpaps_addresses WHERE user_id = $1 ORDER BY is_default DESC`,
+    [userId],
+  );
+}
+
+export async function recordLegalAcceptance(userId: string, legalVersion: string): Promise<void> {
+  const now = new Date().toISOString();
+  await query(
+    `UPDATE mrpaps_users
+     SET terms_accepted_at = $2, terms_accepted_version = $3,
+         privacy_accepted_at = $2, privacy_accepted_version = $3,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [userId, now, legalVersion],
+  );
+}
+
+export async function createCustomerForRegistration(input: {
+  email: string;
+  full_name: string;
+  phone: string | null;
+  password_hash: string;
+  legal_version: string;
+}): Promise<MrpapsUserRow> {
+  const email = input.email.trim().toLowerCase();
+  const existing = await findUserByEmail(email);
+  const now = new Date().toISOString();
+
+  if (existing?.password_hash) {
+    throw new Error('EMAIL_ALREADY_REGISTERED');
+  }
+
+  if (existing) {
+    return queryRequired<MrpapsUserRow>(
+      `UPDATE mrpaps_users
+       SET full_name = $2, phone = $3, password_hash = $4, role = 'customer',
+           terms_accepted_at = $5, terms_accepted_version = $6,
+           privacy_accepted_at = $5, privacy_accepted_version = $6,
+           email_verified_at = NULL, updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [existing.id, input.full_name, input.phone, input.password_hash, now, input.legal_version],
+    );
+  }
+
+  return queryRequired<MrpapsUserRow>(
+    `INSERT INTO mrpaps_users (
+       email, full_name, phone, role, password_hash,
+       terms_accepted_at, terms_accepted_version,
+       privacy_accepted_at, privacy_accepted_version
+     ) VALUES ($1, $2, $3, 'customer', $4, $5, $6, $5, $6)
+     RETURNING *`,
+    [email, input.full_name, input.phone, input.password_hash, now, input.legal_version],
+  );
+}
+
+export async function setEmailVerificationToken(
+  userId: string,
+  tokenHash: string,
+  expiresAt: string,
+): Promise<void> {
+  await query(
+    `UPDATE mrpaps_users
+     SET email_verification_token_hash = $2,
+         email_verification_expires_at = $3,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [userId, tokenHash, expiresAt],
+  );
+}
+
+export async function findUserByEmailVerificationHash(tokenHash: string): Promise<MrpapsUserRow | null> {
+  return queryOne<MrpapsUserRow>(
+    `SELECT * FROM mrpaps_users WHERE email_verification_token_hash = $1`,
+    [tokenHash],
+  );
+}
+
+export async function markEmailVerified(userId: string): Promise<void> {
+  await query(
+    `UPDATE mrpaps_users
+     SET email_verified_at = NOW(),
+         email_verification_token_hash = NULL,
+         email_verification_expires_at = NULL,
+         updated_at = NOW()
+     WHERE id = $1`,
     [userId],
   );
 }

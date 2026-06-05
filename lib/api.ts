@@ -282,6 +282,7 @@ export async function createDraftOrder(body: {
     total: string;
   };
   saveAccount?: boolean;
+  acceptedLegal?: true;
 }) {
   const customerToken = typeof window !== "undefined" ? getCustomerToken() : null;
   const headers: Record<string, string> = {};

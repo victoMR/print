@@ -41,7 +41,8 @@ export function LoginForm() {
       await refresh();
       router.push(redirect);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesión");
+      const msg = err instanceof Error ? err.message : "Error al iniciar sesión";
+      setError(msg);
     } finally {
       setBusy(false);
     }
@@ -99,6 +100,17 @@ export function LoginForm() {
             {busy ? "Entrando…" : "Iniciar sesión"}
           </BotyButton>
         </form>
+
+        {error?.includes("Confirma tu correo") && (
+          <p className="text-center text-sm mt-4">
+            <Link
+              href={`/registro/verificar?email=${encodeURIComponent(form.email.trim().toLowerCase())}`}
+              className="text-primary font-medium hover:underline"
+            >
+              Reenviar enlace de verificación
+            </Link>
+          </p>
+        )}
 
         <p className="text-center text-sm text-muted-foreground mt-8 pt-6 border-t border-border/50">
           ¿Primera vez aquí?{" "}

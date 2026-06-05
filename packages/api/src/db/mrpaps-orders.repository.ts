@@ -27,6 +27,8 @@ export type CreateOrderInput = {
   shipping_mxn: number;
   tax_mxn: number;
   total_mxn: number;
+  terms_accepted_at?: string | null;
+  legal_accepted_version?: string | null;
   items: Array<{
     variant_id: string;
     design_id?: string | null;
@@ -67,9 +69,11 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
        public_id, order_number, user_id, customer_name, customer_email, customer_phone,
        customer_tax_number, ship_address1, ship_address2, ship_city, ship_state_code,
        ship_country_code, ship_zip, shipping_method, shipping_label,
-       subtotal_mxn, shipping_mxn, tax_mxn, total_mxn, status
+       subtotal_mxn, shipping_mxn, tax_mxn, total_mxn, status,
+       terms_accepted_at, legal_accepted_version
      ) VALUES (
-       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'pendiente_pago'
+       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'pendiente_pago',
+       $20, $21
      ) RETURNING *`,
     [
       order.public_id,
@@ -91,6 +95,8 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
       order.shipping_mxn,
       order.tax_mxn,
       order.total_mxn,
+      order.terms_accepted_at ?? null,
+      order.legal_accepted_version ?? null,
     ],
   );
 

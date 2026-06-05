@@ -3,6 +3,8 @@ import * as usersRepo from '../db/mrpaps-users.repository.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { AuthError, BadRequestError } from '../types/errors.js';
 import type { MrpapsUserRow } from '../db/mrpaps.types.js';
+import { sendEmailVerification, LEGAL_VERSION } from './email-verification.service.js';
+
 const TOKEN_TTL = '30d';
 
 export type CustomerTokenPayload = {
@@ -22,17 +24,37 @@ export async function registerCustomer(input: {
   password: string;
   fullName: string;
   phone?: string;
-}): Promise<{ token: string; user: ReturnType<typeof publicCustomer> }> {
+  acceptedTerms: true;
+  acceptedPrivacy: true;
+}): Promise<{ requiresEmailVerification: true; email: string }> {
   const email = input.email.trim().toLowerCase();
   if (input.password.length < 8) throw new BadRequestError('La contraseña debe tener al menos 8 caracteres');
 
   const existing = await usersRepo.findUserByEmail(email);
-  if (existing?.password_hash) throw new BadRequestError('Ya existe una cuenta con ese correo. Inicia sesión.');
+  if (existing?.password_hash) {
+    throw new BadRequestError('Ya existe una cuenta con ese correo. Inicia sesión.');
+  }
 
   const hash = await hashPassword(input.password);
-  const user = await usersRepo.upsertCustomerWithPassword({ email, full_name: input.fullName, phone: input.phone ?? null, password_hash: hash });
-  const token = await signCustomerToken(user);
-  return { token, user: publicCustomer(user) };
+  let user: MrpapsUserRow;
+  try {
+    user = await usersRepo.createCustomerForRegistration({
+      email,
+      full_name: input.fullName,
+      phone: input.phone ?? null,
+      password_hash: hash,
+      legal_version: LEGAL_VERSION,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === 'EMAIL_ALREADY_REGISTERED') {
+      throw new BadRequestError('Ya existe una cuenta con ese correo. Inicia sesión.');
+    }
+    throw err;
+  }
+
+  await sendEmailVerification(user.id, user.email, user.full_name);
+
+  return { requiresEmailVerification: true, email: user.email };
 }
 
 export async function loginCustomer(email: string, password: string): Promise<{ token: string; user: ReturnType<typeof publicCustomer> }> {
@@ -40,6 +62,13 @@ export async function loginCustomer(email: string, password: string): Promise<{ 
   if (!user || user.role !== 'customer' || !user.password_hash) throw new AuthError('Correo o contraseña incorrectos');
   const valid = await verifyPassword(password, user.password_hash);
   if (!valid) throw new AuthError('Correo o contraseña incorrectos');
+
+  if (!user.email_verified_at) {
+    throw new AuthError(
+      'Confirma tu correo antes de iniciar sesión. Revisa tu bandeja de entrada o solicita un nuevo enlace.',
+    );
+  }
+
   const token = await signCustomerToken(user);
   return { token, user: publicCustomer(user) };
 }
@@ -66,5 +95,12 @@ export async function verifyCustomerToken(token: string): Promise<CustomerTokenP
 }
 
 export function publicCustomer(user: MrpapsUserRow) {
-  return { id: user.id, email: user.email, fullName: user.full_name, phone: user.phone, role: user.role };
+  return {
+    id: user.id,
+    email: user.email,
+    fullName: user.full_name,
+    phone: user.phone,
+    role: user.role,
+    emailVerified: Boolean(user.email_verified_at),
+  };
 }

@@ -6,13 +6,13 @@ import { loadLegalText } from "@/lib/legal/load-legal-text";
 import { SITE_NAME } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Aviso de privacidad",
-  description: `Aviso de privacidad integral de ${SITE_NAME}. Tratamiento de datos conforme a la LFPDPPP.`,
-  alternates: { canonical: "/privacidad" },
+  title: "Términos y condiciones",
+  description: `Términos y condiciones de uso y compra de ${SITE_NAME}.`,
+  alternates: { canonical: "/terminos" },
 };
 
-export default async function PrivacidadPage() {
-  const content = await loadLegalText("MrPaps_Aviso_Privacidad_v1.txt");
+export default async function TerminosPage() {
+  const content = await loadLegalText("MrPaps_Terminos_Condiciones_v1.txt");
 
   return (
     <main className="min-h-screen flex flex-col">

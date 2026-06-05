@@ -1,0 +1,495 @@
+MR. PAPS
+
+mrpapshop.com
+
+AVISO DE PRIVACIDAD INTEGRAL
+
+Conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) y su Reglamento.
+
+Versión 1.0 · Última actualización: Junio de 2026
+
+1. Identidad y Domicilio del Responsable
+
+En cumplimiento de lo dispuesto en la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), su Reglamento y los Lineamientos del Aviso de Privacidad expedidos por el Instituto Nacional de Transparencia, Acceso a la Información y Protección de Datos Personales (INAI), la empresa que opera el sitio web mrpapshop.com (en adelante "Mr. Paps" o el "Responsable") pone a su disposición el presente Aviso de Privacidad Integral.
+
+Denominación comercial
+
+Mr. Paps
+
+Razón social
+
+[RAZÓN SOCIAL COMPLETA DEL TITULAR]
+
+RFC
+
+[RFC DEL RESPONSABLE]
+
+Domicilio fiscal
+
+[CALLE, NÚMERO, COLONIA, CIUDAD, ESTADO, C.P., MÉXICO]
+
+Representante legal
+
+[NOMBRE DEL REPRESENTANTE LEGAL]
+
+Sitio web
+
+https://mrpapshop.com
+
+Correo electrónico (privacidad)
+
+contacto@mrpapshop.com
+
+Teléfono de contacto
+
+[TELÉFONO DE CONTACTO]
+
+Nota: Los campos entre corchetes [ ] deben ser completados con los datos legales definitivos del Responsable antes de la publicación de este documento.
+
+2. Datos Personales que se Recaban
+
+Mr. Paps recaba únicamente los datos personales estrictamente necesarios para cumplir con las finalidades descritas en el presente Aviso. A continuación se detallan las categorías de datos que se tratan:
+
+2.1 Datos de Identificación y Contacto
+
+Nombre completo
+
+Correo electrónico
+
+Número de teléfono (mínimo 10 dígitos)
+
+RFC (Registro Federal de Contribuyentes) — únicamente cuando el titular solicita la emisión de Comprobante Fiscal Digital por Internet [CFDI]
+
+2.2 Datos de Ubicación y Envío
+
+Calle y número exterior/interior
+
+Colonia o asentamiento
+
+Ciudad, municipio o alcaldía
+
+Estado (entidad federativa)
+
+Código postal
+
+País (México)
+
+2.3 Datos de Transacción Comercial
+
+Productos adquiridos, cantidades y precios
+
+Subtotales, costos de envío, IVA y total de compra
+
+Método de envío seleccionado
+
+Estado del pedido y número de guía de rastreo
+
+Identificador del intento de pago generado por Stripe (no datos bancarios)
+
+Estado del pago (pendiente, pagado, fallido, reembolsado)
+
+2.4 Datos de Cuenta de Usuario (opcional)
+
+Solo aplica si el titular decide crear una cuenta o guardar sus datos en el checkout:
+
+Correo electrónico y nombre completo
+
+Número de teléfono
+
+Contraseña (almacenada únicamente como hash cifrado mediante bcrypt; nunca en texto legible)
+
+Direcciones de envío guardadas
+
+Historial de pedidos asociados a la cuenta
+
+2.5 Datos que NO se Almacenan en Servidores Propios
+
+Mr. Paps no almacena ni tiene acceso a:
+
+Números de tarjeta de crédito o débito
+
+Códigos de seguridad (CVV/CVC)
+
+Fechas de vencimiento de tarjetas bancarias
+
+Cualquier otro dato bancario sensible
+
+Estos datos son capturados directamente por Stripe, Inc., proveedor certificado de servicios de pago (ver sección 6.1). Mr. Paps únicamente recibe la confirmación del resultado del pago y el identificador de transacción de Stripe.
+
+2.6 Datos Sensibles
+
+Mr. Paps NO recaba de manera intencional datos personales sensibles en los términos del artículo 3, fracción VI de la LFPDPPP (datos relativos al origen racial o étnico, estado de salud, información genética, creencias religiosas, filosóficas o morales, afiliación sindical, opiniones políticas, preferencia sexual u orientación sexual).
+
+El RFC, al ser un dato de carácter fiscal-patrimonial, no constituye un dato sensible en los términos de la LFPDPPP; no obstante, se trata con especial diligencia y se recaba únicamente cuando es indispensable para el cumplimiento de obligaciones fiscales.
+
+3. Finalidades del Tratamiento
+
+Mr. Paps trata sus datos personales para las siguientes finalidades:
+
+3.1 Finalidades Primarias (necesarias para la relación contractual)
+
+Las siguientes finalidades son indispensables para la prestación del servicio; el titular no puede oponerse a ellas sin afectar la posibilidad de realizar una compra:
+
+Procesar, confirmar y cobrar pedidos realizados a través del sitio web
+
+Gestionar el envío y la entrega del producto al domicilio indicado
+
+Cotizar opciones y costos de envío antes de finalizar la compra
+
+Comunicar al titular el estado de su pedido, número de guía y confirmación de pago
+
+Atender solicitudes de soporte, reclamaciones, cancelaciones y devoluciones
+
+Prevenir y detectar fraudes, disputas de pago y actividades ilícitas
+
+Cumplir con obligaciones legales, fiscales y regulatorias aplicables
+
+Emitir Comprobantes Fiscales Digitales por Internet (CFDI), cuando el titular los solicite
+
+Crear y gestionar la cuenta de usuario (cuando el titular decida registrarse)
+
+3.2 Finalidades Secundarias (sujetas a consentimiento)
+
+Las siguientes finalidades no son indispensables para procesar su pedido. Usted puede oponerse a ellas en cualquier momento:
+
+Envío de comunicaciones de marketing, promociones, descuentos y novedades de productos por correo electrónico — nota: esta funcionalidad se encuentra actualmente en desarrollo; no recibirá comunicaciones de marketing hasta que se implemente y se recabe su consentimiento expreso
+
+Análisis de hábitos de compra y preferencias para mejorar la oferta de productos y la experiencia de usuario
+
+Si no desea que sus datos personales sean tratados para las finalidades secundarias, puede enviar un correo a contacto@mrpapshop.com con el asunto "Privacidad / Oposición" en cualquier momento, incluso desde antes de proporcionar sus datos.
+
+4. Medios y Momentos de Recolección
+
+Mr. Paps recaba sus datos personales a través de los siguientes medios y momentos:
+
+4.1 Proceso de Checkout (Compra en Línea)
+
+Al realizar un pedido, el titular proporciona sus datos de identificación, contacto y dirección de envío para que se genere el pedido y se procese el pago a través de Stripe. La información mínima requerida para completar una compra es: nombre completo, correo electrónico, teléfono y dirección completa en México.
+
+4.2 Registro de Cuenta de Usuario
+
+El titular puede crear voluntariamente una cuenta en el sitio web proporcionando su correo electrónico, contraseña y nombre completo. El teléfono es opcional. La creación de cuenta facilita el acceso al historial de pedidos y la gestión de direcciones guardadas.
+
+4.3 Seguimiento de Pedido sin Cuenta
+
+Los compradores que no cuentan con una cuenta pueden consultar el estado de su pedido en la sección /seguimiento del sitio, ingresando el código de pedido y el correo electrónico proporcionado al momento de la compra. Ambos datos actúan como doble factor de acceso.
+
+4.4 Formulario de Newsletter
+
+El sitio web cuenta con un formulario de suscripción a boletín informativo en el pie de página. Al momento de la publicación del presente Aviso, dicho formulario no transmite ni almacena datos en servidores de Mr. Paps. Los datos ingresados en este campo no serán utilizados para ningún fin hasta que se implemente la infraestructura correspondiente y se recabe el consentimiento expreso del titular.
+
+4.5 Comunicaciones por Correo Electrónico
+
+Mr. Paps puede recabar datos adicionales cuando el titular se comunica directamente por correo electrónico para solicitudes de soporte, ejercicio de derechos ARCO u otras consultas.
+
+5. Transferencias de Datos y Encargados
+
+Para cumplir con las finalidades descritas en el presente Aviso, Mr. Paps comparte o permite el acceso a datos personales de los titulares con los siguientes encargados y terceros, quienes han asumido compromisos de confidencialidad y protección de datos acordes con la normativa aplicable:
+
+5.1 Stripe, Inc. (Procesamiento de Pagos)
+
+Categoría: Proveedor de servicios de pago
+
+Datos compartidos: Correo electrónico del comprador, monto y moneda de la transacción, e identificadores internos de pedido (no contienen información personal directa)
+
+Datos NO compartidos: Número de tarjeta, CVV, fecha de vencimiento — capturados directamente por Stripe
+
+Ubicación: Estados Unidos de América — transferencia internacional de datos
+
+Base legal: Ejecución del contrato de compraventa y consentimiento del titular al usar el servicio de pago
+
+Política de privacidad: https://stripe.com/privacy
+
+5.2 Envia.com (Cotización y Envío)
+
+Categoría: Proveedor de logística y envíos
+
+Datos compartidos en cotización: Código postal, ciudad, estado y calle del destino; en esta fase se utilizan datos genéricos para nombre y teléfono
+
+Datos que se compartirán al generar guías de envío (implementación futura): Nombre completo, teléfono y dirección completa del destinatario
+
+Carriers involucrados: Estafeta, DHL, FedEx, Paquetexpress, entre otros
+
+Ubicación: México
+
+Base legal: Ejecución del contrato — entrega del producto
+
+Política de privacidad: https://www.envia.com/privacidad
+
+5.3 IONOS (Correo Transaccional)
+
+Categoría: Proveedor de servicios de correo electrónico (SMTP)
+
+Datos compartidos: Dirección de correo del destinatario y contenido del correo de confirmación de pedido (incluye nombre, número de pedido, dirección de envío, productos y totales)
+
+Ubicación: Alemania / Unión Europea
+
+Base legal: Ejecución del contrato — comunicación del estado del pedido
+
+Política de privacidad: https://www.ionos.mx/terminos-de-contrato/proteccion-de-datos/
+
+5.4 Vercel, Inc. (Alojamiento Web y Analítica)
+
+Categoría: Proveedor de infraestructura de alojamiento web (hosting)
+
+Datos procesados: Datos de tráfico web (dirección IP, páginas visitadas, métricas de navegación) a través de Vercel Analytics, cuando esta función se encuentre activa
+
+La analítica de Vercel no utiliza cookies de terceros y trabaja con métricas agregadas
+
+Ubicación: Estados Unidos de América — transferencia internacional de datos
+
+Base legal: Interés legítimo en el mantenimiento y mejora del servicio
+
+Política de privacidad: https://vercel.com/legal/privacy-policy
+
+5.5 Proveedor de Autorización de Comprobantes Fiscales (PAC) — Planificado
+
+Categoría: Proveedor autorizado por el SAT para emisión de CFDI
+
+Esta integración se encuentra en proceso de implementación y no está operativa al momento de la publicación del presente Aviso
+
+Cuando se active, el PAC recibirá los datos fiscales del emisor y del receptor para la timbración de facturas (RFC, nombre o razón social, domicilio fiscal, datos de la transacción)
+
+Base legal: Cumplimiento de obligación legal fiscal (Código Fiscal de la Federación)
+
+Mr. Paps actualizará el presente Aviso antes de activar esta integración
+
+5.6 Printful (Producción y Envío — Opcional)
+
+Categoría: Proveedor de producción y fulfillment bajo demanda
+
+El modelo operativo principal de Mr. Paps utiliza fulfillment manual (imprenta propia o proveedores locales). Printful existe como integración de respaldo/opcional
+
+Si se activa, Printful recibiría: nombre completo del destinatario, dirección de envío, teléfono, correo electrónico y RFC (en pedidos con factura)
+
+Ubicación: Estados Unidos de América (con instalaciones en México, Tijuana) — posible transferencia internacional
+
+Política de privacidad: https://www.printful.com/policies/privacy
+
+5.7 Banxico (Tipo de Cambio)
+
+Mr. Paps consulta el tipo de cambio FIX publicado por el Banco de México para efectos de referencia interna. No se transmite ningún dato personal de los titulares a esta institución.
+
+Mr. Paps no vende, cede ni arrienda datos personales a terceros con fines comerciales propios. Las transferencias descritas se realizan exclusivamente para cumplir con las finalidades indicadas en este Aviso.
+
+6. Transferencias Internacionales de Datos
+
+Algunos de los encargados descritos en la sección anterior tienen su sede fuera de México, lo que implica una transferencia internacional de datos personales en los términos del artículo 36 de la LFPDPPP:
+
+Destinatario
+
+País / Región
+
+Stripe, Inc.
+
+Estados Unidos de América
+
+Vercel, Inc.
+
+Estados Unidos de América
+
+Printful (si aplica)
+
+Estados Unidos de América
+
+IONOS SE
+
+Alemania (Unión Europea — GDPR)
+
+Estas transferencias se realizan al amparo de las excepciones previstas en el artículo 37 de la LFPDPPP (ejecución de contrato en interés del titular) y/o con base en los mecanismos de adecuación, cláusulas contractuales tipo u otros instrumentos que garanticen un nivel de protección equivalente al previsto en la ley mexicana.
+
+Al proporcionar sus datos y realizar una compra en mrpapshop.com, usted reconoce y acepta que sus datos podrán ser transferidos a los países indicados para los fines exclusivos descritos en este Aviso.
+
+7. Almacenamiento Local en el Navegador
+
+Mr. Paps utiliza tecnologías de almacenamiento local en el navegador del usuario (localStorage y sessionStorage), equivalentes funcionales a las cookies, para los siguientes propósitos:
+
+Tecnología
+
+Finalidad y contenido
+
+localStorage — Carrito
+
+Almacena los artículos en el carrito de compras (identificadores de producto y precios). Persiste hasta que el usuario borra los datos del navegador o vacía el carrito.
+
+localStorage — Sesión cliente
+
+Almacena el token de sesión (JWT) del usuario registrado. Vigencia: 30 días o hasta que el usuario cierra sesión.
+
+sessionStorage — Sesión admin
+
+Almacena el token de sesión del administrador. Se elimina al cerrar la pestaña del navegador.
+
+sessionStorage — Pedido invitado
+
+Almacena el código de pedido y correo del comprador invitado para facilitar el seguimiento en la misma sesión. Se elimina al cerrar la pestaña.
+
+El sitio web no utiliza cookies de terceros para rastreo publicitario. El uso de Vercel Analytics, cuando esté activo, se realiza sin cookies de seguimiento de terceros.
+
+Puede configurar su navegador para rechazar o eliminar el almacenamiento local; sin embargo, esto podría afectar el funcionamiento del carrito, la sesión de usuario y el seguimiento de pedidos.
+
+8. Conservación y Supresión de Datos
+
+Mr. Paps conserva los datos personales durante los plazos que se indican a continuación, considerando las obligaciones legales aplicables y la naturaleza de cada categoría:
+
+Categoría de datos
+
+Plazo de conservación
+
+Datos de pedidos (completados)
+
+5 años contados desde la fecha del pedido, conforme a los plazos de prescripción del Código de Comercio y los requerimientos del SAT para efectos fiscales
+
+Datos de pedidos cancelados / no pagados
+
+90 días naturales desde la fecha de creación, salvo que exista una disputa o reclamación en curso
+
+Datos de cuenta de usuario activa
+
+Mientras la cuenta permanezca activa o hasta que el titular solicite su cancelación
+
+Datos de cuenta de usuario inactiva
+
+12 meses sin actividad; transcurrido dicho plazo, se anonimizarán o eliminarán previo aviso
+
+Datos fiscales (RFC, CFDI)
+
+5 años, conforme al artículo 30 del Código Fiscal de la Federación
+
+Datos de soporte y reclamaciones
+
+3 años desde la resolución del caso, conforme a los plazos de prescripción en materia mercantil
+
+Tokens de sesión (JWT)
+
+30 días (cliente) / duración de la sesión de pestaña (administrador)
+
+Una vez transcurridos los plazos aplicables, o cuando el titular ejerza su derecho de cancelación y no exista obligación legal de conservación, Mr. Paps procederá al borrado seguro o anonimización irreversible de los datos.
+
+9. Medidas de Seguridad
+
+Mr. Paps implementa medidas técnicas, administrativas y físicas de seguridad orientadas a proteger sus datos personales contra pérdida, alteración, destrucción, uso, acceso o tratamiento no autorizados, entre las que se incluyen:
+
+9.1 Medidas Técnicas
+
+Cifrado de contraseñas mediante el algoritmo bcrypt con factor de costo elevado; ninguna contraseña se almacena en texto legible
+
+Autenticación mediante tokens JWT firmados con secretos criptográficos robustos independientes para usuarios y administradores
+
+Validación exhaustiva de datos de entrada en todos los endpoints del API
+
+Verificación criptográfica de notificaciones de pago (webhooks) recibidas de Stripe mediante firma HMAC
+
+Cabeceras HTTP de seguridad: Content Security Policy (CSP), X-Frame-Options, Referrer-Policy y Permissions-Policy
+
+Protección de rutas sensibles contra indexación por motores de búsqueda
+
+Transmisión de datos protegida mediante protocolo HTTPS/TLS
+
+Acceso al panel de administración restringido a cuentas autorizadas con credenciales independientes
+
+9.2 Medidas Organizativas
+
+Acceso a datos personales limitado al personal autorizado que lo requiera para el cumplimiento de sus funciones
+
+Acuerdos de confidencialidad con proveedores y encargados de tratamiento
+
+Revisión periódica de las medidas de seguridad implementadas
+
+Mr. Paps no garantiza la seguridad absoluta en la transmisión de datos por internet. En caso de una vulneración de seguridad que afecte de forma significativa los derechos patrimoniales o morales de los titulares, se notificará al INAI y a los afectados en los términos previstos por la LFPDPPP.
+
+10. Derechos ARCO
+
+Como titular de datos personales, usted tiene derecho a ejercer en cualquier momento los siguientes derechos frente a Mr. Paps:
+
+Derecho
+
+Descripción
+
+Acceso (A)
+
+Conocer qué datos personales tenemos sobre usted, para qué los utilizamos y las condiciones del tratamiento.
+
+Rectificación (R)
+
+Solicitar la corrección de sus datos cuando sean inexactos, incompletos o estén desactualizados.
+
+Cancelación (C)
+
+Solicitar el bloqueo o supresión de sus datos cuando considere que no están siendo tratados conforme a la ley, o cuando hayan dejado de ser necesarios para la finalidad que motivó su tratamiento.
+
+Oposición (O)
+
+Oponerse al tratamiento de sus datos para finalidades específicas, en particular las finalidades secundarias descritas en la sección 3.2.
+
+10.1 Procedimiento para Ejercer Derechos ARCO
+
+Para ejercer cualquiera de los derechos anteriores, el titular o su representante legal deberá enviar una solicitud al siguiente canal:
+
+Canal de solicitud
+
+Correo electrónico: contacto@mrpapshop.com
+
+Asunto sugerido
+
+"Privacidad / ARCO — [Tipo de derecho]"
+
+Información requerida
+
+Nombre completo del titular, correo electrónico registrado, descripción del derecho que desea ejercer, copia de identificación oficial vigente y, en su caso, documentación que acredite la representación legal
+
+Plazo de respuesta
+
+20 días hábiles contados a partir de la recepción de la solicitud completa
+
+Plazo de cumplimiento
+
+15 días hábiles adicionales a partir de la comunicación de la respuesta, cuando proceda
+
+Mr. Paps podrá requerir información adicional para verificar la identidad del solicitante antes de dar trámite a la solicitud. La respuesta será enviada al correo electrónico indicado en la solicitud.
+
+11. Revocación del Consentimiento
+
+El titular podrá revocar el consentimiento que haya otorgado para el tratamiento de sus datos personales en cualquier momento, siempre que no exista una obligación legal que impida dicha revocación. Para ello, deberá seguir el mismo procedimiento indicado en la sección 10.1, especificando en el asunto: "Privacidad / Revocación de consentimiento".
+
+Tenga en cuenta que la revocación del consentimiento puede implicar la imposibilidad de continuar con la prestación del servicio o la ejecución del contrato de compraventa, según el tipo de dato y finalidad involucrados.
+
+12. Limitación de Uso y Divulgación
+
+El titular tiene derecho a limitar el uso o divulgación de sus datos personales para finalidades secundarias. Para ejercer este derecho, puede enviar una solicitud a contacto@mrpapshop.com con el asunto "Privacidad / Limitación de uso".
+
+Mr. Paps cuenta con un Registro de Exclusión interno en el que se inscriben las solicitudes de limitación de uso para finalidades de marketing. Una vez inscrito, Mr. Paps no utilizará sus datos para envío de comunicaciones comerciales no solicitadas.
+
+13. Cambios al Aviso de Privacidad
+
+Mr. Paps se reserva el derecho de modificar el presente Aviso de Privacidad en cualquier momento para reflejar cambios en la legislación aplicable, en las prácticas de tratamiento de datos o en los servicios ofrecidos. Cualquier modificación será notificada a través del sitio web mrpapshop.com y/o por correo electrónico a los titulares cuyos datos se encuentren en nuestra base de datos.
+
+La fecha de última actualización del Aviso estará visible en la parte superior del documento. El uso continuado del sitio web después de la publicación de los cambios implica la aceptación de los mismos.
+
+El presente Aviso ha sido actualizado por última vez en junio de 2026 y corresponde a la versión 1.0.
+
+14. Autoridad Competente
+
+Si usted considera que sus derechos han sido vulnerados o que Mr. Paps no ha atendido adecuadamente su solicitud, tiene derecho a interponer una queja o denuncia ante el Instituto Nacional de Transparencia, Acceso a la Información y Protección de Datos Personales (INAI):
+
+Institución
+
+INAI — Instituto Nacional de Transparencia, Acceso a la Información y Protección de Datos Personales
+
+Sitio web
+
+https://www.inai.org.mx
+
+Sistema de quejas
+
+https://www.inai.org.mx/DPPP
+
+Teléfono
+
+800 835 4324 (INAI)
+
+Se recomienda al titular que, antes de acudir al INAI, intente resolver el asunto directamente con Mr. Paps a través del canal indicado en la sección 10.1, para lo cual dispone de un plazo de 20 días hábiles de respuesta.
+
+Mr. Paps · mrpapshop.com · contacto@mrpapshop.com
+
+Versión 1.0 — Junio 2026
