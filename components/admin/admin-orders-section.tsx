@@ -80,7 +80,7 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<OrderDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [viewMode, setViewMode] = useAdminViewMode("admin-orders-view", "grid");
+  const [viewMode, setViewMode] = useAdminViewMode("admin-orders-view", "list");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounce the search input → searchQuery
@@ -96,6 +96,7 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
     try {
       const res = await adminListOrders({
         status: filterStatus || undefined,
+        excludeStatus: filterStatus ? undefined : "pendiente_pago",
         search: searchQuery || undefined,
       });
       setOrders(res.data);
@@ -182,9 +183,9 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
 
   return (
     <section className="space-y-6">
-      <BotySurface className="p-4 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3">
+      <BotySurface className="p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
         {/* Search bar */}
-        <div className="relative flex-1 min-w-0 w-full sm:w-auto sm:min-w-[260px] sm:max-w-sm">
+        <div className="relative flex-1 min-w-0 w-full lg:max-w-md xl:max-w-xl">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <input
             type="search"
@@ -212,17 +213,17 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
             value={filterStatus || "__all__"}
             onValueChange={(v) => setFilterStatus(v === "__all__" ? "" : (v as MrpapsOrderStatus))}
             className="max-w-[220px]"
-            placeholder="Todos"
+            placeholder="Pagados y en proceso"
             options={[
-              { value: "__all__", label: "Todos" },
+              { value: "__all__", label: "Pagados y en proceso" },
               ...ALL_ORDER_STATUSES.map((s) => ({ value: s, label: ORDER_STATUS_LABELS[s] })),
             ]}
           />
         </div>
 
-        <div className="flex items-center gap-3 sm:ml-auto">
+        <div className="flex items-center gap-3 w-full lg:w-auto lg:ml-auto shrink-0">
           <AdminViewToggle value={viewMode} onChange={setViewMode} />
-          <span className="text-xs text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
+          <span className="text-xs text-muted-foreground flex items-center gap-1.5 whitespace-nowrap ml-auto lg:ml-0">
             {listLoading && <Loader2 className="w-3 h-3 animate-spin" />}
             {orders.length} pedido{orders.length !== 1 ? "s" : ""}
           </span>
@@ -236,7 +237,7 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
             : "No hay pedidos con este filtro."}
         </BotySurface>
       ) : viewMode === "grid" ? (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {orders.map((order) => (
             <li key={order.publicId}>
               <OrderGridCard order={order} onOpen={() => void loadDetail(order.publicId)} />
@@ -244,10 +245,19 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
           ))}
         </ul>
       ) : (
-        <BotySurface className="overflow-hidden divide-y divide-border/50">
-          {orders.map((order) => (
-            <OrderListRow key={order.publicId} order={order} onOpen={() => void loadDetail(order.publicId)} />
-          ))}
+        <BotySurface className="overflow-hidden">
+          <div className="hidden md:grid md:grid-cols-[auto_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_auto] gap-4 px-4 py-2.5 bg-muted/40 border-b border-border/50 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            <span className="w-10" aria-hidden />
+            <span>Pedido / Cliente</span>
+            <span>Estado</span>
+            <span>Fecha</span>
+            <span className="text-right pr-1">Total</span>
+          </div>
+          <div className="divide-y divide-border/50">
+            {orders.map((order) => (
+              <OrderListRow key={order.publicId} order={order} onOpen={() => void loadDetail(order.publicId)} />
+            ))}
+          </div>
         </BotySurface>
       )}
 
@@ -319,26 +329,41 @@ function OrderListRow({
   order: AdminOrderSummary;
   onOpen: () => void;
 }) {
+  const orderedLabel = new Date(order.orderedAt).toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="w-full text-left px-4 py-3 hover:bg-muted/30 boty-transition flex items-center gap-3 sm:gap-4"
+      className={cn(
+        "w-full text-left px-4 py-3 hover:bg-muted/30 boty-transition",
+        "flex items-center gap-3",
+        "md:grid md:items-center md:gap-4",
+        "md:[grid-template-columns:auto_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_auto]",
+      )}
     >
       <OrderThumb items={order.items} size="sm" />
-      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto_auto] md:items-center gap-1 md:gap-4">
+      <div className="flex-1 min-w-0 md:contents">
         <div className="min-w-0">
           <p className="font-serif text-base truncate">{order.orderNumber}</p>
           <p className="text-sm truncate">{order.customerName}</p>
-          <p className="text-xs text-muted-foreground truncate hidden sm:block">{order.customerEmail}</p>
+          <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 mt-2 md:mt-0">
           <OrderStatusBadges order={order} />
         </div>
-        <p className="text-xs text-muted-foreground whitespace-nowrap hidden lg:block">
-          {new Date(order.orderedAt).toLocaleDateString("es-MX")} · {order.itemCount} pza.
+        <p className="text-xs text-muted-foreground whitespace-nowrap mt-1 md:mt-0">
+          {orderedLabel}
+          <span className="hidden sm:inline">
+            {" "}
+            · {order.itemCount} {order.itemCount === 1 ? "pza." : "pzas."}
+          </span>
         </p>
-        <p className="font-semibold text-primary tabular-nums text-sm md:text-base whitespace-nowrap md:text-right">
+        <p className="font-semibold text-primary tabular-nums text-sm md:text-base whitespace-nowrap md:text-right mt-1 md:mt-0">
           {formatMxn(order.totalMxn)}
         </p>
       </div>

@@ -154,7 +154,7 @@ export function AdminLayout({
             </nav>
           </header>
 
-          <main className="p-4 sm:p-8 max-w-6xl">
+          <main className="w-full min-w-0 p-4 sm:p-6 lg:p-8">
             {error && (
               <p className="mb-6 text-sm text-destructive bg-destructive/10 rounded-2xl px-4 py-3 border border-destructive/20">
                 {error}

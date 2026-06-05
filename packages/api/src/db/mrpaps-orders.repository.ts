@@ -308,6 +308,7 @@ export async function markConfirmationEmailSent(rawPublicId: string): Promise<vo
 
 export async function listOrdersAdmin(filters?: {
   status?: MrpapsOrderStatus;
+  excludeStatuses?: MrpapsOrderStatus[];
   search?: string;
   limit?: number;
 }): Promise<MrpapsOrderWithItems[]> {
@@ -318,6 +319,9 @@ export async function listOrdersAdmin(filters?: {
   if (filters?.status) {
     params.push(filters.status);
     conditions.push(`status = $${params.length}`);
+  } else if (filters?.excludeStatuses?.length) {
+    params.push(filters.excludeStatuses);
+    conditions.push(`status <> ALL($${params.length}::mrpaps_order_status[])`);
   }
 
   if (filters?.search?.trim()) {

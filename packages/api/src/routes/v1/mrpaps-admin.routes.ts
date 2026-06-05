@@ -218,8 +218,17 @@ v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
     const search = typeof req.query.search === 'string' && req.query.search.trim()
       ? req.query.search.trim()
       : undefined;
+    const excludeStatusRaw = req.query.excludeStatus;
+    const excludeStatuses = (Array.isArray(excludeStatusRaw) ? excludeStatusRaw : [excludeStatusRaw])
+      .filter((v): v is string => typeof v === 'string')
+      .map((v) => mrpapsOrderStatusSchema.safeParse(v).data)
+      .filter((v): v is NonNullable<typeof v> => v != null);
 
-    const orders = await ordersRepo.listOrdersAdmin({ status, search });
+    const orders = await ordersRepo.listOrdersAdmin({
+      status,
+      excludeStatuses: status ? undefined : excludeStatuses.length > 0 ? excludeStatuses : undefined,
+      search,
+    });
     res.json({
       data: orders.map((o) => ({
         publicId: o.public_id,
