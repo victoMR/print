@@ -16,5 +16,5 @@ export function clearAdminToken(): void {
 export type AdminSessionUser = {
   id: string;
   email: string;
-  role: "admin";
+  role: "admin" | "dev";
 };

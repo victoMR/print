@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { requireAdminAuth } from '../../middleware/admin-auth.js';
+import { requireAdminAuth, requireDevAuth } from '../../middleware/admin-auth.js';
 import { requireUploadedFile, uploadSingle } from '../../middleware/upload.js';
 import {
   adminLoginSchema,
   adminShippingQuoteSchema,
+  adminListUsersQuerySchema,
+  adminCreateUserSchema,
+  adminUpdateUserRoleSchema,
   createDesignSchema,
   createProductSchema,
   createVariantSchema,
@@ -18,6 +21,7 @@ import * as templatesRepo from '../../db/mrpaps-garment-templates.repository.js'
 import * as ordersRepo from '../../db/mrpaps-orders.repository.js';
 import * as productsRepo from '../../db/mrpaps-products.repository.js';
 import * as adminAuth from '../../services/admin-auth.service.js';
+import * as usersRepo from '../../db/mrpaps-users.repository.js';
 import * as storage from '../../services/mrpaps-storage.service.js';
 import { isEnviaConfigured } from '../../services/shipping/envia.client.js';
 import { quoteShipping } from '../../services/shipping/shipping-quote.service.js';
@@ -492,6 +496,88 @@ v1MrpapsAdminRouter.post('/products/:productId/variants', async (req, res, next)
     });
     res.status(201).json({ data });
     void invalidateCatalogCache();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── Gestión de usuarios (solo dev) ──────────────────────────────────────────
+
+function mapUserAdmin(u: usersRepo.UserAdminRow) {
+  return {
+    id: u.id,
+    email: u.email,
+    fullName: u.full_name,
+    phone: u.phone,
+    role: u.role,
+    emailVerifiedAt: u.email_verified_at,
+    createdAt: u.created_at,
+    updatedAt: u.updated_at,
+  };
+}
+
+v1MrpapsAdminRouter.get('/users', requireDevAuth, async (req, res, next) => {
+  try {
+    const query = adminListUsersQuerySchema.parse(req.query);
+    const { rows, total } = await usersRepo.listUsers({
+      role: query.role,
+      search: query.search,
+      limit: query.limit,
+      offset: query.offset,
+    });
+    res.json({
+      data: rows.map(mapUserAdmin),
+      meta: { total, limit: query.limit, offset: query.offset },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1MrpapsAdminRouter.post('/users', requireDevAuth, async (req, res, next) => {
+  try {
+    const body = adminCreateUserSchema.parse(req.body);
+    const password_hash = await adminAuth.hashPassword(body.password);
+    const user = await usersRepo.createPrivilegedUser({
+      email: body.email,
+      full_name: body.fullName,
+      password_hash,
+      role: body.role,
+    });
+    res.status(201).json({ data: mapUserAdmin(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1MrpapsAdminRouter.patch('/users/:userId/role', requireDevAuth, async (req, res, next) => {
+  try {
+    const userId = req.params.userId as string;
+
+    if (userId === req.adminUser!.id) {
+      res.status(400).json({ error: 'No puedes cambiar tu propio rol' });
+      return;
+    }
+
+    const body = adminUpdateUserRoleSchema.parse(req.body);
+    const user = await usersRepo.updateUserRole(userId, body.role);
+    res.json({ data: mapUserAdmin(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1MrpapsAdminRouter.delete('/users/:userId', requireDevAuth, async (req, res, next) => {
+  try {
+    const userId = req.params.userId as string;
+
+    if (userId === req.adminUser!.id) {
+      res.status(400).json({ error: 'No puedes eliminarte a ti mismo' });
+      return;
+    }
+
+    await usersRepo.deleteUser(userId);
+    res.status(204).end();
   } catch (err) {
     next(err);
   }

@@ -32,6 +32,10 @@ export const resendVerificationSchema = z.object({
   email: z.string().email('Correo inválido').transform((v) => v.trim().toLowerCase()),
 });
 
+export const verificationStatusQuerySchema = z.object({
+  email: z.string().email('Correo inválido').transform((v) => v.trim().toLowerCase()),
+});
+
 export const customerLoginSchema = z.object({
   email: z.string().email('Correo inválido').transform((v) => v.trim().toLowerCase()),
   password: z.string().min(1, 'Contraseña requerida').max(CUSTOMER_PASSWORD_MAX),

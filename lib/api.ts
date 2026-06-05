@@ -186,7 +186,7 @@ export async function adminLogin(email: string, password: string) {
   const res = await apiFetch<{
     data: {
       token: string;
-      user: { id: string; email: string; fullName: string; role: "admin" };
+      user: { id: string; email: string; fullName: string; role: "admin" | "dev" };
     };
   }>(`${V1}/admin/auth/login`, {
     method: "POST",
@@ -200,17 +200,91 @@ export async function adminLogin(email: string, password: string) {
       user: {
         id: res.data.user.id,
         email: res.data.user.email,
-        role: "admin" as const,
+        role: res.data.user.role,
       },
     },
   };
 }
 
 export async function adminFetchMe() {
-  return apiFetch<{ data: { id: string; email: string; role: "admin" } }>(
+  return apiFetch<{ data: { id: string; email: string; role: "admin" | "dev" } }>(
     `${V1}/admin/auth/me`,
     { headers: adminHeaders(), cache: "no-store" },
   );
+}
+
+// ─── Gestión de usuarios (solo dev) ──────────────────────────────────────────
+
+export type AdminUserRow = {
+  id: string;
+  email: string;
+  fullName: string;
+  phone: string | null;
+  role: "customer" | "admin" | "dev";
+  emailVerifiedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function adminListUsers(params?: {
+  role?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  const qs = new URLSearchParams();
+  if (params?.role) qs.set("role", params.role);
+  if (params?.search) qs.set("search", params.search);
+  if (params?.limit != null) qs.set("limit", String(params.limit));
+  if (params?.offset != null) qs.set("offset", String(params.offset));
+
+  const url = `${V1}/admin/users${qs.toString() ? `?${qs}` : ""}`;
+  return apiFetch<{
+    data: AdminUserRow[];
+    meta: { total: number; limit: number; offset: number };
+  }>(url, { headers: adminHeaders(), cache: "no-store" });
+}
+
+export async function adminCreateUser(body: {
+  email: string;
+  fullName: string;
+  password: string;
+  role: "admin" | "dev";
+}) {
+  return apiFetch<{ data: AdminUserRow }>(`${V1}/admin/users`, {
+    method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+}
+
+export async function adminUpdateUserRole(userId: string, role: "customer" | "admin" | "dev") {
+  return apiFetch<{ data: AdminUserRow }>(`${V1}/admin/users/${userId}/role`, {
+    method: "PATCH",
+    headers: adminHeaders(),
+    body: JSON.stringify({ role }),
+    cache: "no-store",
+  });
+}
+
+export async function adminDeleteUser(userId: string) {
+  const base = getApiBase();
+  const url = `${base}${V1}/admin/users/${userId}`;
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: { Accept: "application/json", ...adminHeaders() },
+    cache: "no-store",
+  });
+  if (!res.ok && res.status !== 204) {
+    let body: unknown;
+    try { body = await res.json(); } catch { body = undefined; }
+    const msg =
+      body && typeof body === "object" && "error" in body
+        ? String((body as { error: unknown }).error)
+        : `Error API ${res.status}`;
+    throw new ApiError(msg, res.status, body);
+  }
 }
 
 export async function fetchShippingRates(body: {

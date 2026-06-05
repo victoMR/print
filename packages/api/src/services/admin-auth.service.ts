@@ -11,7 +11,7 @@ export { hashPassword, verifyPassword };
 export type AdminTokenPayload = {
   sub: string;
   email: string;
-  role: 'admin';
+  role: 'admin' | 'dev';
 };
 
 function getJwtSecret(): Uint8Array {
@@ -24,7 +24,7 @@ function getJwtSecret(): Uint8Array {
 
 export async function loginAdmin(email: string, password: string) {
   const user = await usersRepo.findUserByEmailForAuth(email);
-  if (!user || user.role !== 'admin' || !user.password_hash) {
+  if (!user || (user.role !== 'admin' && user.role !== 'dev') || !user.password_hash) {
     throw new AuthError('Correo o contraseña incorrectos');
   }
 
@@ -41,11 +41,11 @@ export async function loginAdmin(email: string, password: string) {
 }
 
 export async function signAdminToken(user: Pick<MrpapsUserRow, 'id' | 'email' | 'role'>): Promise<string> {
-  if (user.role !== 'admin') {
+  if (user.role !== 'admin' && user.role !== 'dev') {
     throw new AuthError('No autorizado');
   }
 
-  return new SignJWT({ email: user.email, role: 'admin' as const })
+  return new SignJWT({ email: user.email, role: user.role })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.id)
     .setIssuedAt()
@@ -65,14 +65,18 @@ export async function verifyAdminToken(token: string): Promise<AdminTokenPayload
       algorithms: ['HS256'],
     });
 
-    if (payload.role !== 'admin' || typeof payload.sub !== 'string' || typeof payload.email !== 'string') {
+    if (
+      (payload.role !== 'admin' && payload.role !== 'dev') ||
+      typeof payload.sub !== 'string' ||
+      typeof payload.email !== 'string'
+    ) {
       throw new AuthError('Token inválido');
     }
 
     return {
       sub: payload.sub,
       email: payload.email,
-      role: 'admin',
+      role: payload.role as 'admin' | 'dev',
     };
   } catch (err) {
     if (err instanceof AuthError) throw err;

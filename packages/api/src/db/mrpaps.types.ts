@@ -9,7 +9,7 @@ export type MrpapsProductStatus = 'active' | 'inactive' | 'archived';
 
 export type MrpapsProductCategory = 'camiseta' | 'sudadera' | 'gorra' | 'tenis';
 
-export type MrpapsUserRole = 'customer' | 'admin';
+export type MrpapsUserRole = 'customer' | 'admin' | 'dev';
 
 export type MrpapsUserRow = {
   id: string;

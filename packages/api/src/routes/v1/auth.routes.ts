@@ -7,9 +7,14 @@ import {
   customerLoginSchema,
   customerRegisterSchema,
   resendVerificationSchema,
+  verificationStatusQuerySchema,
   verifyEmailSchema,
 } from '../../schemas/customer-auth.schema.js';
-import { resendEmailVerification, verifyEmailByToken } from '../../services/email-verification.service.js';
+import {
+  getEmailVerificationStatus,
+  resendEmailVerification,
+  verifyEmailByToken,
+} from '../../services/email-verification.service.js';
 import { bootstrapPasswordSchema } from '../../schemas/mrpaps.schema.js';
 
 export const v1AuthRouter: Router = Router();
@@ -46,6 +51,16 @@ v1AuthRouter.post('/verify-email', async (req, res, next) => {
     const { token } = verifyEmailSchema.parse(req.body);
     const data = await verifyEmailByToken(token);
     res.json({ data, message: 'Correo verificado. Ya puedes iniciar sesión.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1AuthRouter.get('/verification-status', async (req, res, next) => {
+  try {
+    const { email } = verificationStatusQuerySchema.parse({ email: req.query.email });
+    const data = await getEmailVerificationStatus(email);
+    res.json({ data });
   } catch (err) {
     next(err);
   }

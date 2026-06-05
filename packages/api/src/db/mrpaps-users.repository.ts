@@ -1,5 +1,5 @@
 import { query, queryOne, queryRequired, buildUpdateSet } from '../lib/db-helper.js';
-import type { MrpapsAddressRow, MrpapsUserRow } from './mrpaps.types.js';
+import type { MrpapsAddressRow, MrpapsUserRole, MrpapsUserRow } from './mrpaps.types.js';
 
 export async function findUserByEmail(email: string): Promise<MrpapsUserRow | null> {
   return queryOne<MrpapsUserRow>(
@@ -341,4 +341,99 @@ export async function saveAddress(input: {
       input.is_default ?? false,
     ],
   );
+}
+
+// ─── Gestión de usuarios (solo dev) ──────────────────────────────────────────
+
+export type ListUsersOptions = {
+  role?: MrpapsUserRole;
+  search?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export type UserAdminRow = {
+  id: string;
+  email: string;
+  full_name: string;
+  phone: string | null;
+  role: MrpapsUserRole;
+  email_verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function listUsers(opts: ListUsersOptions = {}): Promise<{ rows: UserAdminRow[]; total: number }> {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+  let p = 1;
+
+  if (opts.role) {
+    conditions.push(`role = $${p++}`);
+    params.push(opts.role);
+  }
+
+  if (opts.search) {
+    conditions.push(`(lower(email) LIKE $${p} OR lower(full_name) LIKE $${p})`);
+    params.push(`%${opts.search.toLowerCase()}%`);
+    p++;
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const limit = Math.min(opts.limit ?? 50, 200);
+  const offset = opts.offset ?? 0;
+
+  const [countResult, rows] = await Promise.all([
+    queryOne<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM mrpaps_users ${where}`,
+      params,
+    ),
+    query<UserAdminRow>(
+      `SELECT id, email, full_name, phone, role, email_verified_at, created_at, updated_at
+       FROM mrpaps_users ${where}
+       ORDER BY created_at DESC
+       LIMIT $${p} OFFSET $${p + 1}`,
+      [...params, limit, offset],
+    ),
+  ]);
+
+  return { rows, total: parseInt(countResult?.count ?? '0', 10) };
+}
+
+export async function updateUserRole(userId: string, role: MrpapsUserRole): Promise<MrpapsUserRow> {
+  return queryRequired<MrpapsUserRow>(
+    `UPDATE mrpaps_users SET role = $2, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    [userId, role],
+  );
+}
+
+export async function createPrivilegedUser(input: {
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role: 'admin' | 'dev';
+}): Promise<MrpapsUserRow> {
+  const email = input.email.trim().toLowerCase();
+  const existing = await findUserByEmail(email);
+
+  if (existing) {
+    return queryRequired<MrpapsUserRow>(
+      `UPDATE mrpaps_users
+       SET full_name = $2, role = $3, password_hash = $4, updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [existing.id, input.full_name, input.role, input.password_hash],
+    );
+  }
+
+  return queryRequired<MrpapsUserRow>(
+    `INSERT INTO mrpaps_users (email, full_name, role, password_hash)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [email, input.full_name, input.role, input.password_hash],
+  );
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  await query(`DELETE FROM mrpaps_users WHERE id = $1`, [userId]);
 }

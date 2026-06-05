@@ -189,3 +189,28 @@ export const adminShippingQuoteSchema = z.object({
 export type AdminShippingQuoteBody = z.infer<typeof adminShippingQuoteSchema>;
 export type MrpapsEstimateBody = z.infer<typeof estimateBodySchema>;
 export type MrpapsCreateOrderBody = z.infer<typeof createOrderBodySchema>;
+
+// ─── Gestión de usuarios (solo dev) ──────────────────────────────────────────
+
+export const adminUserRoleSchema = z.enum(['customer', 'admin', 'dev']);
+
+export const adminListUsersQuerySchema = z.object({
+  role: adminUserRoleSchema.optional(),
+  search: z.string().trim().min(1).max(120).optional(),
+  limit: z.coerce.number().int().positive().max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const adminCreateUserSchema = z.object({
+  email: z.string().email().transform((v) => v.trim().toLowerCase()),
+  fullName: z.string().trim().min(1).max(120),
+  password: z.string().min(8).max(128),
+  role: z.enum(['admin', 'dev']).default('admin'),
+});
+
+export const adminUpdateUserRoleSchema = z.object({
+  role: adminUserRoleSchema,
+});
+
+export type AdminCreateUserBody = z.infer<typeof adminCreateUserSchema>;
+export type AdminUpdateUserRoleBody = z.infer<typeof adminUpdateUserRoleSchema>;

@@ -74,6 +74,16 @@ export async function verifyEmailByToken(rawToken: string): Promise<{ email: str
   return { email: user.email };
 }
 
+/** Solo indica si el correo ya fue verificado (para polling en pantalla de espera). */
+export async function getEmailVerificationStatus(email: string): Promise<{ verified: boolean }> {
+  const normalized = email.trim().toLowerCase();
+  const user = await usersRepo.findUserByEmail(normalized);
+  if (!user || user.role !== 'customer') {
+    return { verified: false };
+  }
+  return { verified: Boolean(user.email_verified_at) };
+}
+
 export async function resendEmailVerification(email: string): Promise<void> {
   const normalized = email.trim().toLowerCase();
   const user = await usersRepo.findUserByEmail(normalized);

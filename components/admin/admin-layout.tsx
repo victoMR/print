@@ -6,19 +6,25 @@ import {
   RefreshCw,
   Shirt,
   LayoutDashboard,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AdminSessionUser } from "@/lib/admin-session";
 
-export type AdminTab = "orders" | "products";
+export type AdminTab = "orders" | "products" | "users";
 // | "prototypes" | "designs" — ocultos temporalmente
 
-const TABS: { id: AdminTab; label: string; icon: typeof ClipboardList; description: string }[] = [
+const BASE_TABS: { id: AdminTab; label: string; icon: typeof ClipboardList; description: string; devOnly?: boolean }[] = [
   { id: "orders", label: "Pedidos", icon: ClipboardList, description: "Gestión y envíos" },
   { id: "products", label: "Productos", icon: Shirt, description: "Catálogo tienda" },
+  { id: "users", label: "Usuarios", icon: Users, description: "Roles y accesos", devOnly: true },
   // { id: "prototypes", label: "Prototipos", icon: Sparkles, description: "Referencias imprenta" },
   // { id: "designs", label: "Diseños", icon: ImageIcon, description: "Biblioteca de arte" },
 ];
+
+function getTabs(role: AdminSessionUser["role"]) {
+  return BASE_TABS.filter((t) => !t.devOnly || role === "dev");
+}
 
 type AdminLayoutProps = {
   user: AdminSessionUser;
@@ -41,6 +47,8 @@ export function AdminLayout({
   error,
   children,
 }: AdminLayoutProps) {
+  const TABS = getTabs(user.role);
+
   return (
     <div className="min-h-screen bg-[#f4f1ec]">
       <div className="lg:flex">
@@ -49,7 +57,14 @@ export function AdminLayout({
           <div className="p-6 border-b border-border/60">
             <p className="text-xs uppercase tracking-widest text-muted-foreground">Panel</p>
             <h1 className="font-serif text-2xl mt-1">Mr. Paps</h1>
-            <p className="text-xs text-muted-foreground mt-2 truncate">{user.email}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              {user.role === "dev" && (
+                <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-primary/10 text-primary uppercase tracking-wide">
+                  dev
+                </span>
+              )}
+            </div>
           </div>
 
           <nav className="flex-1 p-4 space-y-1">

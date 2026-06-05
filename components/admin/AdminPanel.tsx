@@ -5,6 +5,7 @@ import { adminFetchMe } from "@/lib/api";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { AdminOrdersSection } from "@/components/admin/admin-orders-section";
 import { AdminProductsSection } from "@/components/admin/AdminProductsSection";
+import { AdminUsersSection } from "@/components/admin/AdminUsersSection";
 import { AdminLayout, type AdminTab } from "@/components/admin/admin-layout";
 import { clearAdminToken, type AdminSessionUser } from "@/lib/admin-session";
 import { Loader2 } from "lucide-react";
@@ -76,6 +77,10 @@ export function AdminPanel() {
 
       {tab === "products" && (
         <AdminProductsSection busy={busy} setBusy={setBusy} onError={setError} />
+      )}
+
+      {tab === "users" && user.role === "dev" && (
+        <AdminUsersSection />
       )}
 
       {/* Prototipos y diseños — ocultos temporalmente

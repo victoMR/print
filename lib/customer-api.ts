@@ -58,6 +58,13 @@ export async function resendVerificationEmail(email: string) {
   });
 }
 
+export async function fetchEmailVerificationStatus(email: string) {
+  const params = new URLSearchParams({ email: email.trim().toLowerCase() });
+  return apiFetch<{ data: { verified: boolean } }>(`${V1}/auth/verification-status?${params}`, {
+    cache: "no-store",
+  });
+}
+
 export async function customerLogin(email: string, password: string) {
   const result = await apiFetch<{ data: { token: string; user: CustomerSessionUser } }>(`${V1}/auth/login`, {
     method: "POST",

@@ -68,6 +68,20 @@ export function errorHandler(
     return;
   }
 
+  if (
+    pg?.code === '42703' &&
+    (pg.message?.includes('terms_accepted_at') ||
+      pg.message?.includes('email_verified_at') ||
+      pg.message?.includes('legal_accepted_version'))
+  ) {
+    res.status(503).json({
+      ok: false,
+      error:
+        'Faltan columnas de registro legal/verificación de correo. Ejecuta: pnpm --filter @print/api migrate',
+    });
+    return;
+  }
+
   logger.error({ err }, 'Unhandled error');
   res.status(500).json({ ok: false, error: 'Error interno del servidor' });
 }

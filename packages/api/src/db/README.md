@@ -43,7 +43,9 @@ Desde la raíz del monorepo:
 pnpm --filter @print/api migrate
 ```
 
-Las migraciones están en `supabase/migrations/` (001–014). El script omite bloques de Supabase Storage (005) que no aplican en PostgreSQL puro.
+Las migraciones están en `supabase/migrations/` (001–019). El script omite bloques de Supabase Storage (005) que no aplican en PostgreSQL puro.
+
+Tras cada `git pull` que incluya archivos en `supabase/migrations/`, vuelve a ejecutar `migrate` antes de reiniciar PM2.
 
 ## Archivos subidos (diseños, previews)
 
