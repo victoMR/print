@@ -27,6 +27,7 @@ export type MrpapsUserRow = {
   terms_accepted_version: string | null;
   privacy_accepted_at: string | null;
   privacy_accepted_version: string | null;
+  token_version: number;
   created_at: string;
   updated_at: string;
 };

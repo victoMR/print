@@ -11,6 +11,7 @@ export type CustomerTokenPayload = {
   sub: string;
   email: string;
   role: 'customer';
+  tv: number;
 };
 
 function getJwtSecret(): Uint8Array {
@@ -73,8 +74,11 @@ export async function loginCustomer(email: string, password: string): Promise<{ 
   return { token, user: publicCustomer(user) };
 }
 
-export async function signCustomerToken(user: Pick<MrpapsUserRow, 'id' | 'email' | 'role'>): Promise<string> {
-  return new SignJWT({ email: user.email, role: 'customer' as const })
+export async function signCustomerToken(
+  user: Pick<MrpapsUserRow, 'id' | 'email' | 'role' | 'token_version'>,
+): Promise<string> {
+  const tv = user.token_version ?? 0;
+  return new SignJWT({ email: user.email, role: 'customer' as const, tv })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.id)
     .setIssuedAt()
@@ -88,9 +92,26 @@ export async function verifyCustomerToken(token: string): Promise<CustomerTokenP
     if (payload.role !== 'customer' || typeof payload.sub !== 'string' || typeof payload.email !== 'string') {
       throw new AuthError('Token inválido');
     }
-    return { sub: payload.sub, email: payload.email, role: 'customer' };
+    const tv = typeof payload.tv === 'number' ? payload.tv : 0;
+    return { sub: payload.sub, email: payload.email, role: 'customer', tv };
   } catch {
     throw new AuthError('Sesión expirada o inválida');
+  }
+}
+
+export async function resolveCustomerSession(
+  token: string,
+  options?: { requireVerifiedEmail?: boolean },
+): Promise<{ id: string; email: string; role: 'customer' } | null> {
+  try {
+    const payload = await verifyCustomerToken(token);
+    const user = await usersRepo.findUserById(payload.sub);
+    if (!user || user.role !== 'customer') return null;
+    if (options?.requireVerifiedEmail !== false && !user.email_verified_at) return null;
+    if ((user.token_version ?? 0) !== payload.tv) return null;
+    return { id: payload.sub, email: payload.email, role: 'customer' };
+  } catch {
+    return null;
   }
 }
 

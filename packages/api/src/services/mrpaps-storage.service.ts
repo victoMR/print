@@ -8,7 +8,6 @@ const ALLOWED_MIME = new Set([
   'image/png',
   'image/jpeg',
   'image/webp',
-  'image/svg+xml',
   'application/pdf',
 ]);
 
@@ -136,7 +135,7 @@ export function validateUploadFile(mime: string, size: number): void {
   }
   if (!ALLOWED_MIME.has(mime)) {
     throw new BadRequestError(
-      'Tipo de archivo no permitido. Usa PNG, JPG, WebP, SVG o PDF.',
+      'Tipo de archivo no permitido. Usa PNG, JPG, WebP o PDF.',
     );
   }
   if (size > MAX_BYTES) {
@@ -151,9 +150,6 @@ async function encodeAsset(
 ): Promise<{ buffer: Buffer; mime: string; ext: string }> {
   if (mime === 'application/pdf') {
     return { buffer, mime, ext: 'pdf' };
-  }
-  if (mime === 'image/svg+xml') {
-    return { buffer, mime, ext: 'svg' };
   }
 
   // Archivos de imprenta: PNG sin pérdida, sin WebP.
@@ -232,11 +228,14 @@ export async function ensurePlaceholderAsset(): Promise<void> {
 }
 
 export function resolveAbsolutePath(relativePath: string): string {
-  const normalized = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
-  if (normalized.includes('..')) {
+  const root = uploadRoot();
+  // path.resolve collapses ALL traversal sequences (including embedded ones like
+  // products/uuid/../../other). Verify the result stays within the upload root.
+  const abs = path.resolve(root, relativePath);
+  if (!abs.startsWith(root + path.sep) && abs !== root) {
     throw new BadRequestError('Ruta de archivo inválida.');
   }
-  return path.join(uploadRoot(), normalized);
+  return abs;
 }
 
 export async function deleteAsset(relativePath: string): Promise<void> {

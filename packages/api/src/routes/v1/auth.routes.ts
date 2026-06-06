@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as customerAuth from '../../services/customer-auth.service.js';
 import * as bootstrapAuth from '../../services/bootstrap-auth.service.js';
-import { requireCustomerAuth } from '../../middleware/customer-auth.js';
+import { requireCustomerAuth, revokeCustomerSession } from '../../middleware/customer-auth.js';
 import { authRateLimit } from '../../middleware/rate-limit.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
 import {
@@ -26,7 +26,10 @@ export const v1AuthRouter: Router = Router();
  * Rate-limited to prevent brute-force of ADMIN_BOOTSTRAP_SECRET.
  */
 v1AuthRouter.post('/bootstrap-password', authRateLimit, async (req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_BOOTSTRAP_SECRET) {
+  // Always disabled in production — this is a one-time migration helper only for dev/staging.
+  // The previous guard was inverted: it only blocked when the secret was ABSENT, meaning
+  // a correctly-configured production server would have the endpoint active.
+  if (process.env.NODE_ENV === 'production') {
     res.status(404).end();
     return;
   }
@@ -105,9 +108,14 @@ v1AuthRouter.post('/login', authRateLimit, async (req, res, next) => {
   }
 });
 
-v1AuthRouter.post('/logout', (_req, res) => {
-  res.clearCookie('customer_token', { httpOnly: true, path: '/' });
-  res.status(204).end();
+v1AuthRouter.post('/logout', requireCustomerAuth, async (req, res, next) => {
+  try {
+    await revokeCustomerSession(req.customerUser!.id);
+    res.clearCookie('customer_token', { httpOnly: true, path: '/' });
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
 });
 
 v1AuthRouter.get('/me', requireCustomerAuth, async (req, res, next) => {

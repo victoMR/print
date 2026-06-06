@@ -1,7 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
-import { verifyCustomerToken } from '../services/customer-auth.service.js';
-import * as usersRepo from '../db/mrpaps-users.repository.js';
-import { AuthError } from '../types/errors.js';
+import { resolveCustomerSession } from '../services/customer-auth.service.js';
+import { incrementCustomerTokenVersion } from '../db/mrpaps-users.repository.js';
 
 declare global {
   namespace Express {
@@ -28,28 +27,25 @@ export async function requireCustomerAuth(req: Request, res: Response, next: Nex
     res.status(401).json({ error: 'Inicia sesión para continuar' });
     return;
   }
-  try {
-    const payload = await verifyCustomerToken(token);
-    const user = await usersRepo.findUserById(payload.sub);
-    if (!user || user.role !== 'customer' || !user.email_verified_at) {
-      res.status(401).json({ error: 'Verifica tu correo o inicia sesión de nuevo.' });
-      return;
-    }
-    req.customerUser = { id: payload.sub, email: payload.email, role: 'customer' };
-    next();
-  } catch (err) {
-    if (err instanceof AuthError) { res.status(401).json({ error: err.message }); return; }
-    next(err);
+  const session = await resolveCustomerSession(token, { requireVerifiedEmail: true });
+  if (!session) {
+    res.status(401).json({ error: 'Verifica tu correo o inicia sesión de nuevo.' });
+    return;
   }
+  req.customerUser = session;
+  next();
 }
 
 export async function optionalCustomerAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
   const token = extractCustomerToken(req);
   if (token) {
-    try {
-      const payload = await verifyCustomerToken(token);
-      req.customerUser = { id: payload.sub, email: payload.email, role: 'customer' };
-    } catch { /* anonymous */ }
+    const session = await resolveCustomerSession(token, { requireVerifiedEmail: false });
+    if (session) req.customerUser = session;
   }
   next();
+}
+
+/** Invalida el JWT actual (logout server-side). */
+export async function revokeCustomerSession(userId: string): Promise<void> {
+  await incrementCustomerTokenVersion(userId);
 }

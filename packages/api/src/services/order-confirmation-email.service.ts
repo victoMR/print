@@ -3,6 +3,7 @@ import type { MrpapsOrderWithItems } from '../db/mrpaps.types.js';
 import { formatTrackingCodeDisplay } from '../lib/order-tracking-code.js';
 import { isMailConfigured, sendMail, storefrontUrl } from '../lib/mail.js';
 import { logger } from '../lib/logger.js';
+import { sanitizeMailHeaderValue } from '../lib/sanitize-mail.js';
 
 function formatMxn(amount: number | string): string {
   const value = typeof amount === 'string' ? Number.parseFloat(amount) : amount;
@@ -26,7 +27,8 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
   html: string;
   text: string;
 } {
-  const trackingCode = formatTrackingCodeDisplay(order.public_id);
+  const trackingCode = sanitizeMailHeaderValue(formatTrackingCodeDisplay(order.public_id));
+  const customerName = sanitizeMailHeaderValue(order.customer_name);
   const storeUrl = storefrontUrl();
   const trackingUrl = `${storeUrl}/seguimiento`;
   const orderUrl = `${storeUrl}/pedido/${encodeURIComponent(order.public_id)}`;
@@ -69,7 +71,7 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
           <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;color:#71717a;">Mr. Paps</p>
           <h1 style="margin:0 0 12px;font-size:28px;line-height:1.2;">¡Gracias por tu compra!</h1>
           <p style="margin:0;font-size:16px;line-height:1.6;color:#52525b;">
-            Hola ${escapeHtml(order.customer_name)}, recibimos tu pedido y ya estamos preparándolo.
+            Hola ${escapeHtml(customerName)}, recibimos tu pedido y ya estamos preparándolo.
           </p>
         </td></tr>
         <tr><td style="padding:8px 32px 24px;">
@@ -121,7 +123,7 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
 
   const text = `¡Gracias por tu compra en Mr. Paps!
 
-Hola ${order.customer_name},
+Hola ${customerName},
 
 Recibimos tu pedido y ya estamos preparándolo.
 

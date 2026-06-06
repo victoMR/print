@@ -41,9 +41,12 @@ v1CheckoutRouter.post('/orders', checkoutRateLimit, optionalCustomerAuth, async 
 });
 
 /** Tras pago exitoso en Stripe (cliente o retorno 3DS). Idempotente con el webhook. */
-v1CheckoutRouter.post('/orders/:publicOrderId/finalize-payment', async (req, res, next) => {
+v1CheckoutRouter.post('/orders/:publicOrderId/finalize-payment', checkoutRateLimit, async (req, res, next) => {
   try {
-    const data = await checkoutPresenter.finalizeOrderPaymentPublic(req.params.publicOrderId);
+    const publicOrderId = Array.isArray(req.params.publicOrderId)
+      ? req.params.publicOrderId[0]
+      : req.params.publicOrderId;
+    const data = await checkoutPresenter.finalizeOrderPaymentPublic(publicOrderId);
     res.json({ data });
   } catch (err) {
     next(err);

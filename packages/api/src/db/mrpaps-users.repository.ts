@@ -54,7 +54,8 @@ export async function upsertCustomerWithPassword(input: {
   if (existing) {
     return queryRequired<MrpapsUserRow>(
       `UPDATE mrpaps_users
-       SET full_name = $2, phone = $3, password_hash = $4, role = 'customer', updated_at = NOW()
+       SET full_name = $2, phone = $3, password_hash = $4, role = 'customer',
+           token_version = token_version + 1, updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
       [existing.id, input.full_name, input.phone, input.password_hash],
@@ -436,4 +437,13 @@ export async function createPrivilegedUser(input: {
 
 export async function deleteUser(userId: string): Promise<void> {
   await query(`DELETE FROM mrpaps_users WHERE id = $1`, [userId]);
+}
+
+export async function incrementCustomerTokenVersion(userId: string): Promise<void> {
+  await query(
+    `UPDATE mrpaps_users
+     SET token_version = token_version + 1, updated_at = NOW()
+     WHERE id = $1 AND role = 'customer'`,
+    [userId],
+  );
 }

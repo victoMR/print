@@ -23,6 +23,18 @@ v1PaymentRouter.post('/payment-intent', checkoutRateLimit, optionalCustomerAuth,
     const order = await getOrderForPayment(publicOrderId);
     if (!order) throw new NotFoundError('Pedido no encontrado');
 
+    // Ownership check: if the order belongs to a registered user, require the caller
+    // to be that user. Guest orders (user_id = null) are accessible with the publicOrderId.
+    if (order.user_id && req.customerUser?.id !== order.user_id) {
+      throw new NotFoundError('Pedido no encontrado');
+    }
+
+    // Guard against creating a new PaymentIntent on an already-paid order.
+    if (order.payment_status === 'paid') {
+      res.status(409).json({ error: 'Este pedido ya fue pagado.' });
+      return;
+    }
+
     const { clientSecret, paymentIntentId } = await createPaymentIntent({
       amountMxn: Number(order.total_mxn),
       orderId: order.id,

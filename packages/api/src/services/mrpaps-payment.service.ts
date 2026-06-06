@@ -1,6 +1,7 @@
 import { getStripe, isStripeConfigured } from '../lib/stripe.js';
 import { logger } from '../lib/logger.js';
 import { pool } from '../lib/db.js';
+import { claimStripeWebhookEvent } from '../db/stripe-webhook-events.repository.js';
 import { updateOrderPaymentByPublicId } from '../db/mrpaps-orders.repository.js';
 import { finalizeOrderPayment } from './mrpaps-order-payment-finalize.service.js';
 import type Stripe from 'stripe';
@@ -51,7 +52,13 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string): P
     throw new Error(`Webhook inválido: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  logger.info({ type: event.type }, 'Stripe webhook recibido');
+  logger.info({ type: event.type, eventId: event.id }, 'Stripe webhook recibido');
+
+  const claimed = await claimStripeWebhookEvent(event.id, event.type);
+  if (!claimed) {
+    logger.info({ eventId: event.id, type: event.type }, 'Webhook Stripe duplicado — ignorado');
+    return;
+  }
 
   if (event.type === 'payment_intent.succeeded') {
     const intent = event.data.object as Stripe.PaymentIntent;

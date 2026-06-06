@@ -7,7 +7,8 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/webp',
   'image/gif',
-  'image/svg+xml',
+  // image/svg+xml intentionally excluded: SVGs can contain <script> tags and
+  // execute JavaScript when served on the same origin, enabling stored XSS.
   'application/pdf',
 ]);
 

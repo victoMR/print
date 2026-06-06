@@ -42,6 +42,7 @@ const MOCK_ADMIN_USER = {
   terms_accepted_version: null,
   privacy_accepted_at: null,
   privacy_accepted_version: null,
+  token_version: 0,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };

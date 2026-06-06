@@ -2,39 +2,72 @@ import { SignJWT, jwtVerify } from 'jose';
 import type { MrpapsUserRow } from '../db/mrpaps.types.js';
 import * as usersRepo from '../db/mrpaps-users.repository.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
+import { getRedisConnection } from '../lib/queue.js';
 import { AuthError } from '../types/errors.js';
 
 const TOKEN_TTL = '8h';
 
 const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+const LOCKOUT_SECS = 15 * 60; // 15 minutes
+
+// ── Brute-force lockout ────────────────────────────────────────────────────
+// Redis-backed when Redis is available (survives multi-process PM2 deployments).
+// Falls back to in-memory when Redis is disabled.
 
 type LoginAttemptState = { attempts: number; lockedUntil: number | null };
-const loginAttempts = new Map<string, LoginAttemptState>();
+const memoryAttempts = new Map<string, LoginAttemptState>();
 
-function checkBruteForce(email: string): void {
-  const state = loginAttempts.get(email);
+async function checkBruteForce(email: string): Promise<void> {
+  const redis = getRedisConnection();
+  if (redis) {
+    const key = `admin:lockout:${email}`;
+    const raw = await redis.get(key);
+    if (raw) {
+      const attempts = parseInt(raw, 10);
+      if (attempts >= MAX_ATTEMPTS) {
+        const ttl = await redis.ttl(key);
+        const remaining = Math.ceil(ttl / 60);
+        throw new AuthError(`Cuenta bloqueada temporalmente. Intenta en ${remaining} min.`);
+      }
+    }
+    return;
+  }
+  // In-memory fallback
+  const state = memoryAttempts.get(email);
   if (!state) return;
   if (state.lockedUntil && Date.now() < state.lockedUntil) {
     const remaining = Math.ceil((state.lockedUntil - Date.now()) / 60_000);
     throw new AuthError(`Cuenta bloqueada temporalmente. Intenta en ${remaining} min.`);
   }
   if (state.lockedUntil && Date.now() >= state.lockedUntil) {
-    loginAttempts.delete(email);
+    memoryAttempts.delete(email);
   }
 }
 
-function recordFailedAttempt(email: string): void {
-  const state = loginAttempts.get(email) ?? { attempts: 0, lockedUntil: null };
+async function recordFailedAttempt(email: string): Promise<void> {
+  const redis = getRedisConnection();
+  if (redis) {
+    const key = `admin:lockout:${email}`;
+    const attempts = await redis.incr(key);
+    if (attempts === 1) await redis.expire(key, LOCKOUT_SECS);
+    return;
+  }
+  // In-memory fallback
+  const state = memoryAttempts.get(email) ?? { attempts: 0, lockedUntil: null };
   state.attempts += 1;
   if (state.attempts >= MAX_ATTEMPTS) {
-    state.lockedUntil = Date.now() + LOCKOUT_MS;
+    state.lockedUntil = Date.now() + LOCKOUT_SECS * 1000;
   }
-  loginAttempts.set(email, state);
+  memoryAttempts.set(email, state);
 }
 
-function clearAttempts(email: string): void {
-  loginAttempts.delete(email);
+async function clearAttempts(email: string): Promise<void> {
+  const redis = getRedisConnection();
+  if (redis) {
+    await redis.del(`admin:lockout:${email}`);
+    return;
+  }
+  memoryAttempts.delete(email);
 }
 
 export { hashPassword, verifyPassword };
@@ -54,21 +87,22 @@ function getJwtSecret(): Uint8Array {
 }
 
 export async function loginAdmin(email: string, password: string) {
-  checkBruteForce(email);
+  const normalizedEmail = email.trim().toLowerCase();
+  await checkBruteForce(normalizedEmail);
 
-  const user = await usersRepo.findUserByEmailForAuth(email);
+  const user = await usersRepo.findUserByEmailForAuth(normalizedEmail);
   if (!user || (user.role !== 'admin' && user.role !== 'dev') || !user.password_hash) {
-    recordFailedAttempt(email);
+    await recordFailedAttempt(normalizedEmail);
     throw new AuthError('Correo o contraseña incorrectos');
   }
 
   const valid = await verifyPassword(password, user.password_hash);
   if (!valid) {
-    recordFailedAttempt(email);
+    await recordFailedAttempt(normalizedEmail);
     throw new AuthError('Correo o contraseña incorrectos');
   }
 
-  clearAttempts(email);
+  await clearAttempts(normalizedEmail);
   const token = await signAdminToken(user);
   return {
     token,

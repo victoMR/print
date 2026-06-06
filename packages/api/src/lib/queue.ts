@@ -4,6 +4,15 @@ import { logger } from './logger.js';
 
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
 
+function redisUrlHasAuth(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return Boolean(parsed.password || parsed.username);
+  } catch {
+    return false;
+  }
+}
+
 export interface WebhookJobData {
   type: string;
   data: Record<string, unknown>;
@@ -65,6 +74,11 @@ export async function connectRedis(): Promise<boolean> {
 
     redisReady = true;
     logger.info('Redis conectado (cache + BullMQ)');
+    if (process.env.NODE_ENV === 'production' && !redisUrlHasAuth(redisUrl)) {
+      logger.warn(
+        'REDIS_URL sin contraseña en producción — usa redis://:password@host:6379 y bind 127.0.0.1',
+      );
+    }
     return true;
   } catch (err) {
     redis.disconnect();
