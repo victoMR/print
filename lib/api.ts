@@ -363,13 +363,8 @@ export async function createDraftOrder(body: {
   saveAccount?: boolean;
   acceptedLegal?: true;
 }) {
-  const customerToken = typeof window !== "undefined" ? getCustomerToken() : null;
-  const headers: Record<string, string> = {};
-  if (customerToken) headers.Authorization = `Bearer ${customerToken}`;
-
   return apiFetch<CreateOrderResponse>(`${V1}/checkout/orders`, {
     method: "POST",
-    headers,
     body: JSON.stringify(body),
     cache: "no-store",
   });
@@ -393,15 +388,10 @@ export async function fetchGuestOrderDetail(trackingCode: string, email: string)
 }
 
 export async function fetchAccountOrderDetail(publicOrderId: string) {
-  const token = getCustomerToken();
-  if (!token) throw new Error("Inicia sesión para ver tu pedido");
-
+  // Auth via HttpOnly cookie (credentials: 'include' set globally in apiFetch).
   return apiFetch<OrderDetailResponse>(
     `${V1}/account/orders/${encodeURIComponent(publicOrderId)}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    },
+    { cache: "no-store" },
   );
 }
 

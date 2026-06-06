@@ -12,17 +12,9 @@ export async function GET() {
     const contentType = res.headers.get("content-type") ?? "application/json";
     const body = await res.text();
     return new NextResponse(body, { status: res.status, headers: { "Content-Type": contentType } });
-  } catch (err) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "No se pudo contactar al API",
-        apiBase: base,
-        detail: err instanceof Error ? err.message : String(err),
-        hint: "En el VPS: pm2 restart print-api y que API_INTERNAL_URL apunte a http://127.0.0.1:4000",
-      },
-      { status: 502 },
-    );
+  } catch {
+    // Don't expose the internal API URL or error detail — it reveals infrastructure topology.
+    return NextResponse.json({ ok: false, error: "Webhook no disponible" }, { status: 502 });
   }
 }
 

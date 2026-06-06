@@ -67,8 +67,8 @@ export async function requireDevAuth(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const header = req.header('authorization');
-    const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : null;
+    // Use the same cookie-aware extractor as requireAdminAuth.
+    const token = extractAdminToken(req);
 
     if (!token) {
       res.status(401).json({ error: 'Inicia sesión en el panel admin' });

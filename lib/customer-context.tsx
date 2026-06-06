@@ -2,7 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { CustomerSessionUser } from "./customer-session";
-import { clearCustomerToken, getCustomerToken } from "./customer-session";
+import { clearCustomerToken } from "./customer-session";
+import { customerLogout } from "./customer-api";
 
 const V1 = "/api/v1";
 
@@ -25,17 +26,13 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const token = getCustomerToken();
-    if (!token) { setUser(null); setLoading(false); return; }
     try {
-      const res = await fetch(`${V1}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Auth via HttpOnly cookie — no token in localStorage needed.
+      const res = await fetch(`${V1}/auth/me`, { credentials: "include" });
       if (res.ok) {
         const json = await res.json() as { data: CustomerSessionUser };
         setUser(json.data);
       } else {
-        clearCustomerToken();
         setUser(null);
       }
     } catch {
@@ -46,7 +43,8 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    clearCustomerToken();
+    clearCustomerToken(); // clean up any legacy localStorage value
+    void customerLogout(); // ask server to clear the HttpOnly cookie
     setUser(null);
   }, []);
 
