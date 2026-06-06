@@ -24,7 +24,12 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const redirect = params.get("redirect") ?? "/cuenta";
+  // Validate redirect is a safe same-origin relative path to prevent open redirect attacks.
+  const rawRedirect = params.get("redirect") ?? "/cuenta";
+  const redirect =
+    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+      ? rawRedirect
+      : "/cuenta";
   const registerHref = buildAuthHref("/registro", redirect);
 
   async function handleSubmit(e: React.FormEvent) {

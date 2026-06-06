@@ -213,9 +213,16 @@ function stripGuestFields(detail: OrderDetailDto): OrderDetailDto {
   return {
     ...detail,
     internalNotes: undefined,
+    // Strip PII that is only needed in authenticated/admin contexts.
+    customer: {
+      name: detail.customer.name,
+      email: detail.customer.email,
+      phone: '',          // not returned to unauthenticated callers
+      taxNumber: null,    // RFC is legally sensitive PII
+    },
     items: detail.items.map((item) => ({
       ...item,
-      printFileUrl: null,
+      printFileUrl: null, // production print files are admin-only
     })),
   };
 }

@@ -1,16 +1,20 @@
-const STORAGE_KEY = "mrpaps-customer-token";
+// Customer auth is now handled via HttpOnly cookie set by the server on login.
+// localStorage is no longer used — tokens stored there are not readable by XSS.
 
+/** @deprecated Token is now an HttpOnly cookie. Always returns null. */
 export function getCustomerToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(STORAGE_KEY);
+  return null;
 }
 
-export function setCustomerToken(token: string): void {
-  localStorage.setItem(STORAGE_KEY, token);
+/** @deprecated Token is now an HttpOnly cookie set by the server. No-op. */
+export function setCustomerToken(_token: string): void {
+  // no-op
 }
 
 export function clearCustomerToken(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  if (typeof window === "undefined") return;
+  // Remove any legacy localStorage token from before the cookie migration.
+  localStorage.removeItem("mrpaps-customer-token");
 }
 
 export type CustomerSessionUser = {

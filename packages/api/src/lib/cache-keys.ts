@@ -28,7 +28,9 @@ export function catalogListKey(
 }
 
 export function catalogProductKey(idOrSlug: string): string {
-  return `${CACHE_PREFIX}catalog:product:${idOrSlug.toLowerCase()}`;
+  // Sanitize to prevent Redis key injection via special characters or path traversal.
+  const safe = idOrSlug.toLowerCase().replace(/[^a-z0-9-]/g, '_').slice(0, 128);
+  return `${CACHE_PREFIX}catalog:product:${safe}`;
 }
 
 export function catalogPattern(): string {

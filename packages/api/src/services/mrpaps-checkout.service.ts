@@ -28,13 +28,17 @@ function addressFromRecipient(recipient: MrpapsCreateOrderBody['recipient']) {
 const IVA_RATE = 0.16;
 
 function computeRetailTotals(subtotal: number, shipping: number) {
-  const tax = (subtotal + shipping) * IVA_RATE;
-  const total = subtotal + shipping + tax;
+  // Round each intermediate value to 2 decimal places using integer (cent) arithmetic
+  // to prevent float drift that would cause valid orders to be rejected with "totals don't match".
+  const subtotalCents = Math.round(subtotal * 100);
+  const shippingCents = Math.round(shipping * 100);
+  const taxCents = Math.round((subtotalCents + shippingCents) * IVA_RATE);
+  const totalCents = subtotalCents + shippingCents + taxCents;
   return {
-    subtotal: subtotal.toFixed(2),
-    shipping: shipping.toFixed(2),
-    tax: tax.toFixed(2),
-    total: total.toFixed(2),
+    subtotal: (subtotalCents / 100).toFixed(2),
+    shipping: (shippingCents / 100).toFixed(2),
+    tax: (taxCents / 100).toFixed(2),
+    total: (totalCents / 100).toFixed(2),
   };
 }
 

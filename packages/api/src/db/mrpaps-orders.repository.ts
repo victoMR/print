@@ -393,6 +393,16 @@ export async function listOrdersAdmin(filters?: {
   }));
 }
 
+/** Legal status transitions — prevents moving orders into invalid states. */
+const ALLOWED_STATUS_TRANSITIONS: Record<MrpapsOrderStatus, MrpapsOrderStatus[]> = {
+  pendiente_pago:      ['pedido', 'cancelado'],
+  pedido:              ['solicitado_imprenta', 'cancelado'],
+  solicitado_imprenta: ['recibido_imprenta', 'cancelado'],
+  recibido_imprenta:   ['enviado', 'cancelado'],
+  enviado:             [],   // terminal — no further transitions
+  cancelado:           [],   // terminal — no further transitions
+};
+
 export async function updateOrderStatus(
   publicId: string,
   toStatus: MrpapsOrderStatus,
@@ -409,6 +419,14 @@ export async function updateOrderStatus(
 ): Promise<MrpapsOrderRow> {
   const existing = await getOrderByPublicId(publicId);
   if (!existing) throw new Error('Pedido no encontrado');
+
+  const allowed = ALLOWED_STATUS_TRANSITIONS[existing.status];
+  if (!allowed.includes(toStatus)) {
+    throw new Error(
+      `Transición de estado inválida: ${existing.status} → ${toStatus}. ` +
+      `Estados permitidos: ${allowed.length > 0 ? allowed.join(', ') : 'ninguno (estado terminal)'}`,
+    );
+  }
 
   const now = new Date().toISOString();
   const timestamps: Record<string, string> = {};

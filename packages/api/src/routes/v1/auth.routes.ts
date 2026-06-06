@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as customerAuth from '../../services/customer-auth.service.js';
 import * as bootstrapAuth from '../../services/bootstrap-auth.service.js';
 import { requireCustomerAuth } from '../../middleware/customer-auth.js';
+import { authRateLimit } from '../../middleware/rate-limit.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
 import {
   customerLoginSchema,
@@ -22,8 +23,13 @@ export const v1AuthRouter: Router = Router();
 /**
  * Temporal — restablecer contraseña tras migración desde Supabase.
  * Requiere ADMIN_BOOTSTRAP_SECRET en packages/api/.env. Quitar el secret en producción estable.
+ * Rate-limited to prevent brute-force of ADMIN_BOOTSTRAP_SECRET.
  */
-v1AuthRouter.post('/bootstrap-password', async (req, res, next) => {
+v1AuthRouter.post('/bootstrap-password', authRateLimit, async (req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_BOOTSTRAP_SECRET) {
+    res.status(404).end();
+    return;
+  }
   try {
     const body = bootstrapPasswordSchema.parse(req.body);
     const data = await bootstrapAuth.bootstrapUserPassword(body);
@@ -66,24 +72,42 @@ v1AuthRouter.get('/verification-status', async (req, res, next) => {
   }
 });
 
-v1AuthRouter.post('/resend-verification', async (req, res, next) => {
+v1AuthRouter.post('/resend-verification', authRateLimit, async (req, res, next) => {
   try {
     const { email } = resendVerificationSchema.parse(req.body);
-    await resendEmailVerification(email);
+    // Suppress the "already verified" error to prevent account enumeration.
+    try {
+      await resendEmailVerification(email);
+    } catch { /* swallow — always return generic message */ }
     res.json({ message: 'Si el correo está registrado y pendiente de verificación, enviamos un nuevo enlace.' });
   } catch (err) {
     next(err);
   }
 });
 
-v1AuthRouter.post('/login', async (req, res, next) => {
+v1AuthRouter.post('/login', authRateLimit, async (req, res, next) => {
   try {
     const body = customerLoginSchema.parse(req.body);
     const result = await customerAuth.loginCustomer(body.email, body.password);
-    res.json({ data: result });
+
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('customer_token', result.token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days — matches TOKEN_TTL
+      path: '/',
+    });
+
+    res.json({ data: { user: result.user } });
   } catch (err) {
     next(err);
   }
+});
+
+v1AuthRouter.post('/logout', (_req, res) => {
+  res.clearCookie('customer_token', { httpOnly: true, path: '/' });
+  res.status(204).end();
 });
 
 v1AuthRouter.get('/me', requireCustomerAuth, async (req, res, next) => {

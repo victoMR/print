@@ -59,25 +59,13 @@ export function errorHandler(
   }
 
   const pg = err as { code?: string; message?: string };
-  if (pg?.code === '42703' && pg.message?.includes('garment_color_hex')) {
+  // Handle missing-column errors with generic messages that don't reveal schema details.
+  // Log the full DB error server-side; never surface column/table names to the client.
+  if (pg?.code === '42703') {
+    logger.error({ err }, 'Missing DB column — run migrations: pnpm --filter @print/api migrate');
     res.status(503).json({
       ok: false,
-      error:
-        'Falta la columna garment_color_hex. Ejecuta: pnpm --filter @print/api migrate',
-    });
-    return;
-  }
-
-  if (
-    pg?.code === '42703' &&
-    (pg.message?.includes('terms_accepted_at') ||
-      pg.message?.includes('email_verified_at') ||
-      pg.message?.includes('legal_accepted_version'))
-  ) {
-    res.status(503).json({
-      ok: false,
-      error:
-        'Faltan columnas de registro legal/verificación de correo. Ejecuta: pnpm --filter @print/api migrate',
+      error: 'Servicio temporalmente no disponible. El administrador ha sido notificado.',
     });
     return;
   }

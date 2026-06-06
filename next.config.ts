@@ -6,7 +6,10 @@ const apiOrigin = apiUrl.replace(/\/$/, "");
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://va.vercel-scripts.com https://*.vercel-scripts.com",
+  // 'unsafe-inline' required for JSON-LD script tags and Next.js inline chunks.
+  // TODO: migrate to nonce-based CSP via Next.js middleware for full XSS protection.
+  // 'unsafe-eval' removed — it was never needed in production and disables eval()-based attacks.
+  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://va.vercel-scripts.com https://*.vercel-scripts.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob:",

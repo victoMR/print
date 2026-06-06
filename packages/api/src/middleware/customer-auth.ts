@@ -11,9 +11,19 @@ declare global {
   }
 }
 
-export async function requireCustomerAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+/**
+ * HttpOnly cookie (preferred, XSS-safe) → Bearer header fallback (SSR / mobile apps).
+ */
+function extractCustomerToken(req: Request): string | null {
+  const cookieHeader = req.headers.cookie ?? '';
+  const match = cookieHeader.match(/(?:^|;\s*)customer_token=([^;]+)/);
+  if (match) return decodeURIComponent(match[1]);
   const header = req.header('authorization');
-  const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : null;
+  return header?.startsWith('Bearer ') ? header.slice(7).trim() : null;
+}
+
+export async function requireCustomerAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const token = extractCustomerToken(req);
   if (!token) {
     res.status(401).json({ error: 'Inicia sesión para continuar' });
     return;
@@ -34,8 +44,7 @@ export async function requireCustomerAuth(req: Request, res: Response, next: Nex
 }
 
 export async function optionalCustomerAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
-  const header = req.header('authorization');
-  const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : null;
+  const token = extractCustomerToken(req);
   if (token) {
     try {
       const payload = await verifyCustomerToken(token);

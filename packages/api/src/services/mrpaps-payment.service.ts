@@ -1,5 +1,6 @@
 import { getStripe, isStripeConfigured } from '../lib/stripe.js';
 import { logger } from '../lib/logger.js';
+import { pool } from '../lib/db.js';
 import { updateOrderPaymentByPublicId } from '../db/mrpaps-orders.repository.js';
 import { finalizeOrderPayment } from './mrpaps-order-payment-finalize.service.js';
 import type Stripe from 'stripe';
@@ -73,8 +74,18 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string): P
     const intent = event.data.object as Stripe.PaymentIntent;
     const publicOrderId = intent.metadata.public_order_id;
     if (publicOrderId) {
-      await updateOrderPaymentByPublicId(publicOrderId, { payment_status: 'failed' });
-      logger.info({ publicOrderId, intentId: intent.id }, 'Pago fallido registrado');
+      // Guard: never downgrade an already-paid order (Stripe event delivery is unordered).
+      const result = await pool.query(
+        `UPDATE mrpaps_orders
+         SET payment_status = 'failed', updated_at = NOW()
+         WHERE public_id = $1 AND (payment_status IS NULL OR payment_status NOT IN ('paid'))`,
+        [publicOrderId],
+      );
+      if ((result.rowCount ?? 0) > 0) {
+        logger.info({ publicOrderId, intentId: intent.id }, 'Pago fallido registrado');
+      } else {
+        logger.warn({ publicOrderId, intentId: intent.id }, 'payment_failed ignorado — pedido ya pagado');
+      }
     }
   }
 
