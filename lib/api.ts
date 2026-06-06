@@ -58,6 +58,7 @@ export async function apiFetch<T>(
   let res: Response;
   try {
     res = await fetch(url, {
+      credentials: "include",
       ...init,
       headers: {
         Accept: "application/json",
@@ -157,9 +158,9 @@ async function adminMultipartFetch<T>(
 
   const res = await fetch(url, {
     method: "POST",
+    credentials: "include",
     headers: {
       Accept: "application/json",
-      ...adminHeaders(),
     },
     body: formData,
     cache: "no-store",
@@ -185,7 +186,6 @@ async function adminMultipartFetch<T>(
 export async function adminLogin(email: string, password: string) {
   const res = await apiFetch<{
     data: {
-      token: string;
       user: { id: string; email: string; fullName: string; role: "admin" | "dev" };
     };
   }>(`${V1}/admin/auth/login`, {
@@ -196,7 +196,6 @@ export async function adminLogin(email: string, password: string) {
 
   return {
     data: {
-      token: res.data.token,
       user: {
         id: res.data.user.id,
         email: res.data.user.email,
@@ -204,6 +203,12 @@ export async function adminLogin(email: string, password: string) {
       },
     },
   };
+}
+
+export async function adminLogout() {
+  try {
+    await apiFetch(`${V1}/admin/auth/logout`, { method: "POST", cache: "no-store" });
+  } catch { /* ignore — clear local state regardless */ }
 }
 
 export async function adminFetchMe() {

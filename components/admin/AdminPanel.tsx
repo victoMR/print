@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { adminFetchMe } from "@/lib/api";
+import { adminFetchMe, adminLogout } from "@/lib/api";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { AdminOrdersSection } from "@/components/admin/admin-orders-section";
 import { AdminProductsSection } from "@/components/admin/AdminProductsSection";
@@ -50,6 +50,7 @@ export function AdminPanel() {
 
   function handleLogout() {
     clearAdminToken();
+    void adminLogout();
     setUser(null);
   }
 
