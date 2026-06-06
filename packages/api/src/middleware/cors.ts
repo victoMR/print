@@ -1,9 +1,15 @@
 import type { Request, Response, NextFunction } from 'express';
 
-const ALLOWED_ORIGINS = new Set([
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-]);
+function buildAllowedOrigins(): Set<string> {
+  const defaults = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+  const extra = (process.env.ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return new Set([...defaults, ...extra]);
+}
+
+const ALLOWED_ORIGINS = buildAllowedOrigins();
 
 export function corsMiddleware(req: Request, res: Response, next: NextFunction): void {
   const origin = req.headers.origin;

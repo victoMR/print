@@ -71,6 +71,27 @@ export async function listVariantsByProductIdAdmin(
   );
 }
 
+export async function batchListVariantsByProductIds(
+  productIds: string[],
+): Promise<Map<string, MrpapsProductVariantRow[]>> {
+  if (productIds.length === 0) return new Map();
+
+  const rows = await query<MrpapsProductVariantRow>(
+    `SELECT * FROM mrpaps_product_variants
+     WHERE product_id = ANY($1::uuid[]) AND status <> 'archived'
+     ORDER BY sort_order`,
+    [productIds],
+  );
+
+  const map = new Map<string, MrpapsProductVariantRow[]>();
+  for (const row of rows) {
+    const list = map.get(row.product_id) ?? [];
+    list.push(row);
+    map.set(row.product_id, list);
+  }
+  return map;
+}
+
 export async function updateProductAdmin(
   productId: string,
   patch: Partial<{

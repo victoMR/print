@@ -1,16 +1,19 @@
-const STORAGE_KEY = "mrpaps-admin-token";
+// Auth is handled via HttpOnly cookie set by the server on login.
+// sessionStorage is no longer used for the token.
 
+/** @deprecated Token is now an HttpOnly cookie. Keep only for legacy cleanup. */
 export function getAdminToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return sessionStorage.getItem(STORAGE_KEY);
+  return null;
 }
 
-export function setAdminToken(token: string): void {
-  sessionStorage.setItem(STORAGE_KEY, token);
+/** @deprecated Token is now an HttpOnly cookie set by the server. */
+export function setAdminToken(_token: string): void {
+  // no-op
 }
 
 export function clearAdminToken(): void {
-  sessionStorage.removeItem(STORAGE_KEY);
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem("mrpaps-admin-token");
 }
 
 export type AdminSessionUser = {

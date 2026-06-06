@@ -6,6 +6,37 @@ import { AuthError } from '../types/errors.js';
 
 const TOKEN_TTL = '8h';
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+type LoginAttemptState = { attempts: number; lockedUntil: number | null };
+const loginAttempts = new Map<string, LoginAttemptState>();
+
+function checkBruteForce(email: string): void {
+  const state = loginAttempts.get(email);
+  if (!state) return;
+  if (state.lockedUntil && Date.now() < state.lockedUntil) {
+    const remaining = Math.ceil((state.lockedUntil - Date.now()) / 60_000);
+    throw new AuthError(`Cuenta bloqueada temporalmente. Intenta en ${remaining} min.`);
+  }
+  if (state.lockedUntil && Date.now() >= state.lockedUntil) {
+    loginAttempts.delete(email);
+  }
+}
+
+function recordFailedAttempt(email: string): void {
+  const state = loginAttempts.get(email) ?? { attempts: 0, lockedUntil: null };
+  state.attempts += 1;
+  if (state.attempts >= MAX_ATTEMPTS) {
+    state.lockedUntil = Date.now() + LOCKOUT_MS;
+  }
+  loginAttempts.set(email, state);
+}
+
+function clearAttempts(email: string): void {
+  loginAttempts.delete(email);
+}
+
 export { hashPassword, verifyPassword };
 
 export type AdminTokenPayload = {
@@ -23,16 +54,21 @@ function getJwtSecret(): Uint8Array {
 }
 
 export async function loginAdmin(email: string, password: string) {
+  checkBruteForce(email);
+
   const user = await usersRepo.findUserByEmailForAuth(email);
   if (!user || (user.role !== 'admin' && user.role !== 'dev') || !user.password_hash) {
+    recordFailedAttempt(email);
     throw new AuthError('Correo o contraseña incorrectos');
   }
 
   const valid = await verifyPassword(password, user.password_hash);
   if (!valid) {
+    recordFailedAttempt(email);
     throw new AuthError('Correo o contraseña incorrectos');
   }
 
+  clearAttempts(email);
   const token = await signAdminToken(user);
   return {
     token,

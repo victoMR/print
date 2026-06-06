@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAdminAuth, requireDevAuth } from '../../middleware/admin-auth.js';
 import { requireUploadedFile, uploadSingle } from '../../middleware/upload.js';
+import { authRateLimit } from '../../middleware/rate-limit.js';
 import {
   adminLoginSchema,
   adminShippingQuoteSchema,
@@ -32,14 +33,29 @@ import { BadRequestError } from '../../types/errors.js';
 
 export const v1MrpapsAdminRouter: Router = Router();
 
-v1MrpapsAdminRouter.post('/auth/login', async (req, res, next) => {
+v1MrpapsAdminRouter.post('/auth/login', authRateLimit, async (req, res, next) => {
   try {
     const body = adminLoginSchema.parse(req.body);
-    const data = await adminAuth.loginAdmin(body.email, body.password);
-    res.json({ data });
+    const { token, user } = await adminAuth.loginAdmin(body.email, body.password);
+
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('admin_token', token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'lax',
+      maxAge: 8 * 60 * 60 * 1000, // 8 hours — matches TOKEN_TTL
+      path: '/',
+    });
+
+    res.json({ data: { user } });
   } catch (err) {
     next(err);
   }
+});
+
+v1MrpapsAdminRouter.post('/auth/logout', (_req, res) => {
+  res.clearCookie('admin_token', { httpOnly: true, path: '/' });
+  res.status(204).end();
 });
 
 v1MrpapsAdminRouter.get('/auth/me', requireAdminAuth, async (req, res) => {
@@ -380,21 +396,19 @@ v1MrpapsAdminRouter.delete('/designs/:id', async (req, res, next) => {
 v1MrpapsAdminRouter.get('/products', async (_req, res, next) => {
   try {
     const products = await productsRepo.listProductsAdmin();
-    const data = await Promise.all(
-      products.map(async (p) => {
-        const variants = await productsRepo.listVariantsByProductIdAdmin(p.id);
-        return {
-          id: p.id,
-          slug: p.slug,
-          name: p.name,
-          description: p.description,
-          thumbnailUrl: p.thumbnail_url,
-          status: p.status,
-          category: p.category,
-          variantCount: variants.length,
-        };
-      }),
+    const variantsByProduct = await productsRepo.batchListVariantsByProductIds(
+      products.map((p) => p.id),
     );
+    const data = products.map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      description: p.description,
+      thumbnailUrl: p.thumbnail_url,
+      status: p.status,
+      category: p.category,
+      variantCount: variantsByProduct.get(p.id)?.length ?? 0,
+    }));
     res.json({ data });
   } catch (err) {
     next(err);

@@ -5,6 +5,7 @@ import {
   shippingRatesBodySchema,
 } from '../../schemas/api.schema.js';
 import { optionalCustomerAuth } from '../../middleware/customer-auth.js';
+import { checkoutRateLimit } from '../../middleware/rate-limit.js';
 import * as checkoutPresenter from '../../services/checkout-presenter.service.js';
 
 export const v1CheckoutRouter: Router = Router();
@@ -29,7 +30,7 @@ v1CheckoutRouter.post('/estimate', async (req, res, next) => {
   }
 });
 
-v1CheckoutRouter.post('/orders', optionalCustomerAuth, async (req, res, next) => {
+v1CheckoutRouter.post('/orders', checkoutRateLimit, optionalCustomerAuth, async (req, res, next) => {
   try {
     const input = createOrderBodySchema.parse(req.body);
     const data = await checkoutPresenter.createDraftOrderPublic(input, req.customerUser?.id);

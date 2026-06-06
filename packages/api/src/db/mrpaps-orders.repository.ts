@@ -1,4 +1,5 @@
-import { query, queryOne, queryRequired, buildUpdateSet } from '../lib/db-helper.js';
+import { query, queryOne, queryRequired, buildUpdateSet, withTransaction } from '../lib/db-helper.js';
+import { pool } from '../lib/db.js';
 import { generateTrackingCode, normalizeTrackingCode } from '../lib/order-tracking-code.js';
 import type {
   MrpapsOrderItemRow,
@@ -64,73 +65,80 @@ export async function reserveUniquePublicId(maxAttempts = 10): Promise<string> {
 export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderWithItems> {
   const { items, ...order } = input;
 
-  const orderRow = await queryRequired<MrpapsOrderRow>(
-    `INSERT INTO mrpaps_orders (
-       public_id, order_number, user_id, customer_name, customer_email, customer_phone,
-       customer_tax_number, ship_address1, ship_address2, ship_city, ship_state_code,
-       ship_country_code, ship_zip, shipping_method, shipping_label,
-       subtotal_mxn, shipping_mxn, tax_mxn, total_mxn, status,
-       terms_accepted_at, legal_accepted_version
-     ) VALUES (
-       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'pendiente_pago',
-       $20, $21
-     ) RETURNING *`,
-    [
-      order.public_id,
-      order.order_number,
-      order.user_id ?? null,
-      order.customer_name,
-      order.customer_email,
-      order.customer_phone,
-      order.customer_tax_number ?? null,
-      order.ship_address1,
-      order.ship_address2 ?? null,
-      order.ship_city,
-      order.ship_state_code,
-      order.ship_country_code,
-      order.ship_zip,
-      order.shipping_method,
-      order.shipping_label ?? null,
-      order.subtotal_mxn,
-      order.shipping_mxn,
-      order.tax_mxn,
-      order.total_mxn,
-      order.terms_accepted_at ?? null,
-      order.legal_accepted_version ?? null,
-    ],
-  );
-
-  const itemRows: MrpapsOrderItemRow[] = [];
-  for (const item of items) {
-    const row = await queryRequired<MrpapsOrderItemRow>(
-      `INSERT INTO mrpaps_order_items (
-         order_id, variant_id, design_id, quantity, unit_price_mxn,
-         product_name, variant_label, sku, thumbnail_url, print_file_url
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`,
+  return withTransaction(async (client) => {
+    const orderResult = await client.query<MrpapsOrderRow>(
+      `INSERT INTO mrpaps_orders (
+         public_id, order_number, user_id, customer_name, customer_email, customer_phone,
+         customer_tax_number, ship_address1, ship_address2, ship_city, ship_state_code,
+         ship_country_code, ship_zip, shipping_method, shipping_label,
+         subtotal_mxn, shipping_mxn, tax_mxn, total_mxn, status,
+         terms_accepted_at, legal_accepted_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'pendiente_pago',
+         $20, $21
+       ) RETURNING *`,
       [
-        orderRow.id,
-        item.variant_id,
-        item.design_id ?? null,
-        item.quantity,
-        item.unit_price_mxn,
-        item.product_name,
-        item.variant_label,
-        item.sku,
-        item.thumbnail_url ?? null,
-        item.print_file_url ?? null,
+        order.public_id,
+        order.order_number,
+        order.user_id ?? null,
+        order.customer_name,
+        order.customer_email,
+        order.customer_phone,
+        order.customer_tax_number ?? null,
+        order.ship_address1,
+        order.ship_address2 ?? null,
+        order.ship_city,
+        order.ship_state_code,
+        order.ship_country_code,
+        order.ship_zip,
+        order.shipping_method,
+        order.shipping_label ?? null,
+        order.subtotal_mxn,
+        order.shipping_mxn,
+        order.tax_mxn,
+        order.total_mxn,
+        order.terms_accepted_at ?? null,
+        order.legal_accepted_version ?? null,
       ],
     );
-    itemRows.push(row);
-  }
 
-  await query(
-    `INSERT INTO mrpaps_order_status_events (order_id, from_status, to_status, note, created_by)
-     VALUES ($1, NULL, 'pendiente_pago', 'Pedido creado, pendiente de pago', 'system')`,
-    [orderRow.id],
-  );
+    const orderRow = orderResult.rows[0];
+    if (!orderRow) throw new Error('Failed to insert order');
 
-  return { ...orderRow, items: itemRows };
+    const itemRows: MrpapsOrderItemRow[] = [];
+    for (const item of items) {
+      const itemResult = await client.query<MrpapsOrderItemRow>(
+        `INSERT INTO mrpaps_order_items (
+           order_id, variant_id, design_id, quantity, unit_price_mxn,
+           product_name, variant_label, sku, thumbnail_url, print_file_url
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *`,
+        [
+          orderRow.id,
+          item.variant_id,
+          item.design_id ?? null,
+          item.quantity,
+          item.unit_price_mxn,
+          item.product_name,
+          item.variant_label,
+          item.sku,
+          item.thumbnail_url ?? null,
+          item.print_file_url ?? null,
+        ],
+      );
+      const row = itemResult.rows[0];
+      if (!row) throw new Error('Failed to insert order item');
+      itemRows.push(row);
+    }
+
+    await client.query(
+      `INSERT INTO mrpaps_order_status_events (order_id, from_status, to_status, note, created_by)
+       VALUES ($1, NULL, 'pendiente_pago', 'Pedido creado, pendiente de pago', 'system')`,
+      [orderRow.id],
+    );
+
+    return { ...orderRow, items: itemRows };
+  });
 }
 
 export async function listOrderStatusEvents(orderId: string): Promise<
@@ -298,6 +306,23 @@ export async function getOrderForPaymentFinalize(rawPublicId: string): Promise<{
      FROM mrpaps_orders WHERE public_id = $1`,
     [publicId],
   );
+}
+
+/**
+ * Atomically marks an order as paid only if it isn't paid yet.
+ * Returns true if this call won the race (rowCount === 1), false if already paid.
+ */
+export async function tryMarkOrderAsPaid(rawPublicId: string): Promise<boolean> {
+  const publicId = normalizeTrackingCode(rawPublicId);
+  if (!publicId) return false;
+
+  const result = await pool.query(
+    `UPDATE mrpaps_orders
+     SET payment_status = 'paid', updated_at = NOW()
+     WHERE public_id = $1 AND (payment_status IS NULL OR payment_status <> 'paid')`,
+    [publicId],
+  );
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function markConfirmationEmailSent(rawPublicId: string): Promise<void> {

@@ -4,6 +4,7 @@ import { logger } from '../lib/logger.js';
 import { normalizeTrackingCode } from '../lib/order-tracking-code.js';
 import {
   getOrderForPaymentFinalize,
+  tryMarkOrderAsPaid,
   updateOrderPaymentByPublicId,
   updateOrderStatus,
 } from '../db/mrpaps-orders.repository.js';
@@ -109,7 +110,21 @@ export async function finalizeOrderPayment(
     };
   }
 
-  await updateOrderPaymentByPublicId(publicId, { payment_status: 'paid' });
+  // Atomic CAS: only the first caller wins the race; the other exits early.
+  const won = await tryMarkOrderAsPaid(publicId);
+  if (!won) {
+    logger.info({ publicOrderId: publicId }, 'Finalizar pago: otro proceso ya marcó como paid');
+    try {
+      await sendOrderConfirmationEmail(publicId);
+    } catch { /* already handled by the winning process */ }
+    const refreshed = await getOrderForPaymentFinalize(publicId);
+    return {
+      paymentStatus: 'paid',
+      emailSent: Boolean(refreshed?.confirmation_email_sent_at),
+      message: 'Pedido ya pagado; correo enviado o ya estaba enviado',
+    };
+  }
+
   logger.info({ publicOrderId: publicId }, 'Finalizar pago: marcado como paid');
 
   const orderAfterPay = await getOrderForPaymentFinalize(publicId);
