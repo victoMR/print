@@ -13,7 +13,7 @@ declare global {
 /**
  * HttpOnly cookie (preferred, XSS-safe) → Bearer header fallback (SSR / mobile apps).
  */
-function extractCustomerToken(req: Request): string | null {
+export function extractCustomerToken(req: Request): string | null {
   const cookieHeader = req.headers.cookie ?? '';
   const match = cookieHeader.match(/(?:^|;\s*)customer_token=([^;]+)/);
   if (match) return decodeURIComponent(match[1]);

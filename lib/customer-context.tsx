@@ -30,8 +30,8 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       // Auth via HttpOnly cookie — no token in localStorage needed.
       const res = await fetch(`${V1}/auth/me`, { credentials: "include" });
       if (res.ok) {
-        const json = await res.json() as { data: CustomerSessionUser };
-        setUser(json.data);
+        const json = (await res.json()) as { data: CustomerSessionUser | null };
+        setUser(json.data ?? null);
       } else {
         setUser(null);
       }

@@ -1,7 +1,12 @@
 import { Router } from 'express';
 import * as customerAuth from '../../services/customer-auth.service.js';
+import { resolveCustomerSession } from '../../services/customer-auth.service.js';
 import * as bootstrapAuth from '../../services/bootstrap-auth.service.js';
-import { requireCustomerAuth, revokeCustomerSession } from '../../middleware/customer-auth.js';
+import {
+  extractCustomerToken,
+  requireCustomerAuth,
+  revokeCustomerSession,
+} from '../../middleware/customer-auth.js';
 import { authRateLimit } from '../../middleware/rate-limit.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
 import {
@@ -118,10 +123,27 @@ v1AuthRouter.post('/logout', requireCustomerAuth, async (req, res, next) => {
   }
 });
 
-v1AuthRouter.get('/me', requireCustomerAuth, async (req, res, next) => {
+/**
+ * Sondeo de sesión al cargar la tienda. Sin cookie o sesión inválida → 200 { data: null }
+ * (no 401, para no marcar error en DevTools de visitantes anónimos).
+ */
+v1AuthRouter.get('/me', async (req, res, next) => {
   try {
-    const user = await usersRepo.findUserByEmail(req.customerUser!.email);
-    if (!user) { res.status(404).json({ error: 'Usuario no encontrado' }); return; }
+    const token = extractCustomerToken(req);
+    if (!token) {
+      res.json({ data: null });
+      return;
+    }
+    const session = await resolveCustomerSession(token, { requireVerifiedEmail: true });
+    if (!session) {
+      res.json({ data: null });
+      return;
+    }
+    const user = await usersRepo.findUserByEmail(session.email);
+    if (!user) {
+      res.json({ data: null });
+      return;
+    }
     res.json({ data: customerAuth.publicCustomer(user) });
   } catch (err) {
     next(err);
