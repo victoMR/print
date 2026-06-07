@@ -5,6 +5,7 @@ import type {
   AdminProductSummary,
   GarmentTemplate,
   ProductComposition,
+  CartSyncResponse,
   CatalogDetailResponse,
   CatalogListResponse,
   CreateOrderResponse,
@@ -142,6 +143,19 @@ export async function fetchCatalogProduct(
   } catch {
     return null;
   }
+}
+
+/** Re-sincroniza precios, stock y metadatos del carrito con el catálogo. */
+export async function syncCartWithCatalog(
+  items: Array<{ variantId: string; quantity: number }>,
+): Promise<CartSyncResponse["data"]> {
+  if (items.length === 0) return [];
+  const res = await apiFetch<CartSyncResponse>(`${V1}/catalog/cart/sync`, {
+    method: "POST",
+    body: JSON.stringify({ items }),
+    cache: "no-store",
+  });
+  return res.data;
 }
 
 function adminHeaders(): Record<string, string> {

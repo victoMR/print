@@ -5,6 +5,12 @@ import { catalogProductsQuerySchema } from '../schemas/api.schema.js';
 import { productCategorySchema } from '../lib/product-categories.js';
 import { CacheTTL, catalogListKey, catalogProductKey } from '../lib/cache-keys.js';
 import { wrapCache } from '../lib/cache.js';
+import {
+  clampCartLineQuantity,
+  isTrackedStock,
+  MAX_CART_LINE_QUANTITY,
+  maxPurchasableQuantity,
+} from '../lib/cart-limits.js';
 import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { logger } from '../lib/logger.js';
 
@@ -128,7 +134,8 @@ async function getPublicProductUncached(idOrSlug: string) {
       color: v.color_label,
       retailPriceMxn: Number(v.retail_price_mxn).toFixed(2),
       garmentColorHex: v.garment_color_hex ?? product.default_garment_color ?? '#FFFFFF',
-      inStock: true,
+      inStock: !isTrackedStock(v.stock_quantity) || v.stock_quantity > 0,
+      maxQuantity: maxPurchasableQuantity(v.stock_quantity),
     })),
   };
 }
@@ -160,6 +167,59 @@ export function parseCatalogProductsQuery(query: Record<string, unknown>) {
   return parsed.data;
 }
 
+function variantLabel(size: string, color: string): string {
+  return `${size} / ${color}`;
+}
+
+function assertPurchasableQuantity(
+  variant: Awaited<ReturnType<typeof productsRepo.getVariantById>> & object,
+  quantity: number,
+): void {
+  if (quantity > MAX_CART_LINE_QUANTITY) {
+    throw new BadRequestError(`Máximo ${MAX_CART_LINE_QUANTITY} unidades por artículo.`);
+  }
+
+  if (isTrackedStock(variant.stock_quantity) && quantity > variant.stock_quantity) {
+    throw new BadRequestError(
+      `Solo hay ${variant.stock_quantity} unidades disponibles de ${variantLabel(variant.size_label, variant.color_label)}.`,
+    );
+  }
+}
+
+/** Sincroniza líneas del carrito del cliente con precios y stock del catálogo. */
+export async function syncCartLineItems(
+  items: Array<{ variantId: string; quantity: number }>,
+) {
+  const synced = [];
+
+  for (const item of items) {
+    const variant = await productsRepo.getVariantById(item.variantId);
+    if (!variant || variant.status !== 'active' || variant.product.status !== 'active') {
+      continue;
+    }
+
+    if (isTrackedStock(variant.stock_quantity) && variant.stock_quantity < 1) {
+      continue;
+    }
+
+    const quantity = clampCartLineQuantity(item.quantity, variant.stock_quantity);
+    const dbPrice = Number(variant.retail_price_mxn).toFixed(2);
+
+    synced.push({
+      variantId: variant.id,
+      productSlug: variant.product.slug,
+      productName: variant.product.name,
+      variantLabel: variantLabel(variant.size_label, variant.color_label),
+      retailPriceMxn: dbPrice,
+      thumbnail: variant.product.thumbnail_url,
+      quantity,
+      maxQuantity: maxPurchasableQuantity(variant.stock_quantity),
+    });
+  }
+
+  return synced;
+}
+
 export async function resolveLineItems(
   items: Array<{ variantId: string; quantity: number; retailPriceMxn?: string }>,
 ) {
@@ -174,6 +234,8 @@ export async function resolveLineItems(
       );
       throw new BadRequestError(STALE_CART_MESSAGE);
     }
+
+    assertPurchasableQuantity(variant, item.quantity);
 
     const dbPrice = Number(variant.retail_price_mxn).toFixed(2);
     if (item.retailPriceMxn && item.retailPriceMxn !== dbPrice) {

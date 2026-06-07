@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { useCart } from "@/lib/cart-context";
+import { MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
 import { formatMxn } from "@/lib/utils";
 import {
   Drawer,
@@ -116,7 +117,10 @@ export function CartDrawer() {
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-muted boty-transition rounded-full"
+                          disabled={
+                            item.quantity >= (item.maxQuantity ?? MAX_CART_LINE_QUANTITY)
+                          }
+                          className="w-8 h-8 flex items-center justify-center hover:bg-muted boty-transition rounded-full disabled:opacity-40 disabled:pointer-events-none"
                           aria-label="Más"
                         >
                           <Plus className="w-3 h-3" />

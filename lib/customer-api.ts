@@ -9,10 +9,25 @@ const V1 = "/api/v1";
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const CREDENTIALS_OPTS: RequestInit = { credentials: "include" };
 
+export class CustomerApiError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: string,
+  ) {
+    super(message);
+    this.name = "CustomerApiError";
+  }
+}
+
 async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...CREDENTIALS_OPTS, ...init });
-  const json = await res.json() as { error?: string } & T;
-  if (!res.ok) throw new Error((json as { error?: string }).error ?? `Error ${res.status}`);
+  const json = (await res.json()) as { error?: string; code?: string } & T;
+  if (!res.ok) {
+    throw new CustomerApiError(
+      (json as { error?: string }).error ?? `Error ${res.status}`,
+      (json as { code?: string }).code,
+    );
+  }
   return json;
 }
 

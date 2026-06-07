@@ -1,6 +1,8 @@
 "use client";
 
 import type { CartItem } from "@/lib/api-types";
+import { syncCartWithCatalog } from "@/lib/api";
+import { clampCartLineQuantity, MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
 import {
   createContext,
   useCallback,
@@ -33,14 +35,47 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+function lineMax(item: Pick<CartItem, "maxQuantity">): number {
+  return item.maxQuantity ?? MAX_CART_LINE_QUANTITY;
+}
+
+function sanitizeStoredItem(raw: unknown): CartItem | null {
+  if (!raw || typeof raw !== "object") return null;
+  const item = raw as Partial<CartItem>;
+  if (typeof item.variantId !== "string" || !item.variantId) return null;
+  if (typeof item.productSlug !== "string" || typeof item.productName !== "string") {
+    return null;
+  }
+  if (typeof item.variantLabel !== "string" || typeof item.retailPriceMxn !== "string") {
+    return null;
+  }
+  if (typeof item.thumbnail !== "string") return null;
+
+  const maxQuantity =
+    typeof item.maxQuantity === "number" && item.maxQuantity > 0
+      ? Math.min(item.maxQuantity, MAX_CART_LINE_QUANTITY)
+      : MAX_CART_LINE_QUANTITY;
+
+  return {
+    variantId: item.variantId,
+    productSlug: item.productSlug,
+    productName: item.productName,
+    variantLabel: item.variantLabel,
+    retailPriceMxn: item.retailPriceMxn,
+    thumbnail: item.thumbnail,
+    maxQuantity,
+    quantity: clampCartLineQuantity(item.quantity ?? 1, maxQuantity),
+  };
+}
+
 function loadStoredItems(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as CartItem[];
+    const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((i) => typeof i.variantId === "string" && i.variantId.length > 0);
+    return parsed.map(sanitizeStoredItem).filter((i): i is CartItem => i !== null);
   } catch {
     return [];
   }
@@ -52,8 +87,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    setItems(loadStoredItems());
-    setHydrated(true);
+    const stored = loadStoredItems();
+    if (stored.length === 0) {
+      setItems([]);
+      setHydrated(true);
+      return;
+    }
+
+    void syncCartWithCatalog(
+      stored.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
+    )
+      .then((synced) => setItems(synced))
+      .catch(() => setItems(stored))
+      .finally(() => setHydrated(true));
   }, []);
 
   useEffect(() => {
@@ -68,15 +114,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
       options?: { openDrawer?: boolean },
     ) => {
       setItems((prev) => {
+        const max = lineMax(item);
         const existing = prev.find((i) => i.variantId === item.variantId);
         if (existing) {
           return prev.map((i) =>
             i.variantId === item.variantId
-              ? { ...i, quantity: i.quantity + quantity }
+              ? {
+                  ...i,
+                  ...item,
+                  quantity: clampCartLineQuantity(i.quantity + quantity, max),
+                  maxQuantity: max,
+                }
               : i,
           );
         }
-        return [...prev, { ...item, quantity }];
+        return [
+          ...prev,
+          {
+            ...item,
+            maxQuantity: max,
+            quantity: clampCartLineQuantity(quantity, max),
+          },
+        ];
       });
       if (options?.openDrawer !== false) {
         setIsOpen(true);
@@ -90,13 +149,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateQuantity = useCallback((variantId: string, quantity: number) => {
-    if (quantity < 1) {
-      setItems((prev) => prev.filter((i) => i.variantId !== variantId));
-      return;
-    }
-    setItems((prev) =>
-      prev.map((i) => (i.variantId === variantId ? { ...i, quantity } : i)),
-    );
+    setItems((prev) => {
+      const current = prev.find((i) => i.variantId === variantId);
+      if (!current) return prev;
+      const max = lineMax(current);
+      if (quantity < 1) {
+        return prev.filter((i) => i.variantId !== variantId);
+      }
+      const next = clampCartLineQuantity(quantity, max);
+      return prev.map((i) =>
+        i.variantId === variantId ? { ...i, quantity: next } : i,
+      );
+    });
   }, []);
 
   const clearCart = useCallback(() => setItems([]), []);

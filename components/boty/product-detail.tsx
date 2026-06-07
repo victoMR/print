@@ -8,6 +8,7 @@ import { ChevronLeft, Minus, Plus, Check } from "lucide-react";
 import type { CatalogProductDetail } from "@/lib/api-types";
 import { ProductMockupPreview } from "@/components/boty/product-mockup-preview";
 import { useCart } from "@/lib/cart-context";
+import { clampCartLineQuantity, MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
 import { formatMxn } from "@/lib/utils";
 
 type ProductDetailProps = {
@@ -26,12 +27,18 @@ export function ProductDetail({ product }: ProductDetailProps) {
     [product.variants, variantId],
   );
 
+  const maxQuantity = selected?.maxQuantity ?? MAX_CART_LINE_QUANTITY;
+
   const sizes = [...new Set(product.variants.map((v) => v.size))];
   const colors = [...new Set(product.variants.map((v) => v.color))];
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [product.slug]);
+
+  useEffect(() => {
+    setQuantity((q) => clampCartLineQuantity(q, maxQuantity));
+  }, [maxQuantity, variantId]);
 
   function pickVariant(size: string, color: string) {
     const match =
@@ -51,6 +58,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
         variantLabel: `${selected.size} / ${selected.color}`,
         retailPriceMxn: selected.retailPriceMxn,
         thumbnail: product.thumbnail,
+        maxQuantity,
       },
       quantity,
       { openDrawer },
@@ -187,8 +195,11 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground/60 hover:text-foreground boty-transition"
+                  onClick={() =>
+                    setQuantity(clampCartLineQuantity(quantity + 1, maxQuantity))
+                  }
+                  disabled={quantity >= maxQuantity}
+                  className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground/60 hover:text-foreground boty-transition disabled:opacity-40"
                   aria-label="Aumentar cantidad"
                 >
                   <Plus className="w-4 h-4" />

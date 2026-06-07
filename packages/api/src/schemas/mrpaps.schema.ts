@@ -3,6 +3,9 @@ import { mxStateCodeSchema } from './order.schema.js';
 import { CUSTOMER_PASSWORD_MAX, CUSTOMER_PASSWORD_MIN } from './customer-auth.schema.js';
 import { assetUrlSchema } from './asset-url.schema.js';
 import { productCategorySchema } from '../lib/product-categories.js';
+import { MAX_CART_LINE_QUANTITY } from '../lib/cart-limits.js';
+
+const cartQuantitySchema = z.number().int().positive().max(MAX_CART_LINE_QUANTITY);
 
 export const mrpapsOrderStatusSchema = z.enum([
   'pendiente_pago',
@@ -16,14 +19,26 @@ export const shippingMethodSchema = z.string().min(1).max(80);
 
 export const checkoutItemSchema = z.object({
   variantId: z.string().uuid(),
-  quantity: z.number().int().positive(),
+  quantity: cartQuantitySchema,
   retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/).optional(),
+});
+
+export const cartSyncBodySchema = z.object({
+  items: z
+    .array(
+      z.object({
+        variantId: z.string().uuid(),
+        quantity: cartQuantitySchema,
+      }),
+    )
+    .min(1)
+    .max(50),
 });
 
 export const shippingRatesBodySchema = z.object({
   items: z.array(z.object({
     variantId: z.string().uuid(),
-    quantity: z.number().int().positive(),
+    quantity: cartQuantitySchema,
   })).min(1),
   address: z.object({
     address1: z.string().min(1),
@@ -38,7 +53,7 @@ export const shippingRatesBodySchema = z.object({
 export const estimateBodySchema = z.object({
   items: z.array(z.object({
     variantId: z.string().uuid(),
-    quantity: z.number().int().positive(),
+    quantity: cartQuantitySchema,
     retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/),
   })).min(1),
   shippingMethod: shippingMethodSchema.optional(),
@@ -48,7 +63,7 @@ export const estimateBodySchema = z.object({
 export const createOrderBodySchema = z.object({
   items: z.array(z.object({
     variantId: z.string().uuid(),
-    quantity: z.number().int().positive(),
+    quantity: cartQuantitySchema,
     retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/),
   })).min(1),
   shippingMethod: shippingMethodSchema.optional(),

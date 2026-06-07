@@ -39,7 +39,11 @@ export function errorHandler(
   }
 
   if (err instanceof AuthError) {
-    res.status(401).json({ ok: false, error: err.message });
+    res.status(401).json({
+      ok: false,
+      error: err.message,
+      ...(err.code ? { code: err.code } : {}),
+    });
     return;
   }
 

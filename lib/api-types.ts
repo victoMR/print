@@ -38,6 +38,7 @@ export type CatalogProductDetail = {
     retailPriceMxn: string;
     garmentColorHex?: string;
     inStock: boolean;
+    maxQuantity?: number;
   }>;
 };
 
@@ -219,6 +220,12 @@ export type CartItem = {
   retailPriceMxn: string;
   quantity: number;
   thumbnail: string;
+  /** Tope por línea (catálogo); por defecto 100 en cliente. */
+  maxQuantity?: number;
+};
+
+export type CartSyncResponse = {
+  data: CartItem[];
 };
 
 export type AdminOrderSummary = {

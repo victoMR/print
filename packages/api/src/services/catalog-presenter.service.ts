@@ -42,6 +42,7 @@ export async function getPublicProduct(idOrSlug: string) {
       retailPriceMxn: v.retailPriceMxn,
       garmentColorHex: v.garmentColorHex,
       inStock: v.inStock,
+      maxQuantity: v.maxQuantity,
     })),
   };
 }

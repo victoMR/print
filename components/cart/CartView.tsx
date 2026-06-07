@@ -4,6 +4,7 @@ import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { useCart } from "@/lib/cart-context";
+import { MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
 import { formatMxn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -61,6 +62,7 @@ export function CartView() {
                     <span className="w-6 text-center text-sm">{item.quantity}</span>
                     <QtyBtn
                       label="+"
+                      disabled={item.quantity >= (item.maxQuantity ?? MAX_CART_LINE_QUANTITY)}
                       onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
                     />
                   </div>
@@ -85,12 +87,21 @@ export function CartView() {
   );
 }
 
-function QtyBtn({ label, onClick }: { label: string; onClick: () => void }) {
+function QtyBtn({
+  label,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex h-7 w-7 items-center justify-center rounded-full glass text-sm"
+      disabled={disabled}
+      className="flex h-7 w-7 items-center justify-center rounded-full glass text-sm disabled:opacity-40 disabled:pointer-events-none"
     >
       {label}
     </button>
