@@ -12,7 +12,6 @@ import { cn, formatMxn } from "@/lib/utils";
 import {
   BotyBadge,
   BotyButton,
-  BotyLabel,
   BotySurface,
 } from "@/components/boty/ui-patterns";
 import { AdminSelect } from "@/components/admin/admin-select";
@@ -91,7 +90,7 @@ function TrackingModal({ open, onConfirm, onCancel }: TrackingModalProps) {
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <BotyLabel htmlFor="tracking-number">Número de guía</BotyLabel>
+            <label htmlFor="tracking-number" className="text-sm font-medium text-foreground/90">Número de guía</label>
             <input
               id="tracking-number"
               type="text"
@@ -104,7 +103,9 @@ function TrackingModal({ open, onConfirm, onCancel }: TrackingModalProps) {
           </div>
 
           <div className="space-y-1.5">
-            <BotyLabel htmlFor="tracking-url">URL de rastreo <span className="text-muted-foreground font-normal">(opcional)</span></BotyLabel>
+            <label htmlFor="tracking-url" className="text-sm font-medium text-foreground/90">
+              URL de rastreo <span className="text-muted-foreground font-normal">(opcional)</span>
+            </label>
             <input
               id="tracking-url"
               type="url"
@@ -116,7 +117,9 @@ function TrackingModal({ open, onConfirm, onCancel }: TrackingModalProps) {
           </div>
 
           <div className="space-y-1.5">
-            <BotyLabel htmlFor="carrier">Paquetería <span className="text-muted-foreground font-normal">(opcional)</span></BotyLabel>
+            <label htmlFor="carrier" className="text-sm font-medium text-foreground/90">
+              Paquetería <span className="text-muted-foreground font-normal">(opcional)</span>
+            </label>
             <input
               id="carrier"
               type="text"
