@@ -8,7 +8,14 @@ type RemoteImageProps = Omit<ImageProps, "src"> & {
   src: string;
 };
 
-/** `next/image` para hosts conocidos; `<img>` para URLs externas arbitrarias (admin). */
+/**
+ * `next/image` para hosts conocidos (Printful, Unsplash, rutas same-origin).
+ * `<img>` para URLs externas arbitrarias (admin, URLs de terceros no listados).
+ *
+ * En ambos casos:
+ * - `loading="lazy"` por defecto; pasar `priority` para imágenes above-the-fold.
+ * - `decoding="async"` no bloquea el hilo principal del navegador.
+ */
 export function RemoteImage({
   src,
   alt,
@@ -44,6 +51,8 @@ export function RemoteImage({
         alt={alt}
         className={cn("absolute inset-0 h-full w-full object-cover", className)}
         sizes={sizes}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
         onLoad={onLoad}
       />
     );
@@ -55,6 +64,8 @@ export function RemoteImage({
       src={resolved}
       alt={alt}
       className={className}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
       onLoad={onLoad}
     />
   );

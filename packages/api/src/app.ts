@@ -47,7 +47,10 @@ export function createApp(): express.Application {
   }
 
   app.use('/uploads', express.static(getUploadRoot(), {
-    maxAge: '7d',
+    // Filenames contain a UUID → content never changes at the same path.
+    // 1 year + immutable tells browsers and CDNs never to revalidate.
+    maxAge: '1y',
+    immutable: true,
     fallthrough: true,
     setHeaders(res, filePath) {
       // Force SVG files to download rather than render — prevents stored XSS

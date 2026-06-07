@@ -7,6 +7,16 @@ export const NEXT_IMAGE_REMOTE_PATTERNS = [
   { protocol: "https" as const, hostname: "**.printful.com" },
   { protocol: "https" as const, hostname: "i.pinimg.com" },
   { protocol: "https" as const, hostname: "**.supabase.co" },
+  // Dominio propio en producción — para que next/image optimice URLs absolutas
+  // de assets propios cuando ASSETS_PUBLIC_URL apunta a un dominio externo.
+  ...(process.env.NEXT_PUBLIC_SITE_URL
+    ? [
+        {
+          protocol: "https" as const,
+          hostname: new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname,
+        },
+      ]
+    : []),
 ];
 
 function hostnameMatchesPattern(hostname: string, pattern: string): boolean {

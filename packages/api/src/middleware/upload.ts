@@ -6,6 +6,8 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/png',
   'image/jpeg',
   'image/webp',
+  'image/heic',   // iPhone / Mac — convertido a WebP por sharp
+  'image/heif',   // variante del contenedor HEIF
   // image/gif excluded: rejected by the storage service (sharp can't transcode animations
   // reliably) and not useful for print assets.
   // image/svg+xml excluded: SVGs can contain <script> tags → stored XSS.
