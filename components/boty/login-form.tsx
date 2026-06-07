@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { customerLogin } from "@/lib/customer-api";
 import { validateLoginForm } from "@/lib/customer-auth-rules";
 import { useCustomer } from "@/lib/customer-context";
+import { ADMIN_LOGIN_PATH, isAdminPath, safeRedirectPath } from "@/lib/safe-redirect";
 import { AuthCard, AuthShell } from "./auth-shell";
 import { BotyAlert, BotyButton, BotyInput, BotyLabel } from "./ui-patterns";
 
@@ -24,13 +25,25 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Validate redirect is a safe same-origin relative path to prevent open redirect attacks.
-  const rawRedirect = params.get("redirect") ?? "/cuenta";
-  const redirect =
-    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
-      ? rawRedirect
-      : "/cuenta";
+  const redirect = safeRedirectPath(params.get("redirect"), "/cuenta");
   const registerHref = buildAuthHref("/registro", redirect);
+
+  // Si el destino es el panel admin, usar el login de admin (no el de clientes).
+  useEffect(() => {
+    if (isAdminPath(redirect)) {
+      router.replace(
+        `${ADMIN_LOGIN_PATH}?redirect=${encodeURIComponent(redirect)}`,
+      );
+    }
+  }, [redirect, router]);
+
+  if (isAdminPath(redirect)) {
+    return (
+      <p className="text-center py-20 text-muted-foreground text-sm">
+        Redirigiendo al panel de administración…
+      </p>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

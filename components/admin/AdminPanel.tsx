@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { adminFetchMe, adminLogout } from "@/lib/api";
-import { AdminLogin } from "@/components/admin/AdminLogin";
+import { ADMIN_LOGIN_PATH } from "@/lib/safe-redirect";
 import { AdminOrdersSection } from "@/components/admin/admin-orders-section";
 import { AdminProductsSection } from "@/components/admin/AdminProductsSection";
 import { AdminUsersSection } from "@/components/admin/AdminUsersSection";
@@ -11,6 +12,7 @@ import { clearAdminToken, type AdminSessionUser } from "@/lib/admin-session";
 import { Loader2 } from "lucide-react";
 
 export function AdminPanel() {
+  const router = useRouter();
   const [user, setUser] = useState<AdminSessionUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [tab, setTab] = useState<AdminTab>("orders");
@@ -31,11 +33,16 @@ export function AdminPanel() {
   }, []);
 
   useEffect(() => {
+    if (!authChecked || user) return;
+    router.replace(`${ADMIN_LOGIN_PATH}?redirect=${encodeURIComponent("/admin")}`);
+  }, [authChecked, user, router]);
+
+  useEffect(() => {
     if (!user) return;
     void load();
   }, [load, user]);
 
-  if (!authChecked) {
+  if (!authChecked || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center gap-2 text-muted-foreground text-sm bg-[#f4f1ec]">
         <Loader2 className="w-4 h-4 animate-spin" />
@@ -44,14 +51,10 @@ export function AdminPanel() {
     );
   }
 
-  if (!user) {
-    return <AdminLogin onSuccess={setUser} />;
-  }
-
   function handleLogout() {
     clearAdminToken();
     void adminLogout();
-    setUser(null);
+    router.replace(ADMIN_LOGIN_PATH);
   }
 
   return (
