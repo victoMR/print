@@ -20,7 +20,7 @@ describe('resolveAnalyticsRange', () => {
     const range = resolveAnalyticsRange({ period: 'week' });
     expect(range.period).toBe('week');
     expect(range.bucket).toBe('day');
-    expect(range.label).toBe('Última semana');
+    expect(range.label).toBe('Últimos 7 días');
   });
 
   it('resuelve trimestre con bucket semanal', () => {

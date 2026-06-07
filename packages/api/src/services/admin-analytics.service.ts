@@ -36,11 +36,11 @@ export type AdminDashboardDto = {
 };
 
 const PERIOD_LABELS: Record<AnalyticsPeriod, string> = {
-  week: 'Última semana',
-  month: 'Último mes',
-  quarter: 'Último trimestre',
+  week: 'Últimos 7 días',
+  month: 'Últimos 30 días',
+  quarter: 'Últimos 3 meses',
   year: 'Último año',
-  custom: 'Rango personalizado',
+  custom: 'Fechas elegidas',
 };
 
 function startOfDayUtc(d: Date): Date {

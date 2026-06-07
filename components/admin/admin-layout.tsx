@@ -15,7 +15,7 @@ export type AdminTab = "dashboard" | "orders" | "products" | "users";
 // | "prototypes" | "designs" — ocultos temporalmente
 
 const BASE_TABS: { id: AdminTab; label: string; icon: typeof ClipboardList; description: string; devOnly?: boolean }[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, description: "Ventas y reportes" },
+  { id: "dashboard", label: "Resumen", icon: LayoutDashboard, description: "Ventas y reportes" },
   { id: "orders", label: "Pedidos", icon: ClipboardList, description: "Gestión y envíos" },
   { id: "products", label: "Productos", icon: Shirt, description: "Catálogo tienda" },
   { id: "users", label: "Usuarios", icon: Users, description: "Roles y accesos", devOnly: true },
