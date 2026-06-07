@@ -5,13 +5,15 @@ import { AuthError, BadRequestError } from '../types/errors.js';
 import type { MrpapsUserRow } from '../db/mrpaps.types.js';
 import { sendEmailVerification, LEGAL_VERSION } from './email-verification.service.js';
 
-const TOKEN_TTL = '30d';
+const TOKEN_TTL_LONG = '30d';
+const TOKEN_TTL_SHORT = '1d';
 
 export type CustomerTokenPayload = {
   sub: string;
   email: string;
   role: 'customer';
   tv: number;
+  rm?: boolean;
 };
 
 function getJwtSecret(): Uint8Array {
@@ -58,7 +60,11 @@ export async function registerCustomer(input: {
   return { requiresEmailVerification: true, email: user.email };
 }
 
-export async function loginCustomer(email: string, password: string): Promise<{ token: string; user: ReturnType<typeof publicCustomer> }> {
+export async function loginCustomer(
+  email: string,
+  password: string,
+  rememberMe = true,
+): Promise<{ token: string; user: ReturnType<typeof publicCustomer>; rememberMe: boolean }> {
   const user = await usersRepo.findUserByEmail(email.trim().toLowerCase());
   if (!user || user.role !== 'customer' || !user.password_hash) throw new AuthError('Correo o contraseña incorrectos');
   const valid = await verifyPassword(password, user.password_hash);
@@ -70,20 +76,40 @@ export async function loginCustomer(email: string, password: string): Promise<{ 
     );
   }
 
-  const token = await signCustomerToken(user);
-  return { token, user: publicCustomer(user) };
+  const token = await signCustomerToken(user, { rememberMe });
+  return { token, user: publicCustomer(user), rememberMe };
 }
 
 export async function signCustomerToken(
   user: Pick<MrpapsUserRow, 'id' | 'email' | 'role' | 'token_version'>,
+  options?: { rememberMe?: boolean },
 ): Promise<string> {
+  const rememberMe = options?.rememberMe !== false;
   const tv = user.token_version ?? 0;
-  return new SignJWT({ email: user.email, role: 'customer' as const, tv })
+  return new SignJWT({ email: user.email, role: 'customer' as const, tv, rm: rememberMe })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.id)
     .setIssuedAt()
-    .setExpirationTime(TOKEN_TTL)
+    .setExpirationTime(rememberMe ? TOKEN_TTL_LONG : TOKEN_TTL_SHORT)
     .sign(getJwtSecret());
+}
+
+/** Renueva JWT y cookie sin invalidar token_version (sesión deslizante). */
+export async function refreshCustomerSession(
+  token: string,
+): Promise<{ token: string; user: ReturnType<typeof publicCustomer>; rememberMe: boolean } | null> {
+  try {
+    const payload = await verifyCustomerToken(token);
+    const user = await usersRepo.findUserById(payload.sub);
+    if (!user || user.role !== 'customer' || !user.email_verified_at) return null;
+    if ((user.token_version ?? 0) !== payload.tv) return null;
+
+    const rememberMe = payload.rm !== false;
+    const newToken = await signCustomerToken(user, { rememberMe });
+    return { token: newToken, user: publicCustomer(user), rememberMe };
+  } catch {
+    return null;
+  }
 }
 
 export async function verifyCustomerToken(token: string): Promise<CustomerTokenPayload> {
@@ -93,7 +119,8 @@ export async function verifyCustomerToken(token: string): Promise<CustomerTokenP
       throw new AuthError('Token inválido');
     }
     const tv = typeof payload.tv === 'number' ? payload.tv : 0;
-    return { sub: payload.sub, email: payload.email, role: 'customer', tv };
+    const rm = payload.rm === false ? false : true;
+    return { sub: payload.sub, email: payload.email, role: 'customer', tv, rm };
   } catch {
     throw new AuthError('Sesión expirada o inválida');
   }

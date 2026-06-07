@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { requireAdminAuth, requireDevAuth } from '../../middleware/admin-auth.js';
+import { extractAdminToken, requireAdminAuth, requireDevAuth } from '../../middleware/admin-auth.js';
+import {
+  clearAdminSessionCookie,
+  setAdminSessionCookie,
+} from '../../lib/session-cookie.js';
 import { requireUploadedFile, uploadSingle } from '../../middleware/upload.js';
 import { authRateLimit } from '../../middleware/rate-limit.js';
 import {
@@ -20,6 +24,7 @@ import * as catalog from '../../services/mrpaps-catalog.service.js';
 import * as designsRepo from '../../db/mrpaps-designs.repository.js';
 import * as templatesRepo from '../../db/mrpaps-garment-templates.repository.js';
 import * as ordersRepo from '../../db/mrpaps-orders.repository.js';
+import { changeOrderStatus } from '../../services/mrpaps-order-status.service.js';
 import * as productsRepo from '../../db/mrpaps-products.repository.js';
 import * as adminAuth from '../../services/admin-auth.service.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
@@ -38,14 +43,7 @@ v1MrpapsAdminRouter.post('/auth/login', authRateLimit, async (req, res, next) =>
     const body = adminLoginSchema.parse(req.body);
     const { token, user } = await adminAuth.loginAdmin(body.email, body.password);
 
-    const isProduction = process.env.NODE_ENV === 'production';
-    res.cookie('admin_token', token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'strict' : 'lax',
-      maxAge: 8 * 60 * 60 * 1000, // 8 hours — matches TOKEN_TTL
-      path: '/',
-    });
+    setAdminSessionCookie(res, token);
 
     res.json({ data: { user } });
   } catch (err) {
@@ -54,8 +52,28 @@ v1MrpapsAdminRouter.post('/auth/login', authRateLimit, async (req, res, next) =>
 });
 
 v1MrpapsAdminRouter.post('/auth/logout', (_req, res) => {
-  res.clearCookie('admin_token', { httpOnly: true, path: '/' });
+  clearAdminSessionCookie(res);
   res.status(204).end();
+});
+
+v1MrpapsAdminRouter.post('/auth/refresh', async (req, res, next) => {
+  try {
+    const token = extractAdminToken(req);
+    if (!token) {
+      res.json({ data: null });
+      return;
+    }
+    const result = await adminAuth.refreshAdminSession(token);
+    if (!result) {
+      clearAdminSessionCookie(res);
+      res.json({ data: null });
+      return;
+    }
+    setAdminSessionCookie(res, result.token);
+    res.json({ data: result.user });
+  } catch (err) {
+    next(err);
+  }
 });
 
 v1MrpapsAdminRouter.get('/auth/me', requireAdminAuth, async (req, res) => {
@@ -238,15 +256,9 @@ v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
     const search = typeof req.query.search === 'string' && req.query.search.trim()
       ? req.query.search.trim()
       : undefined;
-    const excludeStatusRaw = req.query.excludeStatus;
-    const excludeStatuses = (Array.isArray(excludeStatusRaw) ? excludeStatusRaw : [excludeStatusRaw])
-      .filter((v): v is string => typeof v === 'string')
-      .map((v) => mrpapsOrderStatusSchema.safeParse(v).data)
-      .filter((v): v is NonNullable<typeof v> => v != null);
-
     const orders = await ordersRepo.listOrdersAdmin({
       status,
-      excludeStatuses: status ? undefined : excludeStatuses.length > 0 ? excludeStatuses : undefined,
+      paidOnly: true,
       search,
     });
     res.json({
@@ -296,7 +308,7 @@ v1MrpapsAdminRouter.get('/orders/:publicId', async (req, res, next) => {
 v1MrpapsAdminRouter.patch('/orders/:publicId/status', async (req, res, next) => {
   try {
     const body = updateOrderStatusSchema.parse(req.body);
-    const row = await ordersRepo.updateOrderStatus(
+    const row = await changeOrderStatus(
       req.params.publicId,
       body.status,
       {

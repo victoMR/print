@@ -182,9 +182,6 @@ export function MxAddressGeoFields({
             <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
           )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Autocompletado con SEPOMEX e INEGI al escribir 5 dígitos.
-        </p>
       </label>
 
       {geoError && <BotyAlert variant="error">{geoError}</BotyAlert>}

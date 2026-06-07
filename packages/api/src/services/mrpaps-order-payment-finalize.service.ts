@@ -3,12 +3,14 @@ import { getStripe, isStripeConfigured } from '../lib/stripe.js';
 import { logger } from '../lib/logger.js';
 import { normalizeTrackingCode } from '../lib/order-tracking-code.js';
 import {
+  commitOrderInventoryOnPaid,
   getOrderForPaymentFinalize,
   tryMarkOrderAsPaid,
   updateOrderPaymentByPublicId,
   updateOrderStatus,
 } from '../db/mrpaps-orders.repository.js';
 import { sendOrderConfirmationEmail } from './order-confirmation-email.service.js';
+import { refundPaidOrder } from './mrpaps-stripe-refund.service.js';
 import { NotFoundError } from '../types/errors.js';
 
 export type FinalizePaymentResult = {
@@ -126,6 +128,50 @@ export async function finalizeOrderPayment(
   }
 
   logger.info({ publicOrderId: publicId }, 'Finalizar pago: marcado como paid');
+
+  const inventory = await commitOrderInventoryOnPaid(publicId);
+  if (!inventory.ok) {
+    logger.error(
+      { publicOrderId: publicId, reason: inventory.reason },
+      'Finalizar pago: inventario insuficiente tras cobro — reembolso automático',
+    );
+
+    const refund = await refundPaidOrder(publicId, {
+      reason: 'stock_unavailable',
+      note: inventory.reason,
+    });
+
+    if (!refund.ok) {
+      logger.error(
+        { publicOrderId: publicId, refundError: refund.error, inventoryReason: inventory.reason },
+        'CRÍTICO: cobro sin stock y reembolso falló — intervención manual',
+      );
+    }
+
+    await updateOrderStatus(
+      publicId,
+      'cancelado',
+      {
+        internal_notes: `Sin stock tras pago (${inventory.reason})${
+          refund.ok ? '. Reembolso automático en Stripe.' : `. Reembolso falló: ${refund.error}`
+        }`,
+      },
+      {
+        note: refund.ok
+          ? 'Cancelado: sin stock. Reembolso automático.'
+          : 'Cancelado: sin stock. Reembolso pendiente (falló en Stripe).',
+        createdBy: 'system',
+      },
+    );
+
+    return {
+      paymentStatus: refund.ok ? 'refunded' : 'paid',
+      emailSent: false,
+      message: refund.ok
+        ? 'El producto ya no tiene stock disponible. Tu pago fue reembolsado automáticamente.'
+        : 'El producto ya no tiene stock disponible. Contacta a soporte para tu reembolso.',
+    };
+  }
 
   const orderAfterPay = await getOrderForPaymentFinalize(publicId);
   if (orderAfterPay?.status === 'pendiente_pago') {

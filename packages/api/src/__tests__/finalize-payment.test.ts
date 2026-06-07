@@ -4,8 +4,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../db/mrpaps-orders.repository.js', () => ({
   getOrderForPaymentFinalize: vi.fn(),
   tryMarkOrderAsPaid: vi.fn(),
+  commitOrderInventoryOnPaid: vi.fn(),
   updateOrderPaymentByPublicId: vi.fn(),
   updateOrderStatus: vi.fn(),
+}));
+vi.mock('../services/mrpaps-stripe-refund.service.js', () => ({
+  refundPaidOrder: vi.fn(),
 }));
 vi.mock('../services/order-confirmation-email.service.js', () => ({
   sendOrderConfirmationEmail: vi.fn(),
@@ -24,6 +28,7 @@ vi.mock('../lib/logger.js', () => ({
 import * as ordersRepo from '../db/mrpaps-orders.repository.js';
 import * as emailService from '../services/order-confirmation-email.service.js';
 import * as stripeLib from '../lib/stripe.js';
+import { refundPaidOrder } from '../services/mrpaps-stripe-refund.service.js';
 import { finalizeOrderPayment } from '../services/mrpaps-order-payment-finalize.service.js';
 
 const BASE_ORDER = {
@@ -70,6 +75,7 @@ describe('finalizeOrderPayment', () => {
       paymentIntents: { retrieve: vi.fn().mockResolvedValue(MOCK_INTENT) },
     } as never);
     vi.mocked(ordersRepo.tryMarkOrderAsPaid).mockResolvedValue(true);
+    vi.mocked(ordersRepo.commitOrderInventoryOnPaid).mockResolvedValue({ ok: true });
     vi.mocked(ordersRepo.updateOrderStatus).mockResolvedValue({} as never);
     vi.mocked(emailService.sendOrderConfirmationEmail).mockResolvedValue(undefined);
     vi.mocked(ordersRepo.getOrderForPaymentFinalize).mockResolvedValueOnce(BASE_ORDER).mockResolvedValue({
@@ -81,6 +87,7 @@ describe('finalizeOrderPayment', () => {
     const result = await finalizeOrderPayment('ABC-123');
 
     expect(ordersRepo.tryMarkOrderAsPaid).toHaveBeenCalledWith('ABC-123');
+    expect(ordersRepo.commitOrderInventoryOnPaid).toHaveBeenCalledWith('ABC-123');
     expect(emailService.sendOrderConfirmationEmail).toHaveBeenCalledWith('ABC-123');
     expect(result.paymentStatus).toBe('paid');
   });
@@ -103,6 +110,37 @@ describe('finalizeOrderPayment', () => {
 
     expect(ordersRepo.updateOrderStatus).not.toHaveBeenCalled();
     expect(result.paymentStatus).toBe('paid');
+  });
+
+  it('reembolsa y cancela si no hay stock tras el pago', async () => {
+    vi.mocked(ordersRepo.getOrderForPaymentFinalize).mockResolvedValue(BASE_ORDER);
+    vi.mocked(stripeLib.isStripeConfigured).mockReturnValue(true);
+    vi.mocked(stripeLib.getStripe).mockReturnValue({
+      paymentIntents: { retrieve: vi.fn().mockResolvedValue(MOCK_INTENT) },
+    } as never);
+    vi.mocked(ordersRepo.tryMarkOrderAsPaid).mockResolvedValue(true);
+    vi.mocked(ordersRepo.commitOrderInventoryOnPaid).mockResolvedValue({
+      ok: false,
+      reason: 'stock_insufficient:variant-1',
+    });
+    vi.mocked(refundPaidOrder).mockResolvedValue({ ok: true, refundId: 're_test' });
+    vi.mocked(ordersRepo.updateOrderStatus).mockResolvedValue({} as never);
+
+    const result = await finalizeOrderPayment('ABC-123');
+
+    expect(refundPaidOrder).toHaveBeenCalledWith('ABC-123', {
+      reason: 'stock_unavailable',
+      note: 'stock_insufficient:variant-1',
+    });
+    expect(ordersRepo.updateOrderStatus).toHaveBeenCalledWith(
+      'ABC-123',
+      'cancelado',
+      expect.objectContaining({ internal_notes: expect.stringContaining('Sin stock') }),
+      expect.objectContaining({ createdBy: 'system' }),
+    );
+    expect(emailService.sendOrderConfirmationEmail).not.toHaveBeenCalled();
+    expect(result.paymentStatus).toBe('refunded');
+    expect(result.message).toContain('reembolsado');
   });
 
   it('returns amount_mismatch when Stripe amount differs', async () => {

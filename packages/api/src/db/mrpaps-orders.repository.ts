@@ -110,11 +110,12 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
 
     const itemRows: MrpapsOrderItemRow[] = [];
     for (const item of items) {
-      const reservedQty =
-        item.inventory_reserved_qty ??
-        (await productsRepo.reserveVariantStockTx(client, item.variant_id, item.quantity));
+      const available =
+        item.inventory_reserved_qty != null
+          ? item.inventory_reserved_qty
+          : await productsRepo.assertVariantStockAvailableTx(client, item.variant_id, item.quantity);
 
-      if (reservedQty === false) {
+      if (available === false) {
         throw new BadRequestError(
           'No hay suficiente stock para completar el pedido. Actualiza tu carrito e intenta de nuevo.',
         );
@@ -131,7 +132,7 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
           item.variant_id,
           item.design_id ?? null,
           item.quantity,
-          reservedQty,
+          0,
           item.unit_price_mxn,
           item.product_name,
           item.variant_label,
@@ -339,6 +340,47 @@ export async function tryMarkOrderAsPaid(rawPublicId: string): Promise<boolean> 
   return (result.rowCount ?? 0) > 0;
 }
 
+/**
+ * Descuenta inventario al confirmar pago. Idempotente si ya se descontó (inventory_reserved_qty > 0).
+ */
+export async function commitOrderInventoryOnPaid(rawPublicId: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const publicId = normalizeTrackingCode(rawPublicId);
+  if (!publicId) return { ok: false, reason: 'invalid_id' };
+
+  return withTransaction(async (client) => {
+    const orderResult = await client.query<MrpapsOrderRow>(
+      `SELECT * FROM mrpaps_orders WHERE public_id = $1 FOR UPDATE`,
+      [publicId],
+    );
+    const orderRow = orderResult.rows[0];
+    if (!orderRow) return { ok: false, reason: 'not_found' };
+
+    const itemsResult = await client.query<MrpapsOrderItemRow>(
+      `SELECT * FROM mrpaps_order_items WHERE order_id = $1 FOR UPDATE`,
+      [orderRow.id],
+    );
+
+    for (const item of itemsResult.rows) {
+      if ((item.inventory_reserved_qty ?? 0) > 0) continue;
+
+      const deducted = await productsRepo.reserveVariantStockTx(client, item.variant_id, item.quantity);
+      if (deducted === false) {
+        return {
+          ok: false,
+          reason: `stock_insufficient:${item.variant_id}`,
+        };
+      }
+
+      await client.query(
+        `UPDATE mrpaps_order_items SET inventory_reserved_qty = $2 WHERE id = $1`,
+        [item.id, deducted],
+      );
+    }
+
+    return { ok: true };
+  });
+}
+
 export async function markConfirmationEmailSent(rawPublicId: string): Promise<void> {
   const publicId = normalizeTrackingCode(rawPublicId);
   if (!publicId) return;
@@ -354,6 +396,8 @@ export async function markConfirmationEmailSent(rawPublicId: string): Promise<vo
 export async function listOrdersAdmin(filters?: {
   status?: MrpapsOrderStatus;
   excludeStatuses?: MrpapsOrderStatus[];
+  /** Solo pedidos con pago confirmado (panel admin — oculta pendiente de pago). */
+  paidOnly?: boolean;
   search?: string;
   limit?: number;
 }): Promise<MrpapsOrderWithItems[]> {
@@ -361,7 +405,15 @@ export async function listOrdersAdmin(filters?: {
   const conditions: string[] = [];
   let sql = `SELECT * FROM mrpaps_orders`;
 
+  if (filters?.paidOnly) {
+    conditions.push(`payment_status = 'paid'`);
+    conditions.push(`status <> 'pendiente_pago'`);
+  }
+
   if (filters?.status) {
+    if (filters.status === 'pendiente_pago') {
+      return [];
+    }
     params.push(filters.status);
     conditions.push(`status = $${params.length}`);
   } else if (filters?.excludeStatuses?.length) {
@@ -434,6 +486,18 @@ export async function updateOrderStatus(
   const existing = await getOrderByPublicId(publicId);
   if (!existing) throw new Error('Pedido no encontrado');
 
+  const payment = existing.payment_status;
+  const isAbandonCancel =
+    existing.status === 'pendiente_pago' && toStatus === 'cancelado' && payment !== 'paid';
+  const isPaidCancel =
+    toStatus === 'cancelado' && (payment === 'paid' || payment === 'refunded');
+  const isSystemFulfillment =
+    existing.status === 'pendiente_pago' && toStatus === 'pedido' && payment === 'paid';
+
+  if (!isAbandonCancel && !isPaidCancel && !isSystemFulfillment && payment !== 'paid') {
+    throw new Error('Solo se pueden actualizar pedidos pagados');
+  }
+
   const allowed = ALLOWED_STATUS_TRANSITIONS[existing.status];
   if (!allowed.includes(toStatus)) {
     throw new Error(
@@ -468,12 +532,22 @@ export async function updateOrderStatus(
     const orderRow = orderResult.rows[0];
     if (!orderRow) throw new Error('Pedido no encontrado');
 
-    if (toStatus === 'cancelado' && existing.status === 'pendiente_pago') {
+    // Al cancelar, devolver al inventario cualquier unidad descontada (pago confirmado).
+    // Idempotente: ponemos inventory_reserved_qty en 0 para evitar doble devolución.
+    if (toStatus === 'cancelado') {
+      let releasedAny = false;
       for (const item of existing.items) {
         const reserved = item.inventory_reserved_qty ?? 0;
         if (reserved > 0) {
           await productsRepo.releaseVariantStockTx(client, item.variant_id, reserved);
+          releasedAny = true;
         }
+      }
+      if (releasedAny) {
+        await client.query(
+          `UPDATE mrpaps_order_items SET inventory_reserved_qty = 0 WHERE order_id = $1`,
+          [existing.id],
+        );
       }
     }
 

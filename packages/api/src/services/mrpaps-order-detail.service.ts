@@ -247,6 +247,9 @@ export async function getOrderDetail(
 export async function getAdminOrderDetail(publicId: string): Promise<OrderDetailDto> {
   const order = await ordersRepo.getOrderByPublicId(publicId);
   if (!order) throw new NotFoundError('Pedido no encontrado');
+  if (order.status === 'pendiente_pago' || order.payment_status !== 'paid') {
+    throw new NotFoundError('Pedido no encontrado');
+  }
   const events = await ordersRepo.listOrderStatusEvents(order.id);
   return mapOrder(order, events, { includeInternal: true });
 }

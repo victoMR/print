@@ -6,9 +6,8 @@ vi.mock('../lib/db.js', () => ({
   pool: { query: vi.fn(), connect: vi.fn() },
 }));
 
-const { reserveVariantStockTx, releaseVariantStockTx } = await import(
-  '../db/mrpaps-products.repository.js'
-);
+const { assertVariantStockAvailableTx, reserveVariantStockTx, releaseVariantStockTx } =
+  await import('../db/mrpaps-products.repository.js');
 
 function mockClient(sequence: Array<{ rows: unknown[] }>): PoolClient {
   let call = 0;
@@ -25,6 +24,14 @@ describe('inventory reservation', () => {
   it('isTrackedStock treats zero as POD unlimited', () => {
     expect(isTrackedStock(0)).toBe(false);
     expect(isTrackedStock(2)).toBe(true);
+  });
+
+  it('assertVariantStockAvailableTx checks without decrementing', async () => {
+    const client = mockClient([{ rows: [{ stock_quantity: '2' }] }]);
+
+    const available = await assertVariantStockAvailableTx(client, 'variant-1', 2);
+    expect(available).toBe(2);
+    expect(client.query).toHaveBeenCalledTimes(1);
   });
 
   it('reserves tracked stock when available', async () => {

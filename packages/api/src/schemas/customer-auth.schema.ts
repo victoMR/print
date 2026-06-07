@@ -39,4 +39,5 @@ export const verificationStatusQuerySchema = z.object({
 export const customerLoginSchema = z.object({
   email: z.string().email('Correo inválido').transform((v) => v.trim().toLowerCase()),
   password: z.string().min(1, 'Contraseña requerida').max(CUSTOMER_PASSWORD_MAX),
+  rememberMe: z.boolean().optional().default(true),
 });

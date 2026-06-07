@@ -177,3 +177,18 @@ export function publicAdminUser(user: MrpapsUserRow) {
     role: user.role,
   };
 }
+
+/** Renueva JWT admin (ventana deslizante de 8 h) sin tocar la BD. */
+export async function refreshAdminSession(
+  token: string,
+): Promise<{ token: string; user: ReturnType<typeof publicAdminUser> } | null> {
+  try {
+    const payload = await verifyAdminToken(token);
+    const user = await usersRepo.findUserById(payload.sub);
+    if (!user || (user.role !== 'admin' && user.role !== 'dev')) return null;
+    const newToken = await signAdminToken(user);
+    return { token: newToken, user: publicAdminUser(user) };
+  } catch {
+    return null;
+  }
+}

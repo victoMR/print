@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Eye, EyeOff, Shield } from "lucide-react";
 import { adminLogin } from "@/lib/api";
 import type { AdminSessionUser } from "@/lib/admin-session";
+import { broadcastSession } from "@/lib/session-broadcast";
 import { AuthCard, AuthShell } from "@/components/boty/auth-shell";
 import { BotyAlert, BotyButton, BotyInput, BotyLabel } from "@/components/boty/ui-patterns";
 
@@ -24,6 +25,7 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
     setError(null);
     try {
       const res = await adminLogin(email, password);
+      broadcastSession({ type: "admin:login" });
       onSuccess(res.data.user);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesión");

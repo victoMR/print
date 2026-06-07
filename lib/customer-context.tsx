@@ -3,7 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { CustomerSessionUser } from "./customer-session";
 import { clearCustomerToken } from "./customer-session";
-import { customerLogout } from "./customer-api";
+import { customerLogout, customerRefreshSession } from "./customer-api";
+import { broadcastSession, subscribeSession } from "./session-broadcast";
+import { useSessionKeepalive } from "./use-session-keepalive";
 
 const V1 = "/api/v1";
 
@@ -27,8 +29,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      // Auth via HttpOnly cookie — no token in localStorage needed.
-      const res = await fetch(`${V1}/auth/me`, { credentials: "include" });
+      const res = await fetch(`${V1}/auth/me`, { credentials: "include", cache: "no-store" });
       if (res.ok) {
         const json = (await res.json()) as { data: CustomerSessionUser | null };
         setUser(json.data ?? null);
@@ -42,13 +43,35 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const slideRefresh = useCallback(async () => {
+    if (!user) return;
+    try {
+      const next = await customerRefreshSession();
+      setUser(next);
+    } catch {
+      setUser(null);
+    }
+  }, [user]);
+
   const logout = useCallback(() => {
-    clearCustomerToken(); // clean up any legacy localStorage value
-    void customerLogout(); // ask server to clear the HttpOnly cookie
+    clearCustomerToken();
+    broadcastSession({ type: "customer:logout" });
+    void customerLogout();
     setUser(null);
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    return subscribeSession((event) => {
+      if (event.type === "customer:logout") setUser(null);
+      if (event.type === "customer:login" || event.type === "customer:refresh") void refresh();
+    });
+  }, [refresh]);
+
+  useSessionKeepalive({ enabled: Boolean(user), onRefresh: slideRefresh });
 
   return (
     <CustomerContext.Provider value={{ user, loading, refresh, logout }}>

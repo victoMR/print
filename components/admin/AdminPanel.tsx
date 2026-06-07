@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { adminFetchMe, adminLogout } from "@/lib/api";
+import { adminFetchMe, adminLogout, adminRefreshSession } from "@/lib/api";
 import { ADMIN_LOGIN_PATH } from "@/lib/safe-redirect";
+import { broadcastSession, subscribeSession } from "@/lib/session-broadcast";
+import { useSessionKeepalive } from "@/lib/use-session-keepalive";
 import { AdminOrdersSection } from "@/components/admin/admin-orders-section";
 import { AdminProductsSection } from "@/components/admin/AdminProductsSection";
 import { AdminUsersSection } from "@/components/admin/AdminUsersSection";
@@ -25,12 +27,40 @@ export function AdminPanel() {
     // if (tab === "designs") { ... } — pestaña diseños oculta
   }, []);
 
-  useEffect(() => {
-    void adminFetchMe()
-      .then((res) => setUser(res.data))
-      .catch(() => setUser(null))
-      .finally(() => setAuthChecked(true));
+  const loadSession = useCallback(async () => {
+    try {
+      const res = await adminFetchMe();
+      setUser(res.data);
+    } catch {
+      setUser(null);
+    } finally {
+      setAuthChecked(true);
+    }
   }, []);
+
+  const slideRefresh = useCallback(async () => {
+    if (!user) return;
+    const next = await adminRefreshSession();
+    if (!next) {
+      setUser(null);
+      return;
+    }
+    setUser(next);
+    broadcastSession({ type: "admin:refresh" });
+  }, [user]);
+
+  useEffect(() => {
+    void loadSession();
+  }, [loadSession]);
+
+  useEffect(() => {
+    return subscribeSession((event) => {
+      if (event.type === "admin:logout") setUser(null);
+      if (event.type === "admin:login" || event.type === "admin:refresh") void loadSession();
+    });
+  }, [loadSession]);
+
+  useSessionKeepalive({ enabled: Boolean(user), onRefresh: slideRefresh });
 
   useEffect(() => {
     if (!authChecked || user) return;
@@ -53,7 +83,9 @@ export function AdminPanel() {
 
   function handleLogout() {
     clearAdminToken();
+    broadcastSession({ type: "admin:logout" });
     void adminLogout();
+    setUser(null);
     router.replace(ADMIN_LOGIN_PATH);
   }
 

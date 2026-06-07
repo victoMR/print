@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import * as customerAuth from '../../services/customer-auth.service.js';
-import { resolveCustomerSession } from '../../services/customer-auth.service.js';
-import * as bootstrapAuth from '../../services/bootstrap-auth.service.js';
+import { refreshCustomerSession, resolveCustomerSession } from '../../services/customer-auth.service.js';
 import {
-  extractCustomerToken,
-  requireCustomerAuth,
-  revokeCustomerSession,
-} from '../../middleware/customer-auth.js';
+  clearCustomerSessionCookie,
+  setCustomerSessionCookie,
+} from '../../lib/session-cookie.js';
+import * as bootstrapAuth from '../../services/bootstrap-auth.service.js';
+import { extractCustomerToken, revokeCustomerSession } from '../../middleware/customer-auth.js';
 import { authRateLimit } from '../../middleware/rate-limit.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
 import {
@@ -96,16 +96,9 @@ v1AuthRouter.post('/resend-verification', authRateLimit, async (req, res, next) 
 v1AuthRouter.post('/login', authRateLimit, async (req, res, next) => {
   try {
     const body = customerLoginSchema.parse(req.body);
-    const result = await customerAuth.loginCustomer(body.email, body.password);
+    const result = await customerAuth.loginCustomer(body.email, body.password, body.rememberMe);
 
-    const isProduction = process.env.NODE_ENV === 'production';
-    res.cookie('customer_token', result.token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'strict' : 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days — matches TOKEN_TTL
-      path: '/',
-    });
+    setCustomerSessionCookie(res, result.token, result.rememberMe);
 
     res.json({ data: { user: result.user } });
   } catch (err) {
@@ -113,10 +106,35 @@ v1AuthRouter.post('/login', authRateLimit, async (req, res, next) => {
   }
 });
 
-v1AuthRouter.post('/logout', requireCustomerAuth, async (req, res, next) => {
+/** Renueva cookie HttpOnly si la sesión sigue válida (sesión deslizante). */
+v1AuthRouter.post('/refresh', async (req, res, next) => {
   try {
-    await revokeCustomerSession(req.customerUser!.id);
-    res.clearCookie('customer_token', { httpOnly: true, path: '/' });
+    const token = extractCustomerToken(req);
+    if (!token) {
+      res.json({ data: null });
+      return;
+    }
+    const result = await refreshCustomerSession(token);
+    if (!result) {
+      clearCustomerSessionCookie(res);
+      res.json({ data: null });
+      return;
+    }
+    setCustomerSessionCookie(res, result.token, result.rememberMe);
+    res.json({ data: result.user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1AuthRouter.post('/logout', async (req, res, next) => {
+  try {
+    const token = extractCustomerToken(req);
+    if (token) {
+      const session = await resolveCustomerSession(token, { requireVerifiedEmail: false });
+      if (session) await revokeCustomerSession(session.id);
+    }
+    clearCustomerSessionCookie(res);
     res.status(204).end();
   } catch (err) {
     next(err);

@@ -20,6 +20,7 @@ import type { CheckoutRecipient } from "./api-types";
 import type { ProductCategory } from "./product-categories";
 import { getAdminToken } from "./admin-session";
 import { getCustomerToken } from "./customer-session";
+import { broadcastSession } from "./session-broadcast";
 
 const SERVER_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
 const V1 = "/api/v1";
@@ -84,6 +85,9 @@ export async function apiFetch<T>(
       body = await res.json();
     } catch {
       body = undefined;
+    }
+    if (res.status === 401 && path.includes("/admin/")) {
+      broadcastSession({ type: "admin:logout" });
     }
     const msg =
       body && typeof body === "object" && "error" in body
@@ -223,6 +227,24 @@ export async function adminLogout() {
   try {
     await apiFetch(`${V1}/admin/auth/logout`, { method: "POST", cache: "no-store" });
   } catch { /* ignore — clear local state regardless */ }
+}
+
+export async function adminRefreshSession(): Promise<{
+  id: string;
+  email: string;
+  role: "admin" | "dev";
+} | null> {
+  const res = await fetch(`${getApiBase()}${V1}/admin/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as {
+    data: { id: string; email: string; role: "admin" | "dev" } | null;
+  };
+  return json.data ?? null;
 }
 
 export async function adminFetchMe() {

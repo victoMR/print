@@ -30,8 +30,11 @@ const {
   signCustomerToken,
   verifyCustomerToken,
   resolveCustomerSession,
+  refreshCustomerSession,
   publicCustomer,
 } = await import('../services/customer-auth.service.js');
+
+import { decodeJwt } from 'jose';
 
 afterAll(() => {
   if (_originalSecret === undefined) delete process.env.CUSTOMER_JWT_SECRET;
@@ -169,6 +172,22 @@ describe('JWT de cliente', () => {
     expect(payload.sub).toBe('abc');
     expect(payload.email).toBe('a@b.com');
     expect(payload.tv).toBe(3);
+    expect(payload.rm).toBe(true);
+  });
+
+  it('usa TTL corto cuando rememberMe es false', async () => {
+    const long = await signCustomerToken(
+      { id: 'abc', email: 'a@b.com', role: 'customer', token_version: 0 },
+      { rememberMe: true },
+    );
+    const short = await signCustomerToken(
+      { id: 'abc', email: 'a@b.com', role: 'customer', token_version: 0 },
+      { rememberMe: false },
+    );
+    const longExp = decodeJwt(long).exp!;
+    const shortExp = decodeJwt(short).exp!;
+    expect(shortExp).toBeLessThan(longExp);
+    expect((await verifyCustomerToken(short)).rm).toBe(false);
   });
 
   it('rechaza un token manipulado', async () => {
@@ -222,6 +241,28 @@ describe('resolveCustomerSession', () => {
 
   it('devuelve null con un token basura sin lanzar', async () => {
     expect(await resolveCustomerSession('no-es-un-jwt')).toBeNull();
+  });
+});
+
+describe('refreshCustomerSession', () => {
+  it('renueva el token si la sesión sigue válida', async () => {
+    const user = makeUser({ token_version: 0 });
+    const token = await signCustomerToken(user as never, { rememberMe: false });
+    vi.mocked(usersRepo.findUserById).mockResolvedValue(user);
+
+    const result = await refreshCustomerSession(token);
+    expect(result).not.toBeNull();
+    expect(result!.user.email).toBe('cliente@example.com');
+    expect(result!.rememberMe).toBe(false);
+    expect(decodeJwt(result!.token).rm).toBe(false);
+  });
+
+  it('devuelve null si token_version no coincide', async () => {
+    const user = makeUser({ token_version: 0 });
+    const token = await signCustomerToken(user as never);
+    vi.mocked(usersRepo.findUserById).mockResolvedValue(makeUser({ token_version: 1 }));
+
+    expect(await refreshCustomerSession(token)).toBeNull();
   });
 });
 

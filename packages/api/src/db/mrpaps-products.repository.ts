@@ -285,8 +285,32 @@ export async function upsertVariant(input: {
 }
 
 /**
- * Reserva inventario rastreado (stock_quantity > 0) dentro de una transacción.
- * @returns unidades reservadas (0 si POD sin inventario), false si no hay stock o variante inexistente.
+ * Verifica inventario sin descontar (checkout pendiente de pago).
+ * @returns unidades disponibles (0 si POD), false si no alcanza o variante inexistente.
+ */
+export async function assertVariantStockAvailableTx(
+  client: PoolClient,
+  variantId: string,
+  quantity: number,
+): Promise<number | false> {
+  const lock = await client.query<{ stock_quantity: string }>(
+    `SELECT stock_quantity FROM mrpaps_product_variants WHERE id = $1 FOR UPDATE`,
+    [variantId],
+  );
+  const row = lock.rows[0];
+  if (!row) return false;
+
+  const stock = Number(row.stock_quantity);
+  if (!isTrackedStock(stock)) return 0;
+
+  if (stock < quantity) return false;
+
+  return quantity;
+}
+
+/**
+ * Descuenta inventario rastreado (stock_quantity > 0) — al confirmar pago.
+ * @returns unidades descontadas (0 si POD sin inventario), false si no hay stock o variante inexistente.
  */
 export async function reserveVariantStockTx(
   client: PoolClient,

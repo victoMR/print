@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-function extractAdminToken(req: Request): string | null {
+export function extractAdminToken(req: Request): string | null {
   // Prefer HttpOnly cookie (XSS-safe); fall back to Bearer for CLI/tooling access.
   const cookieHeader = req.headers.cookie ?? '';
   const cookieMatch = cookieHeader.match(/(?:^|;\s*)admin_token=([^;]+)/);

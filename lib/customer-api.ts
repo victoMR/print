@@ -3,6 +3,7 @@
 // Auth is now handled via HttpOnly cookie — no token in localStorage.
 // All requests include credentials: 'include' so the cookie is sent automatically.
 import type { CustomerSessionUser } from "./customer-session";
+import { broadcastSession } from "./session-broadcast";
 
 const V1 = "/api/v1";
 
@@ -20,15 +21,30 @@ export class CustomerApiError extends Error {
 }
 
 async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { ...CREDENTIALS_OPTS, ...init });
+  const res = await fetch(url, { ...CREDENTIALS_OPTS, ...init, cache: "no-store" });
   const json = (await res.json()) as { error?: string; code?: string } & T;
   if (!res.ok) {
+    if (res.status === 401) {
+      broadcastSession({ type: "customer:logout" });
+    }
     throw new CustomerApiError(
       (json as { error?: string }).error ?? `Error ${res.status}`,
       (json as { code?: string }).code,
     );
   }
   return json;
+}
+
+/** Renueva cookie HttpOnly (sesión deslizante). Devuelve null si expiró o fue revocada. */
+export async function customerRefreshSession(): Promise<CustomerSessionUser | null> {
+  const res = await fetch(`${V1}/auth/refresh`, {
+    method: "POST",
+    ...CREDENTIALS_OPTS,
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as { data: CustomerSessionUser | null };
+  return json.data ?? null;
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -79,12 +95,12 @@ export async function fetchEmailVerificationStatus(email: string) {
   });
 }
 
-export async function customerLogin(email: string, password: string) {
+export async function customerLogin(email: string, password: string, rememberMe = true) {
   // Server sets HttpOnly cookie — no token is returned in the response body.
   const result = await apiFetch<{ data: { user: CustomerSessionUser } }>(`${V1}/auth/login`, {
     method: "POST",
     headers: JSON_HEADERS,
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, rememberMe }),
   });
   return result.data.user;
 }

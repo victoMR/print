@@ -32,8 +32,8 @@ import {
 } from "lucide-react";
 import { mxStateLabel } from "@/lib/mx-state-label";
 
-const ALL_ORDER_STATUSES: MrpapsOrderStatus[] = [
-  "pendiente_pago",
+/** Operaciones admin: solo estados post-pago (pendiente_pago es invisible en el panel). */
+const ADMIN_ORDER_STATUSES: MrpapsOrderStatus[] = [
   "pedido",
   "solicitado_imprenta",
   "recibido_imprenta",
@@ -96,7 +96,6 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
     try {
       const res = await adminListOrders({
         status: filterStatus || undefined,
-        excludeStatus: filterStatus ? undefined : "pendiente_pago",
         search: searchQuery || undefined,
       });
       setOrders(res.data);
@@ -216,7 +215,7 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
             placeholder="Pagados y en proceso"
             options={[
               { value: "__all__", label: "Pagados y en proceso" },
-              ...ALL_ORDER_STATUSES.map((s) => ({ value: s, label: ORDER_STATUS_LABELS[s] })),
+              ...ADMIN_ORDER_STATUSES.map((s) => ({ value: s, label: ORDER_STATUS_LABELS[s] })),
             ]}
           />
         </div>

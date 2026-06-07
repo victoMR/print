@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { customerLogin } from "@/lib/customer-api";
 import { validateLoginForm } from "@/lib/customer-auth-rules";
 import { useCustomer } from "@/lib/customer-context";
+import { broadcastSession } from "@/lib/session-broadcast";
 import { ADMIN_LOGIN_PATH, isAdminPath, safeRedirectPath } from "@/lib/safe-redirect";
 import { AuthCard, AuthShell } from "./auth-shell";
 import { BotyAlert, BotyButton, BotyInput, BotyLabel } from "./ui-patterns";
@@ -21,6 +22,7 @@ export function LoginForm() {
   const params = useSearchParams();
   const { refresh } = useCustomer();
   const [form, setForm] = useState({ email: "", password: "" });
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,8 +57,9 @@ export function LoginForm() {
     }
     setBusy(true);
     try {
-      await customerLogin(form.email.trim().toLowerCase(), form.password);
+      await customerLogin(form.email.trim().toLowerCase(), form.password, rememberMe);
       await refresh();
+      broadcastSession({ type: "customer:login" });
       router.push(redirect);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error al iniciar sesión";
@@ -112,6 +115,16 @@ export function LoginForm() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+          </label>
+
+          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 rounded border-border accent-primary"
+            />
+            <span className="text-sm text-muted-foreground">Recordarme en este dispositivo (30 días)</span>
           </label>
 
           <BotyButton type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
