@@ -6,6 +6,7 @@ import { adminFetchMe, adminLogout, adminRefreshSession } from "@/lib/api";
 import { ADMIN_LOGIN_PATH } from "@/lib/safe-redirect";
 import { broadcastSession, subscribeSession } from "@/lib/session-broadcast";
 import { useSessionKeepalive } from "@/lib/use-session-keepalive";
+import { AdminDashboardSection } from "@/components/admin/admin-dashboard-section";
 import { AdminOrdersSection } from "@/components/admin/admin-orders-section";
 import { AdminProductsSection } from "@/components/admin/AdminProductsSection";
 import { AdminUsersSection } from "@/components/admin/AdminUsersSection";
@@ -17,8 +18,9 @@ export function AdminPanel() {
   const router = useRouter();
   const [user, setUser] = useState<AdminSessionUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [tab, setTab] = useState<AdminTab>("orders");
+  const [tab, setTab] = useState<AdminTab>("dashboard");
   const [error, setError] = useState<string | null>(null);
+  const [dashboardRefresh, setDashboardRefresh] = useState(0);
   const [ordersRefresh, setOrdersRefresh] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -97,11 +99,16 @@ export function AdminPanel() {
       onLogout={handleLogout}
       onRefresh={() => {
         void load();
+        setDashboardRefresh((n) => n + 1);
         setOrdersRefresh((n) => n + 1);
       }}
       busy={busy}
       error={error}
     >
+      {tab === "dashboard" && (
+        <AdminDashboardSection onError={setError} refreshKey={dashboardRefresh} />
+      )}
+
       {tab === "orders" && (
         <AdminOrdersSection
           busy={busy}

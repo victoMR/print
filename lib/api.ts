@@ -1,4 +1,6 @@
 import type {
+  AdminAnalyticsPeriod,
+  AdminDashboardData,
   AdminDesign,
   AdminOrderSummary,
   AdminProductDetail,
@@ -676,4 +678,66 @@ export async function adminUpdateProductVariant(
     body: JSON.stringify(body),
     cache: "no-store",
   });
+}
+
+// ─── Analytics / dashboard ───────────────────────────────────────────────────
+
+export async function adminFetchDashboard(filters?: {
+  period?: AdminAnalyticsPeriod;
+  from?: string;
+  to?: string;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.period) params.set("period", filters.period);
+  if (filters?.from) params.set("from", filters.from);
+  if (filters?.to) params.set("to", filters.to);
+  const q = params.size > 0 ? `?${params.toString()}` : "";
+  return apiFetch<{ data: AdminDashboardData }>(`${V1}/admin/analytics/dashboard${q}`, {
+    headers: adminHeaders(),
+    cache: "no-store",
+  });
+}
+
+export async function adminDownloadAnalyticsReport(filters: {
+  period: AdminAnalyticsPeriod;
+  format: "csv" | "pdf";
+  from?: string;
+  to?: string;
+}): Promise<void> {
+  const base = getApiBase();
+  const params = new URLSearchParams({
+    period: filters.period,
+    format: filters.format,
+  });
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+
+  const url = `${base}${V1}/admin/analytics/export?${params.toString()}`;
+  const res = await fetch(url, {
+    credentials: "include",
+    headers: adminHeaders(),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    let msg = `Error al descargar reporte (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body.error) msg = body.error;
+    } catch { /* ignore */ }
+    throw new ApiError(msg, res.status);
+  }
+
+  const blob = await res.blob();
+  const ext = filters.format === "pdf" ? "pdf" : "csv";
+  const disposition = res.headers.get("content-disposition");
+  const match = disposition?.match(/filename="?([^";]+)"?/);
+  const filename = match?.[1] ?? `mrpaps-ventas.${ext}`;
+
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(objectUrl);
 }

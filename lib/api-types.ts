@@ -342,3 +342,27 @@ export type AdminProductDetail = AdminProductSummary & {
   composition?: ProductComposition;
   variants: AdminProductVariant[];
 };
+
+export type AdminAnalyticsPeriod = "week" | "month" | "quarter" | "year" | "custom";
+
+export type AdminDashboardData = {
+  period: { key: AdminAnalyticsPeriod; label: string; from: string; to: string };
+  summary: {
+    paidOrders: number;
+    revenueMxn: string;
+    avgOrderMxn: string;
+    itemsSold: number;
+    refundedOrders: number;
+    cancelledOrders: number;
+    uniqueCustomers: number;
+  };
+  series: Array<{ bucket: string; label: string; orders: number; revenueMxn: string }>;
+  byStatus: Array<{ status: string; count: number }>;
+  topProducts: Array<{
+    productName: string;
+    variantLabel: string;
+    sku: string;
+    quantity: number;
+    revenueMxn: string;
+  }>;
+};

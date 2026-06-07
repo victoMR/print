@@ -35,6 +35,15 @@ import * as variantsAdmin from '../../services/mrpaps-variants-admin.service.js'
 import { invalidateCatalogCache } from '../../services/cache-invalidation.service.js';
 import * as mailTest from '../../services/mail-test.service.js';
 import { BadRequestError } from '../../types/errors.js';
+import {
+  adminAnalyticsExportSchema,
+  adminAnalyticsQuerySchema,
+} from '../../schemas/admin-analytics.schema.js';
+import { getAdminDashboard } from '../../services/admin-analytics.service.js';
+import {
+  buildAnalyticsCsv,
+  buildAnalyticsPdf,
+} from '../../services/admin-analytics-export.service.js';
 
 export const v1MrpapsAdminRouter: Router = Router();
 
@@ -87,6 +96,45 @@ v1MrpapsAdminRouter.get('/auth/me', requireAdminAuth, async (req, res) => {
 });
 
 v1MrpapsAdminRouter.use(requireAdminAuth);
+
+v1MrpapsAdminRouter.get('/analytics/dashboard', async (req, res, next) => {
+  try {
+    const query = adminAnalyticsQuerySchema.parse(req.query);
+    const data = await getAdminDashboard(query);
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1MrpapsAdminRouter.get('/analytics/export', async (req, res, next) => {
+  try {
+    const query = adminAnalyticsExportSchema.parse(req.query);
+    const data = await getAdminDashboard(query);
+    const stamp = `${data.period.from}_${data.period.to}`;
+
+    if (query.format === 'csv') {
+      const csv = buildAnalyticsCsv(data);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="mrpaps-ventas-${stamp}.csv"`,
+      );
+      res.send(csv);
+      return;
+    }
+
+    const pdf = await buildAnalyticsPdf(data);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="mrpaps-ventas-${stamp}.pdf"`,
+    );
+    res.send(pdf);
+  } catch (err) {
+    next(err);
+  }
+});
 
 v1MrpapsAdminRouter.get('/mail/status', async (_req, res, next) => {
   try {
