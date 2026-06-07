@@ -1,20 +1,48 @@
 import rateLimit from 'express-rate-limit';
 
-/** 5 requests per 15 minutes — auth endpoints */
-export const authRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
+const defaultOptions = {
   standardHeaders: true,
   legacyHeaders: false,
+};
+
+/** 5 req / 15 min — login, reset, bootstrap (solo intentos fallidos). */
+export const authRateLimit = rateLimit({
+  ...defaultOptions,
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: { error: 'Demasiados intentos. Espera 15 minutos antes de volver a intentar.' },
   skipSuccessfulRequests: true,
 });
 
-/** 20 requests per minute — checkout and payment endpoints */
+/** 30 req / min — shipping-rates y estimate (llaman a Envia externamente). */
+export const shippingRateLimit = rateLimit({
+  ...defaultOptions,
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Demasiadas solicitudes de cotización. Intenta de nuevo en un momento.' },
+});
+
+/** 20 req / min — creación de pedidos y pagos. */
 export const checkoutRateLimit = rateLimit({
+  ...defaultOptions,
   windowMs: 60 * 1000,
   max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { error: 'Demasiadas solicitudes. Intenta de nuevo en un momento.' },
+});
+
+/** 60 req / min — renovación de sesión (cookie sliding-window). */
+export const sessionRefreshRateLimit = rateLimit({
+  ...defaultOptions,
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Demasiadas renovaciones de sesión. Intenta de nuevo en un momento.' },
+  skipSuccessfulRequests: false,
+});
+
+/** 10 req / min — uploads de archivos (costoso en CPU por sharp). */
+export const uploadRateLimit = rateLimit({
+  ...defaultOptions,
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: 'Demasiados uploads. Espera un momento antes de subir más archivos.' },
 });

@@ -3,10 +3,19 @@ import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 // --- Mock external dependencies so tests run without a database ---
 vi.mock('../db/mrpaps-users.repository.js', () => ({
   findUserByEmailForAuth: vi.fn(),
+  findUserById: vi.fn(),
+  incrementAdminTokenVersion: vi.fn(),
 }));
 vi.mock('../lib/password.js', () => ({
   verifyPassword: vi.fn(),
   hashPassword: vi.fn(),
+}));
+vi.mock('./admin-refresh-token.service.js', () => ({
+  createAdminRefreshToken: vi.fn().mockResolvedValue('mock-refresh-token'),
+  consumeAdminRefreshToken: vi.fn(),
+  revokeAdminRefreshToken: vi.fn(),
+  revokeAllAdminRefreshTokens: vi.fn(),
+  findAdminRefreshTokenUserId: vi.fn(),
 }));
 
 import * as usersRepo from '../db/mrpaps-users.repository.js';
@@ -57,7 +66,8 @@ describe('Admin Auth — loginAdmin', () => {
     vi.mocked(passwordLib.verifyPassword).mockResolvedValue(true);
 
     const result = await loginAdmin('admin@example.com', 'correct-password');
-    expect(result.token).toBeTruthy();
+    expect(result.accessToken).toBeTruthy();
+    expect(result.refreshToken).toBeTruthy();
     expect(result.user.email).toBe('admin@example.com');
     expect(result.user.role).toBe('admin');
   });
@@ -105,7 +115,7 @@ describe('Admin Auth — loginAdmin', () => {
 
 describe('Admin Auth — token lifecycle', () => {
   it('signs a token and verifies it', async () => {
-    const token = await signAdminToken({ id: 'abc', email: 'x@y.com', role: 'admin' });
+    const token = await signAdminToken({ id: 'abc', email: 'x@y.com', role: 'admin', token_version: 0 });
     const payload = await verifyAdminToken(token);
     expect(payload.sub).toBe('abc');
     expect(payload.email).toBe('x@y.com');
@@ -113,7 +123,7 @@ describe('Admin Auth — token lifecycle', () => {
   });
 
   it('rejects a tampered token', async () => {
-    const token = await signAdminToken({ id: 'abc', email: 'x@y.com', role: 'admin' });
+    const token = await signAdminToken({ id: 'abc', email: 'x@y.com', role: 'admin', token_version: 0 });
     await expect(verifyAdminToken(token + 'tampered')).rejects.toThrow();
   });
 });

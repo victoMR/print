@@ -7,7 +7,7 @@ import {
 } from '../../lib/session-cookie.js';
 import * as bootstrapAuth from '../../services/bootstrap-auth.service.js';
 import { extractCustomerToken, revokeCustomerSession } from '../../middleware/customer-auth.js';
-import { authRateLimit } from '../../middleware/rate-limit.js';
+import { authRateLimit, sessionRefreshRateLimit } from '../../middleware/rate-limit.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
 import {
   customerLoginSchema,
@@ -107,7 +107,7 @@ v1AuthRouter.post('/login', authRateLimit, async (req, res, next) => {
 });
 
 /** Renueva cookie HttpOnly si la sesión sigue válida (sesión deslizante). */
-v1AuthRouter.post('/refresh', async (req, res, next) => {
+v1AuthRouter.post('/refresh', sessionRefreshRateLimit, async (req, res, next) => {
   try {
     const token = extractCustomerToken(req);
     if (!token) {

@@ -21,7 +21,7 @@ afterAll(() => {
 describe('validateUploadFile — allowlist de tipos', () => {
   it.each(['image/png', 'image/jpeg', 'image/webp', 'application/pdf'])(
     'acepta %s',
-    (mime) => {
+    (mime: string) => {
       expect(() => validateUploadFile(mime, 1024)).not.toThrow();
     },
   );

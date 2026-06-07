@@ -12,6 +12,12 @@ import {
 import { CreateProductModal, EditProductModal } from "@/components/admin/admin-product-modals";
 import { AdminSelect } from "@/components/admin/admin-select";
 import { AdminViewToggle, useAdminViewMode } from "@/components/admin/admin-view-toggle";
+import {
+  ADMIN_EMPTY_SURFACE_CLASS,
+  ADMIN_FILTER_SURFACE_CLASS,
+  ADMIN_GRID_CLASS,
+  AdminGridCard,
+} from "@/components/admin/admin-grid-card";
 import { cn, formatMxn } from "@/lib/utils";
 import { BotyButton, BotyLabel, BotyPageHeader, BotySurface } from "@/components/boty/ui-patterns";
 import { ExternalLink, Pencil, Plus, Power, PowerOff, Search, X } from "lucide-react";
@@ -89,7 +95,7 @@ export function AdminProductsSection({ busy, setBusy, onError }: AdminProductsSe
   }
 
   return (
-    <>
+    <section className="space-y-6">
       <BotyPageHeader
         title="Productos"
         description="Catálogo de la tienda. Edita desde el panel lateral."
@@ -101,8 +107,8 @@ export function AdminProductsSection({ busy, setBusy, onError }: AdminProductsSe
         }
       />
 
-      <BotySurface className="p-4 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 mb-6">
-        <div className="relative flex-1 min-w-0 w-full sm:w-auto sm:min-w-[220px] sm:max-w-sm">
+      <BotySurface className={ADMIN_FILTER_SURFACE_CLASS}>
+        <div className="relative flex-1 min-w-0 w-full lg:max-w-md xl:max-w-xl">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <input
             type="search"
@@ -152,7 +158,7 @@ export function AdminProductsSection({ busy, setBusy, onError }: AdminProductsSe
           />
         </div>
 
-        <div className="flex items-center gap-3 sm:ml-auto">
+        <div className="flex items-center gap-3 w-full lg:w-auto lg:ml-auto shrink-0">
           <AdminViewToggle value={viewMode} onChange={setViewMode} />
           <span className="text-xs text-muted-foreground whitespace-nowrap">
             {filteredProducts.length} de {products.length}
@@ -161,18 +167,18 @@ export function AdminProductsSection({ busy, setBusy, onError }: AdminProductsSe
       </BotySurface>
 
       {products.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground text-sm">
+        <BotySurface className={ADMIN_EMPTY_SURFACE_CLASS}>
           <p>No hay productos todavía.</p>
           <BotyButton type="button" variant="secondary" className="mt-4" onClick={() => setShowCreate(true)}>
             Crear el primero
           </BotyButton>
-        </div>
+        </BotySurface>
       ) : filteredProducts.length === 0 ? (
-        <BotySurface className="p-12 text-center text-muted-foreground text-sm">
+        <BotySurface className={ADMIN_EMPTY_SURFACE_CLASS}>
           No hay productos con estos filtros.
         </BotySurface>
       ) : viewMode === "grid" ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        <div className={ADMIN_GRID_CLASS}>
           {filteredProducts.map((p) => (
             <ProductCard
               key={p.id}
@@ -212,7 +218,7 @@ export function AdminProductsSection({ busy, setBusy, onError }: AdminProductsSe
         onClose={() => setEditProduct(null)}
         onSaved={() => { void loadProducts(); }}
       />
-    </>
+    </section>
   );
 }
 
@@ -234,46 +240,42 @@ function ProductCard({
   const isActive = product.status === "active";
 
   return (
-    <article
-      className={cn(
-        "group relative rounded-3xl border bg-card overflow-hidden flex flex-col boty-shadow boty-transition",
-        !isActive && "opacity-60",
-      )}
+    <AdminGridCard
+      dimmed={!isActive}
+      media={
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={product.thumbnailUrl}
+            alt={product.name}
+            className="w-full h-full object-cover boty-transition group-hover/media:scale-105"
+          />
+          <span className="absolute top-3 left-3 text-xs font-medium px-2.5 py-1 rounded-full bg-black/40 text-white backdrop-blur-sm">
+            {PRODUCT_CATEGORY_LABELS[product.category ?? "camiseta"] ?? product.category}
+          </span>
+          <span
+            className={cn(
+              "absolute top-3 right-3 text-xs font-medium px-2.5 py-1 rounded-full",
+              isActive ? "bg-emerald-500/20 text-emerald-100 backdrop-blur-sm" : "bg-black/40 text-white backdrop-blur-sm",
+            )}
+          >
+            {isActive ? "Activo" : "Inactivo"}
+          </span>
+          <span className="absolute bottom-3 left-3 text-xs bg-black/40 text-white backdrop-blur-sm px-2.5 py-1 rounded-full">
+            {product.variantCount} variante{product.variantCount !== 1 ? "s" : ""}
+          </span>
+        </>
+      }
+      footer={
+        <ProductActions product={product} busy={busy} onEdit={onEdit} onToggleStatus={onToggleStatus} />
+      }
     >
-      <div className="relative aspect-square bg-muted overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={product.thumbnailUrl}
-          alt={product.name}
-          className="w-full h-full object-cover boty-transition group-hover:scale-105"
-        />
-        <span className="absolute top-3 left-3 text-xs font-medium px-2.5 py-1 rounded-full bg-black/40 text-white backdrop-blur-sm">
-          {PRODUCT_CATEGORY_LABELS[product.category ?? "camiseta"] ?? product.category}
-        </span>
-        <span
-          className={cn(
-            "absolute top-3 right-3 text-xs font-medium px-2.5 py-1 rounded-full",
-            isActive ? "bg-emerald-500/20 text-emerald-800 backdrop-blur-sm" : "bg-black/40 text-white backdrop-blur-sm",
-          )}
-        >
-          {isActive ? "Activo" : "Inactivo"}
-        </span>
-        <span className="absolute bottom-3 left-3 text-xs bg-black/40 text-white backdrop-blur-sm px-2.5 py-1 rounded-full">
-          {product.variantCount} variante{product.variantCount !== 1 ? "s" : ""}
-        </span>
-      </div>
-
-      <div className="p-4 flex-1 flex flex-col gap-3">
-        <div>
-          <h3 className="font-semibold leading-snug line-clamp-1">{product.name}</h3>
-          <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">/{product.slug}</p>
-          {product.description ? (
-            <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{product.description}</p>
-          ) : null}
-        </div>
-        <ProductActions product={product} busy={busy} onEdit={onEdit} onToggleStatus={onToggleStatus} className="mt-auto" />
-      </div>
-    </article>
+      <h3 className="font-serif text-base leading-snug line-clamp-1">{product.name}</h3>
+      <p className="text-xs text-muted-foreground font-mono truncate">/{product.slug}</p>
+      {product.description ? (
+        <p className="text-xs text-muted-foreground line-clamp-2">{product.description}</p>
+      ) : null}
+    </AdminGridCard>
   );
 }
 

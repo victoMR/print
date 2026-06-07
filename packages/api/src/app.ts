@@ -3,6 +3,7 @@ import { pinoHttp } from 'pino-http';
 import { logger } from './lib/logger.js';
 import { v1Router } from './routes/v1/index.js';
 import { corsMiddleware } from './middleware/cors.js';
+import { securityHeaders } from './middleware/security-headers.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { getUploadRoot } from './services/mrpaps-storage.service.js';
 import {
@@ -26,16 +27,20 @@ export function createApp(): express.Application {
   // sees the real client IP from X-Forwarded-For instead of the proxy IP.
   app.set('trust proxy', 1);
 
+  // Security headers (equivalent to helmet) — antes de cualquier ruta.
+  app.use(securityHeaders);
   app.use(corsMiddleware);
   app.use(pinoHttp({ logger }));
 
-  // Stripe: ANTES de express.json() — el body debe quedar como Buffer
+  // Stripe: ANTES de express.json() — el body debe quedar como Buffer.
   for (const path of STRIPE_WEBHOOK_PATHS) {
     app.get(path, stripeWebhookHealth);
     app.post(path, stripeWebhookRawBody, (req, res) => void stripeWebhookHandler(req, res));
   }
 
-  app.use(express.json());
+  // Limita el body a 1 MB para evitar ataques de DoS por payload grande.
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
   if (process.env.WEBHOOK_SECRET?.trim()) {
     app.use(webhooksRouter);

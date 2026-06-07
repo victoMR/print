@@ -17,7 +17,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!request.cookies.get("admin_token")) {
+  if (!request.cookies.get("admin_token") && !request.cookies.get("admin_refresh")) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = ADMIN_LOGIN_PATH;
     loginUrl.searchParams.set("redirect", pathname);

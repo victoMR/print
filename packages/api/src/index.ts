@@ -6,6 +6,16 @@ async function main(): Promise<void> {
     throw new Error('ADMIN_JWT_SECRET is required (mínimo 32 caracteres)');
   }
 
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (!process.env.CUSTOMER_JWT_SECRET || process.env.CUSTOMER_JWT_SECRET.length < 32)
+  ) {
+    throw new Error(
+      'CUSTOMER_JWT_SECRET es obligatorio en producción (mínimo 32 caracteres). ' +
+      'Define una clave independiente de ADMIN_JWT_SECRET.',
+    );
+  }
+
   const { getPgClientConfig } = await import('./lib/database-config.js');
   getPgClientConfig();
 

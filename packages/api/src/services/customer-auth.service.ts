@@ -17,9 +17,24 @@ export type CustomerTokenPayload = {
 };
 
 function getJwtSecret(): Uint8Array {
-  const secret = process.env.CUSTOMER_JWT_SECRET ?? process.env.ADMIN_JWT_SECRET;
-  if (!secret || secret.length < 32) throw new Error('CUSTOMER_JWT_SECRET requerido (≥32 chars)');
-  return new TextEncoder().encode(`customer:${secret}`);
+  const secret = process.env.CUSTOMER_JWT_SECRET;
+
+  // In production, require an explicit separate secret so rotating ADMIN_JWT_SECRET
+  // never invalidates customer sessions (and vice versa).
+  if (process.env.NODE_ENV === 'production' && !secret) {
+    throw new Error(
+      'CUSTOMER_JWT_SECRET es obligatorio en producción. ' +
+      'Define una clave independiente de al menos 32 caracteres en .env.',
+    );
+  }
+
+  // Development/staging fallback: derive a distinct secret from the admin key.
+  const effective = secret ?? process.env.ADMIN_JWT_SECRET;
+  if (!effective || effective.length < 32) {
+    throw new Error('CUSTOMER_JWT_SECRET requerido (≥32 chars)');
+  }
+
+  return new TextEncoder().encode(`customer:${effective}`);
 }
 
 export async function registerCustomer(input: {

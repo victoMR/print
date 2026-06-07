@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const DEFAULT_INTERVAL_MS = 15 * 60 * 1000;
+const DEFAULT_INTERVAL_MS = 10 * 60 * 1000;
 
 type Options = {
   enabled: boolean;

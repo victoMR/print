@@ -447,3 +447,12 @@ export async function incrementCustomerTokenVersion(userId: string): Promise<voi
     [userId],
   );
 }
+
+export async function incrementAdminTokenVersion(userId: string): Promise<void> {
+  await query(
+    `UPDATE mrpaps_users
+     SET token_version = token_version + 1, updated_at = NOW()
+     WHERE id = $1 AND role IN ('admin', 'dev')`,
+    [userId],
+  );
+}

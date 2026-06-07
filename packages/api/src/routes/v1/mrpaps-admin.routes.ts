@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { extractAdminToken, requireAdminAuth, requireDevAuth } from '../../middleware/admin-auth.js';
+import { extractAdminToken, extractAdminRefreshToken, requireAdminAuth, requireDevAuth } from '../../middleware/admin-auth.js';
 import {
-  clearAdminSessionCookie,
+  clearAllAdminSessionCookies,
+  setAdminRefreshCookie,
   setAdminSessionCookie,
 } from '../../lib/session-cookie.js';
 import { requireUploadedFile, uploadSingle } from '../../middleware/upload.js';
-import { authRateLimit } from '../../middleware/rate-limit.js';
+import { authRateLimit, sessionRefreshRateLimit, uploadRateLimit } from '../../middleware/rate-limit.js';
 import {
   adminLoginSchema,
   adminShippingQuoteSchema,
@@ -50,9 +51,10 @@ export const v1MrpapsAdminRouter: Router = Router();
 v1MrpapsAdminRouter.post('/auth/login', authRateLimit, async (req, res, next) => {
   try {
     const body = adminLoginSchema.parse(req.body);
-    const { token, user } = await adminAuth.loginAdmin(body.email, body.password);
+    const { accessToken, refreshToken, user } = await adminAuth.loginAdmin(body.email, body.password);
 
-    setAdminSessionCookie(res, token);
+    setAdminSessionCookie(res, accessToken);
+    setAdminRefreshCookie(res, refreshToken);
 
     res.json({ data: { user } });
   } catch (err) {
@@ -60,25 +62,44 @@ v1MrpapsAdminRouter.post('/auth/login', authRateLimit, async (req, res, next) =>
   }
 });
 
-v1MrpapsAdminRouter.post('/auth/logout', (_req, res) => {
-  clearAdminSessionCookie(res);
-  res.status(204).end();
+v1MrpapsAdminRouter.post('/auth/logout', async (req, res, next) => {
+  try {
+    const accessToken = extractAdminToken(req);
+    const refreshToken = extractAdminRefreshToken(req);
+    const userId = await adminAuth.resolveAdminLogoutUserId(accessToken, refreshToken);
+
+    if (userId) {
+      await adminAuth.revokeAdminSession(userId, refreshToken);
+    } else if (refreshToken) {
+      const { revokeAdminRefreshToken } = await import('../../services/admin-refresh-token.service.js');
+      await revokeAdminRefreshToken(refreshToken);
+    }
+
+    clearAllAdminSessionCookies(res);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
 });
 
-v1MrpapsAdminRouter.post('/auth/refresh', async (req, res, next) => {
+v1MrpapsAdminRouter.post('/auth/refresh', sessionRefreshRateLimit, async (req, res, next) => {
   try {
-    const token = extractAdminToken(req);
-    if (!token) {
+    const refreshToken = extractAdminRefreshToken(req);
+    if (!refreshToken) {
+      clearAllAdminSessionCookies(res);
       res.json({ data: null });
       return;
     }
-    const result = await adminAuth.refreshAdminSession(token);
+
+    const result = await adminAuth.refreshAdminSession(refreshToken);
     if (!result) {
-      clearAdminSessionCookie(res);
+      clearAllAdminSessionCookies(res);
       res.json({ data: null });
       return;
     }
-    setAdminSessionCookie(res, result.token);
+
+    setAdminSessionCookie(res, result.accessToken);
+    setAdminRefreshCookie(res, result.refreshToken);
     res.json({ data: result.user });
   } catch (err) {
     next(err);
@@ -175,7 +196,7 @@ v1MrpapsAdminRouter.get('/templates', async (_req, res, next) => {
   }
 });
 
-v1MrpapsAdminRouter.post('/uploads', (req, res, next) => {
+v1MrpapsAdminRouter.post('/uploads', uploadRateLimit, (req, res, next) => {
   uploadSingle(req, res, (err) => {
     if (err) {
       next(err);
@@ -219,7 +240,7 @@ v1MrpapsAdminRouter.delete('/uploads', async (req, res, next) => {
   }
 });
 
-v1MrpapsAdminRouter.post('/designs/upload', (req, res, next) => {
+v1MrpapsAdminRouter.post('/designs/upload', uploadRateLimit, (req, res, next) => {
   uploadSingle(req, res, (err) => {
     if (err) {
       next(err);

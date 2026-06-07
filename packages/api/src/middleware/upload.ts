@@ -6,9 +6,9 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/png',
   'image/jpeg',
   'image/webp',
-  'image/gif',
-  // image/svg+xml intentionally excluded: SVGs can contain <script> tags and
-  // execute JavaScript when served on the same origin, enabling stored XSS.
+  // image/gif excluded: rejected by the storage service (sharp can't transcode animations
+  // reliably) and not useful for print assets.
+  // image/svg+xml excluded: SVGs can contain <script> tags → stored XSS.
   'application/pdf',
 ]);
 

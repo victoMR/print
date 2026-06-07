@@ -49,6 +49,7 @@ export class ApiError extends Error {
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
+  retried = false,
 ): Promise<T> {
   const base = getApiBase();
   if (!base && typeof window === "undefined" && !SERVER_BASE) {
@@ -88,9 +89,25 @@ export async function apiFetch<T>(
     } catch {
       body = undefined;
     }
-    if (res.status === 401 && path.includes("/admin/")) {
+
+    // Intenta renovar sesión admin antes de cerrar (access token expirado).
+    if (
+      res.status === 401 &&
+      !retried &&
+      path.includes("/admin/") &&
+      !path.includes("/admin/auth/login") &&
+      !path.includes("/admin/auth/refresh")
+    ) {
+      const refreshed = await adminRefreshSession();
+      if (refreshed) {
+        broadcastSession({ type: "admin:refresh" });
+        return apiFetch<T>(path, init, true);
+      }
+      broadcastSession({ type: "admin:logout" });
+    } else if (res.status === 401 && path.includes("/admin/")) {
       broadcastSession({ type: "admin:logout" });
     }
+
     const msg =
       body && typeof body === "object" && "error" in body
         ? String((body as { error: unknown }).error)

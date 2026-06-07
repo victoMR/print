@@ -17,6 +17,12 @@ import {
 } from "@/components/boty/ui-patterns";
 import { AdminSelect } from "@/components/admin/admin-select";
 import { AdminViewToggle, useAdminViewMode } from "@/components/admin/admin-view-toggle";
+import {
+  ADMIN_EMPTY_SURFACE_CLASS,
+  ADMIN_FILTER_SURFACE_CLASS,
+  ADMIN_GRID_CLASS,
+  AdminGridCard,
+} from "@/components/admin/admin-grid-card";
 import { RemoteImage } from "@/components/ui/remote-image";
 import {
   ArrowLeft,
@@ -31,6 +37,113 @@ import {
   X,
 } from "lucide-react";
 import { mxStateLabel } from "@/lib/mx-state-label";
+
+// ---------------------------------------------------------------------------
+// TrackingModal — reemplaza window.prompt() para capturar datos de envío
+// ---------------------------------------------------------------------------
+type TrackingData = {
+  trackingNumber: string;
+  trackingUrl: string;
+  carrier: string;
+};
+
+type TrackingModalProps = {
+  open: boolean;
+  onConfirm: (data: TrackingData) => void;
+  onCancel: () => void;
+};
+
+function TrackingModal({ open, onConfirm, onCancel }: TrackingModalProps) {
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [trackingUrl, setTrackingUrl] = useState("");
+  const [carrier, setCarrier] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setTrackingNumber("");
+      setTrackingUrl("");
+      setCarrier("");
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+    >
+      <div className="bg-background border border-border rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Truck className="w-5 h-5 text-primary" />
+            <h2 className="font-semibold text-lg">Datos de envío</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg p-1 hover:bg-muted transition-colors"
+            aria-label="Cerrar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <BotyLabel htmlFor="tracking-number">Número de guía</BotyLabel>
+            <input
+              id="tracking-number"
+              type="text"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              placeholder="1Z999AA10123456784"
+              className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              autoFocus
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <BotyLabel htmlFor="tracking-url">URL de rastreo <span className="text-muted-foreground font-normal">(opcional)</span></BotyLabel>
+            <input
+              id="tracking-url"
+              type="url"
+              value={trackingUrl}
+              onChange={(e) => setTrackingUrl(e.target.value)}
+              placeholder="https://tracking.ups.com/..."
+              className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <BotyLabel htmlFor="carrier">Paquetería <span className="text-muted-foreground font-normal">(opcional)</span></BotyLabel>
+            <input
+              id="carrier"
+              type="text"
+              value={carrier}
+              onChange={(e) => setCarrier(e.target.value)}
+              placeholder="UPS, FedEx, DHL, Estafeta..."
+              className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-1">
+          <BotyButton type="button" variant="secondary" className="flex-1" onClick={onCancel}>
+            Cancelar
+          </BotyButton>
+          <BotyButton
+            type="button"
+            className="flex-1"
+            onClick={() => onConfirm({ trackingNumber, trackingUrl, carrier })}
+          >
+            Marcar como enviado
+          </BotyButton>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /** Operaciones admin: solo estados post-pago (pendiente_pago es invisible en el panel). */
 const ADMIN_ORDER_STATUSES: MrpapsOrderStatus[] = [
@@ -81,6 +194,8 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
   const [detail, setDetail] = useState<OrderDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [viewMode, setViewMode] = useAdminViewMode("admin-orders-view", "list");
+  const [trackingModalOpen, setTrackingModalOpen] = useState(false);
+  const trackingResolverRef = useRef<((data: TrackingData | null) => void) | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounce the search input → searchQuery
@@ -127,26 +242,42 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
     [onError],
   );
 
+  function openTrackingModal(): Promise<TrackingData | null> {
+    return new Promise((resolve) => {
+      trackingResolverRef.current = resolve;
+      setTrackingModalOpen(true);
+    });
+  }
+
+  function handleTrackingConfirm(data: TrackingData) {
+    setTrackingModalOpen(false);
+    trackingResolverRef.current?.(data);
+    trackingResolverRef.current = null;
+  }
+
+  function handleTrackingCancel() {
+    setTrackingModalOpen(false);
+    trackingResolverRef.current?.(null);
+    trackingResolverRef.current = null;
+  }
+
   async function handleStatusChange(status: MrpapsOrderStatus) {
     if (!selectedId) return;
+
+    let trackingData: TrackingData | null = null;
+    if (status === "enviado") {
+      trackingData = await openTrackingModal();
+      if (!trackingData) return; // usuario canceló
+    }
+
     setBusy(true);
     onError(null);
     try {
-      let trackingNumber: string | null | undefined;
-      let trackingUrl: string | null | undefined;
-      let carrier: string | null | undefined;
-
-      if (status === "enviado") {
-        trackingNumber = window.prompt("Número de guía") ?? null;
-        trackingUrl = window.prompt("URL de rastreo (opcional)") ?? null;
-        carrier = window.prompt("Paquetería (opcional)") ?? null;
-      }
-
       await adminUpdateOrderStatus(selectedId, {
         status,
-        trackingNumber,
-        trackingUrl,
-        carrier,
+        trackingNumber: trackingData?.trackingNumber || null,
+        trackingUrl: trackingData?.trackingUrl || null,
+        carrier: trackingData?.carrier || null,
       });
       await loadList();
       await loadDetail(selectedId);
@@ -159,6 +290,12 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
 
   if (selectedId && detail) {
     return (
+      <>
+        <TrackingModal
+          open={trackingModalOpen}
+          onConfirm={handleTrackingConfirm}
+          onCancel={handleTrackingCancel}
+        />
       <div className="space-y-6">
         <button
           type="button"
@@ -177,12 +314,13 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
           onStatusChange={(s) => void handleStatusChange(s)}
         />
       </div>
+      </>
     );
   }
 
   return (
     <section className="space-y-6">
-      <BotySurface className="p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+      <BotySurface className={ADMIN_FILTER_SURFACE_CLASS}>
         {/* Search bar */}
         <div className="relative flex-1 min-w-0 w-full lg:max-w-md xl:max-w-xl">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -230,13 +368,13 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
       </BotySurface>
 
       {orders.length === 0 ? (
-        <BotySurface className="p-12 text-center text-muted-foreground text-sm">
+        <BotySurface className={ADMIN_EMPTY_SURFACE_CLASS}>
           {searchQuery
             ? `No se encontraron pedidos para "${searchQuery}".`
             : "No hay pedidos con este filtro."}
         </BotySurface>
       ) : viewMode === "grid" ? (
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        <ul className={ADMIN_GRID_CLASS}>
           {orders.map((order) => (
             <li key={order.publicId}>
               <OrderGridCard order={order} onOpen={() => void loadDetail(order.publicId)} />
@@ -292,32 +430,26 @@ function OrderGridCard({
   onOpen: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <AdminGridCard
       onClick={onOpen}
-      className="w-full text-left boty-transition hover:opacity-95"
+      media={<OrderThumb items={order.items} size="fill" />}
+      footer={
+        <p className="font-semibold text-primary tabular-nums text-sm">
+          {formatMxn(order.totalMxn)}
+        </p>
+      }
     >
-      <BotySurface className="p-4 hover:border-primary/40 h-full">
-        <div className="flex gap-3">
-          <OrderThumb items={order.items} />
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-serif text-lg">{order.orderNumber}</p>
-              <OrderStatusBadges order={order} />
-            </div>
-            <p className="text-sm font-medium mt-1 truncate">{order.customerName}</p>
-            <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
-            <p className="text-xs text-muted-foreground mt-2">
-              {new Date(order.orderedAt).toLocaleDateString("es-MX")} · {order.itemCount}{" "}
-              {order.itemCount === 1 ? "pieza" : "piezas"}
-            </p>
-            <p className="font-semibold text-primary mt-2 tabular-nums">
-              {formatMxn(order.totalMxn)}
-            </p>
-          </div>
-        </div>
-      </BotySurface>
-    </button>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <p className="font-serif text-base leading-snug truncate">{order.orderNumber}</p>
+        <OrderStatusBadges order={order} />
+      </div>
+      <p className="text-sm font-medium truncate">{order.customerName}</p>
+      <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
+      <p className="text-xs text-muted-foreground mt-auto">
+        {new Date(order.orderedAt).toLocaleDateString("es-MX")} · {order.itemCount}{" "}
+        {order.itemCount === 1 ? "pieza" : "piezas"}
+      </p>
+    </AdminGridCard>
   );
 }
 
@@ -375,10 +507,31 @@ function OrderThumb({
   size = "md",
 }: {
   items: AdminOrderSummary["items"];
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "fill";
 }) {
-  const dim = size === "sm" ? "w-10 h-10" : "w-14 h-14";
   const thumb = items[0];
+
+  if (size === "fill") {
+    return (
+      <div className="relative w-full h-full">
+        {thumb?.thumbnailUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={thumb.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-muted">
+            <Package className="w-8 h-8 text-muted-foreground/60" />
+          </div>
+        )}
+        {items.length > 1 && (
+          <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
+            +{items.length - 1}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  const dim = size === "sm" ? "w-10 h-10" : "w-14 h-14";
   if (!thumb) {
     return (
       <div className={cn(dim, "rounded-xl bg-muted flex items-center justify-center shrink-0")}>

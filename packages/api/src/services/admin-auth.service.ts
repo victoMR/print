@@ -4,8 +4,15 @@ import * as usersRepo from '../db/mrpaps-users.repository.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { getRedisConnection } from '../lib/queue.js';
 import { AuthError } from '../types/errors.js';
+import {
+  consumeAdminRefreshToken,
+  createAdminRefreshToken,
+  revokeAdminRefreshToken,
+  revokeAllAdminRefreshTokens,
+} from './admin-refresh-token.service.js';
 
-const TOKEN_TTL = '8h';
+/** Access token corto; se renueva con refresh token opaco. */
+const ACCESS_TOKEN_TTL = '15m';
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECS = 15 * 60; // 15 minutes
@@ -76,6 +83,7 @@ export type AdminTokenPayload = {
   sub: string;
   email: string;
   role: 'admin' | 'dev';
+  tv: number;
 };
 
 function getJwtSecret(): Uint8Array {
@@ -103,23 +111,28 @@ export async function loginAdmin(email: string, password: string) {
   }
 
   await clearAttempts(normalizedEmail);
-  const token = await signAdminToken(user);
+  const accessToken = await signAdminToken(user);
+  const refreshToken = await createAdminRefreshToken(user.id);
   return {
-    token,
+    accessToken,
+    refreshToken,
     user: publicAdminUser(user),
   };
 }
 
-export async function signAdminToken(user: Pick<MrpapsUserRow, 'id' | 'email' | 'role'>): Promise<string> {
+export async function signAdminToken(
+  user: Pick<MrpapsUserRow, 'id' | 'email' | 'role' | 'token_version'>,
+): Promise<string> {
   if (user.role !== 'admin' && user.role !== 'dev') {
     throw new AuthError('No autorizado');
   }
 
-  return new SignJWT({ email: user.email, role: user.role })
+  const tv = user.token_version ?? 0;
+  return new SignJWT({ email: user.email, role: user.role, tv })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.id)
     .setIssuedAt()
-    .setExpirationTime(TOKEN_TTL)
+    .setExpirationTime(ACCESS_TOKEN_TTL)
     .sign(getJwtSecret());
 }
 
@@ -143,10 +156,13 @@ export async function verifyAdminToken(token: string): Promise<AdminTokenPayload
       throw new AuthError('Token inválido');
     }
 
+    const tv = typeof payload.tv === 'number' ? payload.tv : 0;
+
     return {
       sub: payload.sub,
       email: payload.email,
       role: payload.role as 'admin' | 'dev',
+      tv,
     };
   } catch (err) {
     if (err instanceof AuthError) throw err;
@@ -169,6 +185,21 @@ export async function verifyAdminToken(token: string): Promise<AdminTokenPayload
   }
 }
 
+/** Valida access token contra BD (revocación vía token_version). */
+export async function resolveAdminSession(
+  token: string,
+): Promise<{ id: string; email: string; role: 'admin' | 'dev' } | null> {
+  try {
+    const payload = await verifyAdminToken(token);
+    const user = await usersRepo.findUserById(payload.sub);
+    if (!user || (user.role !== 'admin' && user.role !== 'dev')) return null;
+    if ((user.token_version ?? 0) !== payload.tv) return null;
+    return { id: payload.sub, email: payload.email, role: payload.role };
+  } catch {
+    return null;
+  }
+}
+
 export function publicAdminUser(user: MrpapsUserRow) {
   return {
     id: user.id,
@@ -178,17 +209,47 @@ export function publicAdminUser(user: MrpapsUserRow) {
   };
 }
 
-/** Renueva JWT admin (ventana deslizante de 8 h) sin tocar la BD. */
-export async function refreshAdminSession(
-  token: string,
-): Promise<{ token: string; user: ReturnType<typeof publicAdminUser> } | null> {
-  try {
-    const payload = await verifyAdminToken(token);
-    const user = await usersRepo.findUserById(payload.sub);
-    if (!user || (user.role !== 'admin' && user.role !== 'dev')) return null;
-    const newToken = await signAdminToken(user);
-    return { token: newToken, user: publicAdminUser(user) };
-  } catch {
-    return null;
+/**
+ * Renueva sesión admin usando refresh token opaco (rotación one-time).
+ * Devuelve nuevo access JWT + nuevo refresh token.
+ */
+export async function refreshAdminSession(refreshToken: string): Promise<{
+  accessToken: string;
+  refreshToken: string;
+  user: ReturnType<typeof publicAdminUser>;
+} | null> {
+  const userId = await consumeAdminRefreshToken(refreshToken);
+  if (!userId) return null;
+
+  const user = await usersRepo.findUserById(userId);
+  if (!user || (user.role !== 'admin' && user.role !== 'dev')) return null;
+
+  const accessToken = await signAdminToken(user);
+  const newRefreshToken = await createAdminRefreshToken(user.id);
+  return { accessToken, refreshToken: newRefreshToken, user: publicAdminUser(user) };
+}
+
+/** Logout server-side: invalida JWTs y refresh tokens. */
+export async function revokeAdminSession(userId: string, refreshToken?: string | null): Promise<void> {
+  await usersRepo.incrementAdminTokenVersion(userId);
+  if (refreshToken) {
+    await revokeAdminRefreshToken(refreshToken);
   }
+  await revokeAllAdminRefreshTokens(userId);
+}
+
+/** Resuelve userId para logout (access o refresh cookie). */
+export async function resolveAdminLogoutUserId(
+  accessToken: string | null,
+  refreshToken: string | null,
+): Promise<string | null> {
+  if (accessToken) {
+    const session = await resolveAdminSession(accessToken);
+    if (session) return session.id;
+  }
+  if (refreshToken) {
+    const { findAdminRefreshTokenUserId } = await import('./admin-refresh-token.service.js');
+    return findAdminRefreshTokenUserId(refreshToken);
+  }
+  return null;
 }
