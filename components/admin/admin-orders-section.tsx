@@ -12,6 +12,7 @@ import { cn, formatMxn } from "@/lib/utils";
 import {
   BotyBadge,
   BotyButton,
+  BotyLabel,
   BotySurface,
 } from "@/components/boty/ui-patterns";
 import { AdminSelect } from "@/components/admin/admin-select";
