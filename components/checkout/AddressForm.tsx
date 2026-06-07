@@ -3,7 +3,7 @@
 import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import type { CheckoutRecipient } from "@/lib/api-types";
-import { MX_STATES } from "@/lib/mx-states";
+import { MxAddressGeoFields } from "@/components/checkout/mx-address-geo-fields";
 
 type AddressFormProps = {
   recipient: CheckoutRecipient;
@@ -27,21 +27,15 @@ export function AddressForm({ recipient, onChange, onSubmit, busy }: AddressForm
         <Field label="Email" type="email" value={recipient.email} onChange={(v) => onChange({ ...recipient, email: v })} required />
         <Field label="Teléfono" value={recipient.phone} onChange={(v) => onChange({ ...recipient, phone: v })} required />
         <Field label="Calle y número" value={recipient.address1} onChange={(v) => onChange({ ...recipient, address1: v })} required />
-        <Field label="Colonia (opcional)" value={recipient.address2 ?? ""} onChange={(v) => onChange({ ...recipient, address2: v })} />
-        <Field label="Ciudad" value={recipient.city} onChange={(v) => onChange({ ...recipient, city: v })} required />
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Estado</span>
-          <select
-            value={recipient.stateCode}
-            onChange={(e) => onChange({ ...recipient, stateCode: e.target.value })}
-            className="rounded-xl glass px-3 py-2 bg-transparent"
-          >
-            {MX_STATES.map((s) => (
-              <option key={s.code} value={s.code}>{s.name}</option>
-            ))}
-          </select>
-        </label>
-        <Field label="C.P. (5 dígitos)" value={recipient.zip} onChange={(v) => onChange({ ...recipient, zip: v })} required pattern="\d{5}" />
+        <MxAddressGeoFields
+          value={{
+            zip: recipient.zip,
+            stateCode: recipient.stateCode,
+            city: recipient.city,
+            address2: recipient.address2,
+          }}
+          onChange={(patch) => onChange({ ...recipient, ...patch })}
+        />
         <GlassButton type="submit" variant="primary">{busy ? "Cotizando…" : "Cotizar envío"}</GlassButton>
       </form>
     </GlassCard>

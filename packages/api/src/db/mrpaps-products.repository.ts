@@ -1,4 +1,6 @@
+import type { PoolClient } from 'pg';
 import { query, queryOne, queryRequired, buildUpdateSet } from '../lib/db-helper.js';
+import { isTrackedStock } from '../lib/cart-limits.js';
 import type {
   MrpapsProductRow,
   MrpapsProductStatus,
@@ -279,5 +281,52 @@ export async function upsertVariant(input: {
       input.design_id ?? null,
       input.garment_color_hex ?? '#FFFFFF',
     ],
+  );
+}
+
+/**
+ * Reserva inventario rastreado (stock_quantity > 0) dentro de una transacción.
+ * @returns unidades reservadas (0 si POD sin inventario), false si no hay stock o variante inexistente.
+ */
+export async function reserveVariantStockTx(
+  client: PoolClient,
+  variantId: string,
+  quantity: number,
+): Promise<number | false> {
+  const lock = await client.query<{ stock_quantity: string }>(
+    `SELECT stock_quantity FROM mrpaps_product_variants WHERE id = $1 FOR UPDATE`,
+    [variantId],
+  );
+  const row = lock.rows[0];
+  if (!row) return false;
+
+  const stock = Number(row.stock_quantity);
+  if (!isTrackedStock(stock)) return 0;
+
+  if (stock < quantity) return false;
+
+  await client.query(
+    `UPDATE mrpaps_product_variants
+     SET stock_quantity = stock_quantity - $2, updated_at = NOW()
+     WHERE id = $1`,
+    [variantId, quantity],
+  );
+
+  return quantity;
+}
+
+/** Devuelve inventario reservado al cancelar un pedido pendiente de pago. */
+export async function releaseVariantStockTx(
+  client: PoolClient,
+  variantId: string,
+  quantity: number,
+): Promise<void> {
+  if (quantity <= 0) return;
+
+  await client.query(
+    `UPDATE mrpaps_product_variants
+     SET stock_quantity = stock_quantity + $2, updated_at = NOW()
+     WHERE id = $1`,
+    [variantId, quantity],
   );
 }

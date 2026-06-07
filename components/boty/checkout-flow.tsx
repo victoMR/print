@@ -10,6 +10,7 @@ import { useCustomer } from "@/lib/customer-context";
 import { saveGuestOrderAccess } from "@/lib/order-guest-session";
 import { createAddress, listAddresses, type SavedAddress } from "@/lib/customer-api";
 import { MX_STATES } from "@/lib/mx-states";
+import { MxAddressGeoFields } from "@/components/checkout/mx-address-geo-fields";
 import { cn, formatMxn } from "@/lib/utils";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { LegalConsentCheckbox } from "@/components/legal/legal-consent-checkbox";
@@ -496,43 +497,17 @@ export function BotyCheckoutFlow() {
                         placeholder="Av. Revolución 123"
                       />
                     </div>
-                    <Field
-                      label="Colonia"
-                      value={recipient.address2 ?? ""}
-                      onChange={(v) => setRecipient({ ...recipient, address2: v })}
-                      autoComplete="address-line2"
-                      placeholder="Opcional"
-                    />
-                    <Field
-                      label="Ciudad"
-                      value={recipient.city}
-                      onChange={(v) => setRecipient({ ...recipient, city: v })}
-                      required
-                      autoComplete="address-level2"
-                    />
-                    <div className="flex flex-col gap-1 text-sm">
-                      <label className="font-medium">Estado</label>
-                      <select
-                        value={recipient.stateCode}
-                        onChange={(e) => setRecipient({ ...recipient, stateCode: e.target.value })}
-                        className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 boty-transition"
-                        autoComplete="address-level1"
-                        required
-                      >
-                        {MX_STATES.map((s) => (
-                          <option key={s.code} value={s.code}>{s.name}</option>
-                        ))}
-                      </select>
+                    <div className="sm:col-span-2">
+                      <MxAddressGeoFields
+                        value={{
+                          zip: recipient.zip,
+                          stateCode: recipient.stateCode,
+                          city: recipient.city,
+                          address2: recipient.address2,
+                        }}
+                        onChange={(patch) => setRecipient({ ...recipient, ...patch })}
+                      />
                     </div>
-                    <Field
-                      label="Código postal"
-                      value={recipient.zip}
-                      onChange={(v) => setRecipient({ ...recipient, zip: v })}
-                      required
-                      pattern="\d{5}"
-                      autoComplete="postal-code"
-                      placeholder="5 dígitos"
-                    />
                   </div>
 
                   {/* Opción de guardar dirección — solo para usuarios con sesión */}

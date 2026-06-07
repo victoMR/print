@@ -10,9 +10,9 @@ import {
   BotyInput,
   BotyLabel,
   BotyPageHeader,
-  BotySelect,
   BotySurface,
 } from "@/components/boty/ui-patterns";
+import { MxAddressGeoFields } from "@/components/checkout/mx-address-geo-fields";
 import {
   listAddresses,
   createAddress,
@@ -20,7 +20,6 @@ import {
   deleteAddress,
   type SavedAddress,
 } from "@/lib/customer-api";
-import { MX_STATES } from "@/lib/mx-states";
 
 const EMPTY_FORM = {
   label: "Casa",
@@ -154,17 +153,17 @@ export default function DireccionesPage() {
               <Field label="Nombre del destinatario" value={form.recipientName} onChange={set("recipientName")} required />
               <Field label="Teléfono" value={form.phone} onChange={set("phone")} type="tel" required />
               <Field label="Calle y número" value={form.address1} onChange={set("address1")} required className="sm:col-span-2" />
-              <Field label="Colonia (opcional)" value={form.address2} onChange={set("address2")} />
-              <Field label="Ciudad" value={form.city} onChange={set("city")} required />
-              <label className="flex flex-col gap-2">
-                <BotyLabel>Estado</BotyLabel>
-                <BotySelect value={form.stateCode} onChange={(e) => set("stateCode")(e.target.value)}>
-                  {MX_STATES.map((s) => (
-                    <option key={s.code} value={s.code}>{s.name}</option>
-                  ))}
-                </BotySelect>
-              </label>
-              <Field label="C.P. (5 dígitos)" value={form.zip} onChange={set("zip")} pattern="\d{5}" required />
+              <div className="sm:col-span-2">
+                <MxAddressGeoFields
+                  value={{
+                    zip: form.zip,
+                    stateCode: form.stateCode,
+                    city: form.city,
+                    address2: form.address2,
+                  }}
+                  onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+                />
+              </div>
             </div>
             <label className="flex items-center gap-3 text-sm cursor-pointer rounded-2xl bg-background/60 px-4 py-3">
               <input

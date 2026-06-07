@@ -165,6 +165,7 @@ export type MrpapsOrderItemRow = {
   variant_id: string;
   design_id: string | null;
   quantity: number;
+  inventory_reserved_qty: number;
   unit_price_mxn: number;
   product_name: string;
   variant_label: string;

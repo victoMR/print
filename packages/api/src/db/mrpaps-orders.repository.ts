@@ -1,5 +1,7 @@
 import { query, queryOne, queryRequired, buildUpdateSet, withTransaction } from '../lib/db-helper.js';
 import { pool } from '../lib/db.js';
+import * as productsRepo from './mrpaps-products.repository.js';
+import { BadRequestError } from '../types/errors.js';
 import { generateTrackingCode, normalizeTrackingCode } from '../lib/order-tracking-code.js';
 import type {
   MrpapsOrderItemRow,
@@ -34,6 +36,7 @@ export type CreateOrderInput = {
     variant_id: string;
     design_id?: string | null;
     quantity: number;
+    inventory_reserved_qty?: number;
     unit_price_mxn: number;
     product_name: string;
     variant_label: string;
@@ -107,17 +110,28 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
 
     const itemRows: MrpapsOrderItemRow[] = [];
     for (const item of items) {
+      const reservedQty =
+        item.inventory_reserved_qty ??
+        (await productsRepo.reserveVariantStockTx(client, item.variant_id, item.quantity));
+
+      if (reservedQty === false) {
+        throw new BadRequestError(
+          'No hay suficiente stock para completar el pedido. Actualiza tu carrito e intenta de nuevo.',
+        );
+      }
+
       const itemResult = await client.query<MrpapsOrderItemRow>(
         `INSERT INTO mrpaps_order_items (
-           order_id, variant_id, design_id, quantity, unit_price_mxn,
+           order_id, variant_id, design_id, quantity, inventory_reserved_qty, unit_price_mxn,
            product_name, variant_label, sku, thumbnail_url, print_file_url
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING *`,
         [
           orderRow.id,
           item.variant_id,
           item.design_id ?? null,
           item.quantity,
+          reservedQty,
           item.unit_price_mxn,
           item.product_name,
           item.variant_label,
@@ -446,16 +460,31 @@ export async function updateOrderStatus(
     updated_at: now,
   });
 
-  const updated = await queryRequired<MrpapsOrderRow>(
-    `UPDATE mrpaps_orders SET ${clause} WHERE public_id = $1 RETURNING *`,
-    [publicId, ...values],
-  );
+  const updated = await withTransaction(async (client) => {
+    const orderResult = await client.query<MrpapsOrderRow>(
+      `UPDATE mrpaps_orders SET ${clause} WHERE public_id = $1 RETURNING *`,
+      [publicId, ...values],
+    );
+    const orderRow = orderResult.rows[0];
+    if (!orderRow) throw new Error('Pedido no encontrado');
 
-  await query(
-    `INSERT INTO mrpaps_order_status_events (order_id, from_status, to_status, note, created_by)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [existing.id, existing.status, toStatus, meta.note ?? null, meta.createdBy ?? 'admin'],
-  );
+    if (toStatus === 'cancelado' && existing.status === 'pendiente_pago') {
+      for (const item of existing.items) {
+        const reserved = item.inventory_reserved_qty ?? 0;
+        if (reserved > 0) {
+          await productsRepo.releaseVariantStockTx(client, item.variant_id, reserved);
+        }
+      }
+    }
+
+    await client.query(
+      `INSERT INTO mrpaps_order_status_events (order_id, from_status, to_status, note, created_by)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [existing.id, existing.status, toStatus, meta.note ?? null, meta.createdBy ?? 'admin'],
+    );
+
+    return orderRow;
+  });
 
   return updated;
 }
