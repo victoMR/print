@@ -21,7 +21,6 @@ import {
   ADMIN_EMPTY_SURFACE_CLASS,
   ADMIN_FILTER_SURFACE_CLASS,
   ADMIN_GRID_CLASS,
-  AdminGridCard,
 } from "@/components/admin/admin-grid-card";
 import { RemoteImage } from "@/components/ui/remote-image";
 import {
@@ -434,26 +433,32 @@ function OrderGridCard({
   onOpen: () => void;
 }) {
   return (
-    <AdminGridCard
+    <button
+      type="button"
       onClick={onOpen}
-      media={<OrderThumb items={order.items} size="fill" />}
-      footer={
-        <p className="font-semibold text-primary tabular-nums text-sm">
-          {formatMxn(order.totalMxn)}
-        </p>
-      }
+      className="w-full text-left rounded-2xl border border-border/60 bg-card hover:border-primary/30 hover:shadow-sm boty-transition overflow-hidden"
     >
-      <div className="flex flex-wrap items-center gap-1.5">
-        <p className="font-serif text-base leading-snug truncate">{order.orderNumber}</p>
-        <OrderStatusBadges order={order} />
+      <div className="p-4 space-y-2.5">
+        <div className="flex items-start gap-3">
+          <OrderThumb items={order.items} size="sm" />
+          <div className="flex-1 min-w-0">
+            <p className="font-serif text-base leading-snug truncate">{order.orderNumber}</p>
+            <p className="text-sm font-medium truncate">{order.customerName}</p>
+            <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
+          </div>
+          <p className="font-semibold text-primary tabular-nums text-sm shrink-0">
+            {formatMxn(order.totalMxn)}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <OrderStatusBadges order={order} />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {new Date(order.orderedAt).toLocaleDateString("es-MX")} · {order.itemCount}{" "}
+          {order.itemCount === 1 ? "pieza" : "piezas"}
+        </p>
       </div>
-      <p className="text-sm font-medium truncate">{order.customerName}</p>
-      <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
-      <p className="text-xs text-muted-foreground mt-auto">
-        {new Date(order.orderedAt).toLocaleDateString("es-MX")} · {order.itemCount}{" "}
-        {order.itemCount === 1 ? "pieza" : "piezas"}
-      </p>
-    </AdminGridCard>
+    </button>
   );
 }
 
