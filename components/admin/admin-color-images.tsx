@@ -121,8 +121,7 @@ export function AdminColorImages({
     );
   }
 
-  async function handleAddColor(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleAddColor() {
     if (!addForm) return;
     const colorName = addForm.name.trim();
     if (!colorName) { onError("Indica un nombre de color."); return; }
@@ -248,7 +247,7 @@ export function AdminColorImages({
             </button>
           </div>
 
-          <form onSubmit={(e) => void handleAddColor(e)} className="space-y-3">
+          <div className="space-y-3">
             {/* Selector rápido de colores predefinidos */}
             {availableBrandColors.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
@@ -279,7 +278,6 @@ export function AdminColorImages({
                   value={addForm.name}
                   onChange={(e) => setAddForm((prev) => prev ? { ...prev, name: e.target.value } : null)}
                   disabled={addBusy}
-                  required
                 />
               </div>
 
@@ -317,15 +315,16 @@ export function AdminColorImages({
                 Cancelar
               </BotyButton>
               <BotyButton
-                type="submit"
+                type="button"
                 variant="primary"
                 size="sm"
                 disabled={addBusy || !addForm.name.trim() || !addForm.file}
+                onClick={() => void handleAddColor()}
               >
                 {addBusy ? "Guardando…" : "Agregar color"}
               </BotyButton>
             </div>
-          </form>
+          </div>
         </div>
       )}
 
