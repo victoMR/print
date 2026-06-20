@@ -93,6 +93,7 @@ export type MrpapsProductRow = {
   name: string;
   description: string;
   thumbnail_url: string;
+  gallery_urls: string[];
   status: MrpapsProductStatus;
   template_id: string | null;
   composition: Record<string, unknown>;

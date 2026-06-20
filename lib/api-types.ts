@@ -29,6 +29,8 @@ export type CatalogProductDetail = {
   name: string;
   description: string;
   thumbnail: string;
+  /** Fotos del producto en orden (la primera es la portada). */
+  images: string[];
   category: ProductCategory;
   preview?: ProductPreviewData | null;
   variants: Array<{
@@ -317,6 +319,7 @@ export type AdminProductSummary = {
   name: string;
   description: string;
   thumbnailUrl: string;
+  galleryUrls?: string[];
   status: string;
   category: ProductCategory;
   variantCount: number;

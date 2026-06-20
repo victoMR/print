@@ -5,6 +5,8 @@ import { assetUrlSchema } from './asset-url.schema.js';
 import { productCategorySchema } from '../lib/product-categories.js';
 import { MAX_CART_LINE_QUANTITY } from '../lib/cart-limits.js';
 
+const productGalleryUrlsSchema = z.array(assetUrlSchema).max(12);
+
 const cartQuantitySchema = z.number().int().positive().max(MAX_CART_LINE_QUANTITY);
 
 export const mrpapsOrderStatusSchema = z.enum([
@@ -164,6 +166,7 @@ export const createProductSchema = z.object({
   slug: z.string().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   description: z.string().max(5000).optional(),
   thumbnailUrl: assetUrlSchema.optional(),
+  galleryUrls: productGalleryUrlsSchema.optional(),
   /** Crea variante única «Única / Estándar» para la tienda. */
   retailPriceMxn: z.number().positive().optional(),
   status: z.enum(['active', 'inactive']).optional(),
@@ -178,6 +181,7 @@ export const updateProductSchema = z.object({
   slug: z.string().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   description: z.string().max(5000).optional(),
   thumbnailUrl: assetUrlSchema.optional(),
+  galleryUrls: productGalleryUrlsSchema.optional(),
   status: z.enum(['active', 'inactive', 'archived']).optional(),
   templateId: z.string().uuid().nullable().optional(),
   composition: productCompositionSchema.optional(),

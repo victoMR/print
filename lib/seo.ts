@@ -163,7 +163,9 @@ export function productJsonLd(product: CatalogProductDetail) {
     "@type": "Product",
     name: product.name,
     description: product.description || DEFAULT_DESCRIPTION,
-    image: [absoluteUrl(product.thumbnail)],
+    image: (product.images?.length ? product.images : [product.thumbnail])
+      .filter(Boolean)
+      .map((url) => absoluteUrl(url)),
     url,
     sku: product.id,
     brand: { "@type": "Brand", name: SITE_NAME },

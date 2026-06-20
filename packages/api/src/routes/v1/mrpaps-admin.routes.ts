@@ -27,6 +27,11 @@ import * as templatesRepo from '../../db/mrpaps-garment-templates.repository.js'
 import * as ordersRepo from '../../db/mrpaps-orders.repository.js';
 import { changeOrderStatus } from '../../services/mrpaps-order-status.service.js';
 import * as productsRepo from '../../db/mrpaps-products.repository.js';
+import {
+  normalizeProductImages,
+  replacePrimaryImage,
+  resolveProductImages,
+} from '../../lib/product-images.js';
 import * as adminAuth from '../../services/admin-auth.service.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
 import * as storage from '../../services/mrpaps-storage.service.js';
@@ -509,11 +514,20 @@ v1MrpapsAdminRouter.post('/products', async (req, res, next) => {
   try {
     const body = createProductSchema.parse(req.body);
     const slug = body.slug ?? catalog.slugify(body.name);
+    const placeholder = storage.placeholderThumbnailUrl();
+    const images = normalizeProductImages({
+      thumbnailUrl: body.thumbnailUrl ?? placeholder,
+      galleryUrls: body.galleryUrls,
+    });
+    const thumbnailUrl = images.thumbnail_url ?? placeholder;
+    const galleryUrls = images.gallery_urls.length > 0 ? images.gallery_urls : [thumbnailUrl];
+
     const row = await productsRepo.upsertProduct({
       slug,
       name: body.name,
       description: body.description ?? '',
-      thumbnail_url: body.thumbnailUrl ?? storage.placeholderThumbnailUrl(),
+      thumbnail_url: thumbnailUrl,
+      gallery_urls: galleryUrls,
       status: body.status ?? 'active',
       template_id: body.templateId ?? null,
       composition: body.composition ?? {},
@@ -553,17 +567,32 @@ v1MrpapsAdminRouter.post('/products', async (req, res, next) => {
 v1MrpapsAdminRouter.patch('/products/:productId', async (req, res, next) => {
   try {
     const body = updateProductSchema.parse(req.body);
-    const row = await productsRepo.updateProductAdmin(req.params.productId, {
+    const patch: Parameters<typeof productsRepo.updateProductAdmin>[1] = {
       name: body.name,
       slug: body.slug,
       description: body.description,
-      thumbnail_url: body.thumbnailUrl,
       status: body.status,
       template_id: body.templateId,
       composition: body.composition,
       default_garment_color: body.defaultGarmentColor,
       category: body.category,
-    });
+    };
+
+    if (body.galleryUrls !== undefined) {
+      const images = normalizeProductImages({
+        galleryUrls: body.galleryUrls,
+        thumbnailUrl: body.thumbnailUrl,
+      });
+      patch.gallery_urls = images.gallery_urls;
+      if (images.thumbnail_url) patch.thumbnail_url = images.thumbnail_url;
+    } else if (body.thumbnailUrl !== undefined) {
+      const existing = await productsRepo.getProductById(req.params.productId);
+      const currentGallery = existing ? resolveProductImages(existing) : [];
+      patch.gallery_urls = replacePrimaryImage(currentGallery, body.thumbnailUrl);
+      patch.thumbnail_url = body.thumbnailUrl;
+    }
+
+    const row = await productsRepo.updateProductAdmin(req.params.productId, patch);
     res.json({
       data: {
         id: row.id,

@@ -27,8 +27,13 @@ import {
 } from "@/components/boty/ui-patterns";
 import { AdminDrawer } from "@/components/admin/admin-drawer";
 import { AdminProductVariantsEditor } from "@/components/admin/admin-product-variants-editor";
+import {
+  AdminProductGallery,
+  MAX_PRODUCT_GALLERY,
+  reorderGallery,
+  setPrimaryGallery,
+} from "@/components/admin/admin-product-gallery";
 import { AdminSelect } from "@/components/admin/admin-select";
-import { ImagePlus } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -78,8 +83,8 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<ProductCategory>("camiseta");
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
 
   // Step 2 state – created product
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -99,8 +104,8 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
       setName("");
       setDescription("");
       setCategory("camiseta");
-      setPhotoFile(null);
-      setPhotoPreview(null);
+      setPhotoFiles([]);
+      setPhotoPreviews([]);
       setCreatedId(null);
       setCreatedSlug(null);
       setVariants([]);
@@ -111,14 +116,32 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
     }
   }, [open]);
 
-  function pickPhoto(file: File) {
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+  function pickPhotos(files: File[]) {
+    const remaining = MAX_PRODUCT_GALLERY - photoFiles.length;
+    const batch = files.slice(0, remaining);
+    if (batch.length === 0) return;
+    setPhotoFiles((prev) => [...prev, ...batch]);
+    setPhotoPreviews((prev) => [...prev, ...batch.map((f) => URL.createObjectURL(f))]);
+  }
+
+  function removePendingPhoto(index: number) {
+    setPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+    setPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function movePendingPhoto(from: number, to: number) {
+    setPhotoFiles((prev) => reorderGallery(prev, from, to));
+    setPhotoPreviews((prev) => reorderGallery(prev, from, to));
+  }
+
+  function setPrimaryPendingPhoto(index: number) {
+    setPhotoFiles((prev) => setPrimaryGallery(prev, index));
+    setPhotoPreviews((prev) => setPrimaryGallery(prev, index));
   }
 
   async function handleStep1(e: React.FormEvent) {
     e.preventDefault();
-    if (!photoFile) { setError("Sube una foto del producto."); return; }
+    if (photoFiles.length === 0) { setError("Sube al menos una foto del producto."); return; }
     setBusy(true);
     setError(null);
     try {
@@ -129,13 +152,15 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
         description: description.trim() || undefined,
         category,
       });
-      const uploaded = await adminUploadAsset(photoFile, {
-        kind: "thumbnails",
-        productId: res.data.id,
-      });
-      await adminUpdateProduct(res.data.id, {
-        thumbnailUrl: uploaded.data.url,
-      });
+      const galleryUrls: string[] = [];
+      for (const file of photoFiles) {
+        const uploaded = await adminUploadAsset(file, {
+          kind: "thumbnails",
+          productId: res.data.id,
+        });
+        galleryUrls.push(uploaded.data.url);
+      }
+      await adminUpdateProduct(res.data.id, { galleryUrls });
       setCreatedId(res.data.id);
       setCreatedSlug(res.data.slug);
       setStep("variants");
@@ -207,38 +232,18 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
         <form onSubmit={(e) => void handleStep1(e)} className="space-y-5">
           {/* Photo upload */}
           <div>
-            <BotyLabel>Foto del producto</BotyLabel>
-            <label className={cn(
-              "mt-1.5 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed cursor-pointer boty-transition overflow-hidden",
-              photoPreview ? "border-transparent p-0 h-48" : "border-border/70 hover:border-primary/60 bg-muted/30 p-8",
-            )}>
-              {photoPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={photoPreview} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <>
-                  <ImagePlus className="w-8 h-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground text-center">
-                    Haz clic para subir PNG, JPG o WebP
-                  </span>
-                </>
-              )}
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="sr-only"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) pickPhoto(f); }}
-                required
-              />
-            </label>
-            {photoPreview && (
-              <button
-                type="button"
-                className="mt-1 text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
-              >
-                Cambiar foto
-              </button>
+            <AdminProductGallery
+              urls={photoPreviews}
+              disabled={isBusy}
+              onAddFiles={pickPhotos}
+              onRemove={removePendingPhoto}
+              onMove={movePendingPhoto}
+              onSetPrimary={setPrimaryPendingPhoto}
+            />
+            {photoPreviews.length === 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                PNG, JPG o WebP. Puedes seleccionar varias a la vez.
+              </p>
             )}
           </div>
 
@@ -279,7 +284,7 @@ export function CreateProductModal({ open, onClose, onCreated }: CreateProductMo
             <BotyButton type="button" variant="ghost" onClick={onClose} disabled={isBusy}>
               Cancelar
             </BotyButton>
-            <BotyButton type="submit" variant="primary" disabled={isBusy || !photoFile || !name.trim()}>
+            <BotyButton type="submit" variant="primary" disabled={isBusy || photoFiles.length === 0 || !name.trim()}>
               {isBusy ? "Guardando…" : "Continuar → Variantes"}
             </BotyButton>
           </div>
@@ -403,8 +408,9 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<ProductCategory>("camiseta");
   const [status, setStatus] = useState<"active" | "inactive">("active");
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
 
   // Track which product is open to avoid resetting tab on every reload
   const openedProductId = useRef<string | null>(null);
@@ -416,8 +422,9 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
       // Only reset tab and form fields when opening a different product
       openedProductId.current = product.id;
       setTab("info");
-      setPhotoFile(null);
-      setPhotoPreview(null);
+      setPendingFiles([]);
+      setPendingPreviews([]);
+      setGalleryUrls(product.galleryUrls?.length ? product.galleryUrls : [product.thumbnailUrl].filter(Boolean));
       setError(null);
     }
     // Always sync latest name/description/status (in case they changed)
@@ -425,6 +432,9 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
     setDescription(product.description ?? "");
     setCategory(product.category ?? "camiseta");
     setStatus(product.status === "active" ? "active" : "inactive");
+    if (product.id === openedProductId.current) {
+      setGalleryUrls(product.galleryUrls?.length ? product.galleryUrls : [product.thumbnailUrl].filter(Boolean));
+    }
   }, [product]);
 
   // Reset tracked id when modal closes
@@ -434,27 +444,61 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
 
   if (!product) return null;
 
+  function addPendingFiles(files: File[]) {
+    const total = galleryUrls.length + pendingFiles.length;
+    const batch = files.slice(0, MAX_PRODUCT_GALLERY - total);
+    if (batch.length === 0) return;
+    setPendingFiles((prev) => [...prev, ...batch]);
+    setPendingPreviews((prev) => [...prev, ...batch.map((f) => URL.createObjectURL(f))]);
+  }
+
+  function removeGalleryPhoto(index: number) {
+    setGalleryUrls((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function moveGalleryPhoto(from: number, to: number) {
+    setGalleryUrls((prev) => reorderGallery(prev, from, to));
+  }
+
+  function setPrimaryGalleryPhoto(index: number) {
+    setGalleryUrls((prev) => setPrimaryGallery(prev, index));
+  }
+
+  function removePendingGalleryPhoto(index: number) {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+    setPendingPreviews((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSaveInfo(e: React.FormEvent) {
     e.preventDefault();
     if (!product) return;
+    const totalPhotos = galleryUrls.length + pendingFiles.length;
+    if (totalPhotos === 0) {
+      setError("El producto debe tener al menos una foto.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      let thumbnailUrl: string | undefined;
-      if (photoFile) {
-        const uploaded = await adminUploadAsset(photoFile, {
+      const uploadedUrls: string[] = [];
+      for (const file of pendingFiles) {
+        const uploaded = await adminUploadAsset(file, {
           kind: "thumbnails",
           productId: product.id,
         });
-        thumbnailUrl = uploaded.data.url;
+        uploadedUrls.push(uploaded.data.url);
       }
+      const nextGallery = [...galleryUrls, ...uploadedUrls].slice(0, MAX_PRODUCT_GALLERY);
+
       await adminUpdateProduct(product.id, {
         name: name.trim(),
         description: description.trim() || undefined,
         status,
         category,
-        ...(thumbnailUrl && { thumbnailUrl }),
+        galleryUrls: nextGallery,
       });
+      setPendingFiles([]);
+      setPendingPreviews([]);
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar");
@@ -481,33 +525,18 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
 
       {tab === "info" && (
         <form onSubmit={(e) => void handleSaveInfo(e)} className="space-y-4">
-          <div className="flex gap-4">
-            {/* Thumbnail */}
-            <label className="relative shrink-0 w-24 h-24 rounded-2xl overflow-hidden border-2 border-dashed border-border/70 hover:border-primary/60 cursor-pointer boty-transition bg-muted/30 flex items-center justify-center group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={photoPreview ?? product.thumbnailUrl}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <span className="relative z-10 text-xs text-white bg-black/50 rounded-full px-2 py-0.5 opacity-0 group-hover:opacity-100 boty-transition">
-                Cambiar
-              </span>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) {
-                    setPhotoFile(f);
-                    setPhotoPreview(URL.createObjectURL(f));
-                  }
-                }}
-              />
-            </label>
+          <AdminProductGallery
+            urls={galleryUrls}
+            pendingPreviews={pendingPreviews}
+            disabled={busy}
+            onAddFiles={addPendingFiles}
+            onRemove={removeGalleryPhoto}
+            onRemovePending={removePendingGalleryPhoto}
+            onMove={moveGalleryPhoto}
+            onSetPrimary={setPrimaryGalleryPhoto}
+          />
 
-            <div className="flex-1 space-y-3">
+          <div className="space-y-3">
               <div>
                 <BotyLabel>Nombre *</BotyLabel>
                 <BotyInput
@@ -557,7 +586,6 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
                 </span>
               </div>
             </div>
-          </div>
 
           <div>
             <BotyLabel>Descripción</BotyLabel>

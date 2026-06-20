@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { RemoteImage } from "@/components/ui/remote-image";
 import { ChevronLeft, Minus, Plus, Check } from "lucide-react";
 import type { CatalogProductDetail } from "@/lib/api-types";
 import { ProductMockupPreview } from "@/components/boty/product-mockup-preview";
+import { ProductGallery } from "@/components/boty/product-gallery";
 import { useCart } from "@/lib/cart-context";
 import { clampCartLineQuantity, MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
 import { formatMxn } from "@/lib/utils";
@@ -77,6 +77,10 @@ export function ProductDetail({ product }: ProductDetailProps) {
     router.push("/checkout");
   }
 
+  const images = product.images?.length
+    ? product.images
+    : [product.thumbnail].filter(Boolean);
+
   return (
     <div className="pt-28 pb-20">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -89,23 +93,29 @@ export function ProductDetail({ product }: ProductDetailProps) {
         </Link>
 
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
-          <div className="relative aspect-square rounded-3xl overflow-hidden bg-card boty-shadow">
+          <div>
             {product.preview ? (
-              <ProductMockupPreview
-                preview={product.preview}
-                fallbackThumbnail={product.thumbnail || "/placeholder.svg"}
-                alt={product.name}
-                garmentColorOverride={selected?.garmentColorHex}
-                className="absolute inset-0 w-full h-full object-contain"
-              />
+              <div className="relative aspect-square rounded-3xl overflow-hidden bg-card boty-shadow">
+                <ProductMockupPreview
+                  preview={product.preview}
+                  fallbackThumbnail={product.thumbnail || "/placeholder.svg"}
+                  alt={product.name}
+                  garmentColorOverride={selected?.garmentColorHex}
+                  className="absolute inset-0 w-full h-full object-contain"
+                />
+              </div>
             ) : (
-              <RemoteImage
-                src={product.thumbnail || "/placeholder.svg"}
+              <ProductGallery
+                images={images}
                 alt={product.name}
-                fill
-                className="object-cover"
                 priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+            )}
+            {product.preview && images.length > 1 && (
+              <ProductGallery
+                images={images}
+                alt={product.name}
+                className="mt-4"
               />
             )}
           </div>

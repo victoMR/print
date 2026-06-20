@@ -32,6 +32,7 @@ export async function getPublicProduct(idOrSlug: string) {
     name: product.name,
     description: product.description,
     thumbnail: product.thumbnail,
+    images: product.images,
     preview: product.preview ?? null,
     category: product.category,
     variants: product.variants.map((v) => ({

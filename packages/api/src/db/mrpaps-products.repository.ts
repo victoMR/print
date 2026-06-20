@@ -101,6 +101,7 @@ export async function updateProductAdmin(
     name: string;
     description: string;
     thumbnail_url: string;
+    gallery_urls: string[];
     status: MrpapsProductStatus;
     template_id: string | null;
     composition: Record<string, unknown>;
@@ -209,21 +210,24 @@ export async function upsertProduct(input: {
   name: string;
   description: string;
   thumbnail_url: string;
+  gallery_urls?: string[];
   status?: MrpapsProductStatus;
   template_id?: string | null;
   composition?: Record<string, unknown>;
   default_garment_color?: string;
   category?: MrpapsProductCategory;
 }): Promise<MrpapsProductRow> {
+  const galleryJson = JSON.stringify(input.gallery_urls ?? []);
   return queryRequired<MrpapsProductRow>(
     `INSERT INTO mrpaps_products (
-       slug, name, description, thumbnail_url, status, template_id, composition,
+       slug, name, description, thumbnail_url, gallery_urls, status, template_id, composition,
        default_garment_color, category
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     ) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
      ON CONFLICT (slug) DO UPDATE SET
        name = EXCLUDED.name,
        description = EXCLUDED.description,
        thumbnail_url = EXCLUDED.thumbnail_url,
+       gallery_urls = EXCLUDED.gallery_urls,
        status = EXCLUDED.status,
        template_id = EXCLUDED.template_id,
        composition = EXCLUDED.composition,
@@ -236,6 +240,7 @@ export async function upsertProduct(input: {
       input.name,
       input.description,
       input.thumbnail_url,
+      galleryJson,
       input.status ?? 'active',
       input.template_id ?? null,
       JSON.stringify(input.composition ?? {}),

@@ -2,12 +2,11 @@
 
 import { AnimatedReveal } from "@/components/ui/AnimatedReveal";
 import { GlassButton } from "@/components/ui/GlassButton";
-import { GlassCard } from "@/components/ui/GlassCard";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { QtyButton, VariantPicker } from "@/components/shop/VariantPicker";
+import { ProductGallery } from "@/components/boty/product-gallery";
 import type { CatalogProductDetail } from "@/lib/api-types";
 import { useCart } from "@/lib/cart-context";
-import Image from "next/image";
 import { useMemo, useState } from "react";
 
 type ProductDetailViewProps = {
@@ -52,20 +51,15 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
     setTimeout(() => setAdded(false), 2000);
   }
 
+  const images = product.images?.length
+    ? product.images
+    : [product.thumbnail].filter(Boolean);
+
   return (
     <div className="mx-auto max-w-6xl px-4 pb-16 md:px-6">
       <div className="grid gap-10 lg:grid-cols-2">
         <AnimatedReveal direction="right">
-          <GlassCard className="relative aspect-square overflow-hidden">
-            <Image
-              src={product.thumbnail}
-              alt={product.name}
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
-            />
-          </GlassCard>
+          <ProductGallery images={images} alt={product.name} priority />
         </AnimatedReveal>
 
         <AnimatedReveal delay={0.1}>

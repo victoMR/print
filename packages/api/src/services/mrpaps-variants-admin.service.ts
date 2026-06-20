@@ -3,6 +3,7 @@ import * as productsRepo from '../db/mrpaps-products.repository.js';
 import type { MrpapsProductVariantRow } from '../db/mrpaps.types.js';
 import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { slugify } from './mrpaps-catalog.service.js';
+import { resolveProductImages } from '../lib/product-images.js';
 
 export type AdminVariantDto = {
   id: string;
@@ -76,6 +77,7 @@ export async function getAdminProductWithVariants(productId: string) {
     name: product.name,
     description: product.description,
     thumbnailUrl: product.thumbnail_url,
+    galleryUrls: resolveProductImages(product),
     status: product.status,
     category: product.category,
     templateId: product.template_id,

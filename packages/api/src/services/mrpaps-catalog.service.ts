@@ -13,6 +13,7 @@ import {
 } from '../lib/cart-limits.js';
 import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { logger } from '../lib/logger.js';
+import { resolveProductImages } from '../lib/product-images.js';
 
 const STALE_CART_MESSAGE =
   'Tu carrito tiene productos que ya no existen en el catálogo. Vacía el carrito y vuelve a agregar los artículos desde la tienda.';
@@ -74,7 +75,8 @@ async function listPublicProductsUncached(
           id: product.id,
           slug: product.slug,
           name: product.name,
-          thumbnail: product.thumbnail_url,
+          thumbnail: resolveProductImages(product)[0] ?? product.thumbnail_url,
+          images: resolveProductImages(product),
           category: product.category,
           priceFromMxn,
           variantCount: variants.length,
@@ -120,12 +122,15 @@ async function getPublicProductUncached(idOrSlug: string) {
   const variants = await productsRepo.listVariantsByProductId(product.id);
   const preview = await buildProductPreview(product);
 
+  const images = resolveProductImages(product);
+
   return {
     id: product.id,
     slug: product.slug,
     name: product.name,
     description: product.description,
-    thumbnail: product.thumbnail_url,
+    thumbnail: images[0] ?? product.thumbnail_url,
+    images,
     category: product.category,
     preview,
     variants: variants.map((v) => ({

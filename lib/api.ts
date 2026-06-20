@@ -621,6 +621,7 @@ export async function adminCreateProduct(body: {
   slug?: string;
   description?: string;
   thumbnailUrl?: string;
+  galleryUrls?: string[];
   retailPriceMxn?: number;
   status?: "active" | "inactive";
   templateId?: string;
@@ -643,6 +644,7 @@ export async function adminUpdateProduct(
     slug?: string;
     description?: string;
     thumbnailUrl?: string;
+    galleryUrls?: string[];
     status?: "active" | "inactive" | "archived";
     templateId?: string;
     composition?: ProductComposition;
