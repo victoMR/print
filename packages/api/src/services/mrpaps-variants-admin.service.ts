@@ -11,6 +11,7 @@ export type AdminVariantDto = {
   size: string;
   color: string;
   retailPriceMxn: string;
+  stockQuantity: number;
   status: string;
   designId: string | null;
   garmentColorHex: string;
@@ -25,6 +26,7 @@ function toVariantDto(v: MrpapsProductVariantRow, orderItemCount: number): Admin
     size: v.size_label,
     color: v.color_label,
     retailPriceMxn: Number(v.retail_price_mxn).toFixed(2),
+    stockQuantity: v.stock_quantity,
     status: v.status,
     designId: v.design_id,
     garmentColorHex: v.garment_color_hex ?? '#FFFFFF',
@@ -153,6 +155,7 @@ export type UpdateVariantAdminInput = {
   sizeLabel?: string;
   colorLabel?: string;
   retailPriceMxn?: number;
+  stockQuantity?: number;
   designId?: string | null;
   garmentColorHex?: string;
   status?: 'active' | 'inactive' | 'archived';
@@ -193,6 +196,7 @@ export async function updateVariantAdmin(
   if (input.designId !== undefined) patch.design_id = input.designId;
   if (input.garmentColorHex !== undefined) patch.garment_color_hex = input.garmentColorHex;
   if (input.status !== undefined) patch.status = input.status;
+  if (input.stockQuantity !== undefined) patch.stock_quantity = input.stockQuantity;
 
   const row = await productsRepo.updateVariantAdmin(variantId, patch);
   return toVariantDto(row, orderItemCount);

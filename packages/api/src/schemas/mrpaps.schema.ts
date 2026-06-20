@@ -140,6 +140,7 @@ export const updateVariantAdminSchema = z.object({
   sizeLabel: z.string().min(1).max(50).optional(),
   colorLabel: z.string().min(1).max(50).optional(),
   retailPriceMxn: z.number().positive().optional(),
+  stockQuantity: z.number().int().min(0).optional(),
   designId: z.string().uuid().nullable().optional(),
   garmentColorHex: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   status: z.enum(['active', 'inactive', 'archived']).optional(),

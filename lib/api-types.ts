@@ -30,7 +30,9 @@ export type CatalogProductDetail = {
   description: string;
   thumbnail: string;
   /** Fotos del producto en orden (la primera es la portada). */
-  images: string[];
+  images?: string[];
+  /** Foto por cada color disponible del producto. */
+  colorImages?: Array<{ color: string; imageUrl: string }>;
   category: ProductCategory;
   preview?: ProductPreviewData | null;
   variants: Array<{
@@ -331,6 +333,8 @@ export type AdminProductVariant = {
   size: string;
   color: string;
   retailPriceMxn: string;
+  /** Unidades en inventario. 0 = sin límite (print-on-demand). */
+  stockQuantity: number;
   status: "active" | "inactive" | "archived";
   designId: string | null;
   garmentColorHex: string;

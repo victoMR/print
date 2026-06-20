@@ -34,6 +34,7 @@ type RowDraft = {
   size: string;
   color: string;
   retailPriceMxn: string;
+  stockQuantity: string;
 };
 
 const STATUS_LABEL: Record<AdminProductVariant["status"], string> = {
@@ -65,6 +66,7 @@ export function AdminProductVariantsEditor({
   const [newSize, setNewSize] = useState<string>(GARMENT_SIZES[2]); // M
   const [newColor, setNewColor] = useState("Estándar");
   const [newPrice, setNewPrice] = useState("");
+  const [newStock, setNewStock] = useState("0");
 
   // Ref so onChanged never causes reload to be recreated
   const onChangedRef = useRef(onChanged);
@@ -80,6 +82,7 @@ export function AdminProductVariantsEditor({
         size: v.size,
         color: v.color,
         retailPriceMxn: v.retailPriceMxn,
+        stockQuantity: String(v.stockQuantity ?? 0),
       };
     }
     setDrafts(next);
@@ -103,6 +106,11 @@ export function AdminProductVariantsEditor({
       onError("Precio inválido en la fila.");
       return;
     }
+    const stock = Number.parseInt(d.stockQuantity, 10);
+    if (!Number.isFinite(stock) || stock < 0) {
+      onError("Inventario inválido en la fila.");
+      return;
+    }
     setBusy(true);
     onError(null);
     try {
@@ -110,6 +118,7 @@ export function AdminProductVariantsEditor({
         sizeLabel: d.size.trim(),
         colorLabel: d.color.trim(),
         retailPriceMxn: price,
+        stockQuantity: stock,
         // SKU se genera automáticamente; no se edita desde UI
       });
       await reload();
@@ -146,6 +155,11 @@ export function AdminProductVariantsEditor({
       onError("Indica un precio válido.");
       return;
     }
+    const stock = Number.parseInt(newStock, 10);
+    if (!Number.isFinite(stock) || stock < 0) {
+      onError("Indica un inventario válido (0 = sin límite).");
+      return;
+    }
     const size = newSize.trim();
     const color = newColor.trim() || "Estándar";
     setBusy(true);
@@ -158,7 +172,18 @@ export function AdminProductVariantsEditor({
         retailPriceMxn: price,
         garmentColorHex: defaultGarmentColor,
       });
+      // Actualizar stock si se indicó un valor mayor a 0
+      if (stock > 0) {
+        const res = await adminGetProduct(productId);
+        const created = res.data.variants.find(
+          (v: { size: string; color: string; id: string }) => v.size === size && v.color === color,
+        );
+        if (created) {
+          await adminUpdateProductVariant(created.id, { stockQuantity: stock });
+        }
+      }
       setNewPrice("");
+      setNewStock("0");
       await reload();
     } catch (err) {
       onError(err instanceof Error ? err.message : "No se pudo agregar la variante");
@@ -204,6 +229,7 @@ export function AdminProductVariantsEditor({
                 <th className="px-4 py-2.5">Talla</th>
                 <th className="px-4 py-2.5">Color</th>
                 <th className="px-4 py-2.5">Precio MXN</th>
+                <th className="px-4 py-2.5 text-center" title="0 = sin límite (print-on-demand)">Inventario</th>
                 <th className="px-4 py-2.5">Estado</th>
                 <th className="px-4 py-2.5 text-center">Pedidos</th>
                 <th className="px-4 py-2.5 text-right">Acciones</th>
@@ -250,6 +276,18 @@ export function AdminProductVariantsEditor({
                           disabled={busy}
                         />
                       </div>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <BotyInput
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={d.stockQuantity}
+                        onChange={(e) => patchDraft(v.id, { stockQuantity: e.target.value })}
+                        className="w-20 text-center"
+                        disabled={busy}
+                        title="0 = sin límite (print-on-demand)"
+                      />
                     </td>
                     <td className="px-4 py-2">
                       <BotyBadge className={STATUS_BADGE[v.status]}>{STATUS_LABEL[v.status]}</BotyBadge>
@@ -309,7 +347,7 @@ export function AdminProductVariantsEditor({
           <Plus className="w-4 h-4 text-primary" />
           Agregar talla
         </h4>
-        <form onSubmit={(e) => void handleAddOne(e)} className="grid gap-4 sm:grid-cols-3">
+        <form onSubmit={(e) => void handleAddOne(e)} className="grid gap-4 sm:grid-cols-2">
           <div>
             <BotyLabel>Talla</BotyLabel>
             <AdminSelect
@@ -341,9 +379,21 @@ export function AdminProductVariantsEditor({
               disabled={busy}
             />
           </div>
-          <div className="sm:col-span-3">
+          <div>
+            <BotyLabel>Inventario inicial (0 = sin límite)</BotyLabel>
+            <BotyInput
+              type="number"
+              min="0"
+              step="1"
+              value={newStock}
+              onChange={(e) => setNewStock(e.target.value)}
+              placeholder="0"
+              disabled={busy}
+            />
+          </div>
+          <div className="sm:col-span-2">
             <BotyButton type="submit" variant="primary" size="sm" disabled={busy}>
-              Agregar talla {newSize}
+              Agregar {newSize} / {newColor || "color"}
             </BotyButton>
           </div>
         </form>

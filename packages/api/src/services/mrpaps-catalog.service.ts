@@ -119,8 +119,11 @@ async function getPublicProductUncached(idOrSlug: string) {
     throw new NotFoundError('Producto no encontrado');
   }
 
-  const variants = await productsRepo.listVariantsByProductId(product.id);
-  const preview = await buildProductPreview(product);
+  const [variants, colorImages, preview] = await Promise.all([
+    productsRepo.listVariantsByProductId(product.id),
+    productsRepo.listColorImagesByProductId(product.id),
+    buildProductPreview(product),
+  ]);
 
   const images = resolveProductImages(product);
 
@@ -133,6 +136,7 @@ async function getPublicProductUncached(idOrSlug: string) {
     images,
     category: product.category,
     preview,
+    colorImages: colorImages.map((ci) => ({ color: ci.color_label, imageUrl: ci.image_url })),
     variants: variants.map((v) => ({
       variantId: v.id,
       size: v.size_label,

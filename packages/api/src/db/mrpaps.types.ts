@@ -183,3 +183,13 @@ export type MrpapsOrderWithItems = MrpapsOrderRow & {
 export type MrpapsVariantWithProduct = MrpapsProductVariantRow & {
   product: MrpapsProductRow;
 };
+
+export type MrpapsProductColorImageRow = {
+  id: string;
+  product_id: string;
+  color_label: string;
+  image_url: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};

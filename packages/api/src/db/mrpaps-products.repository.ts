@@ -7,6 +7,7 @@ import type {
   MrpapsProductCategory,
   MrpapsProductVariantRow,
   MrpapsVariantWithProduct,
+  MrpapsProductColorImageRow,
 } from './mrpaps.types.js';
 
 function escapeIlikePattern(term: string): string {
@@ -342,6 +343,63 @@ export async function reserveVariantStockTx(
   );
 
   return quantity;
+}
+
+// ─── Color images ─────────────────────────────────────────────────────────────
+
+export async function listColorImagesByProductId(
+  productId: string,
+): Promise<MrpapsProductColorImageRow[]> {
+  return query<MrpapsProductColorImageRow>(
+    `SELECT * FROM mrpaps_product_color_images
+     WHERE product_id = $1
+     ORDER BY sort_order, created_at`,
+    [productId],
+  );
+}
+
+export async function batchListColorImagesByProductIds(
+  productIds: string[],
+): Promise<Map<string, MrpapsProductColorImageRow[]>> {
+  if (productIds.length === 0) return new Map();
+  const rows = await query<MrpapsProductColorImageRow>(
+    `SELECT * FROM mrpaps_product_color_images
+     WHERE product_id = ANY($1::uuid[])
+     ORDER BY sort_order, created_at`,
+    [productIds],
+  );
+  const map = new Map<string, MrpapsProductColorImageRow[]>();
+  for (const row of rows) {
+    const list = map.get(row.product_id) ?? [];
+    list.push(row);
+    map.set(row.product_id, list);
+  }
+  return map;
+}
+
+export async function upsertColorImage(
+  productId: string,
+  colorLabel: string,
+  imageUrl: string,
+): Promise<MrpapsProductColorImageRow> {
+  return queryRequired<MrpapsProductColorImageRow>(
+    `INSERT INTO mrpaps_product_color_images (product_id, color_label, image_url)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (product_id, color_label) DO UPDATE
+       SET image_url = EXCLUDED.image_url, updated_at = NOW()
+     RETURNING *`,
+    [productId, colorLabel, imageUrl],
+  );
+}
+
+export async function deleteColorImage(
+  productId: string,
+  colorLabel: string,
+): Promise<void> {
+  await query(
+    `DELETE FROM mrpaps_product_color_images WHERE product_id = $1 AND color_label = $2`,
+    [productId, colorLabel],
+  );
 }
 
 /** Devuelve inventario reservado al cancelar un pedido pendiente de pago. */

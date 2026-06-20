@@ -31,6 +31,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# pnpm store cache (nunca commitear)
+.pnpm-store/
+
 # env files (secretos — no commitear)
 .env
 .env.local

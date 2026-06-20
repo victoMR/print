@@ -32,6 +32,22 @@ export function ProductDetail({ product }: ProductDetailProps) {
   const sizes = [...new Set(product.variants.map((v) => v.size))];
   const colors = [...new Set(product.variants.map((v) => v.color))];
 
+  // Foto correspondiente al color seleccionado (si existe en colorImages)
+  const selectedColorImage = selected?.color
+    ? (product.colorImages?.find((ci) => ci.color === selected.color)?.imageUrl ?? null)
+    : null;
+
+  // Imagen(es) a mostrar en la galería: si hay foto del color seleccionado, va primero
+  const displayImages = selectedColorImage
+    ? [selectedColorImage, ...(product.images ?? []).filter((img) => img !== selectedColorImage)]
+    : (product.images?.length ? product.images : [product.thumbnail].filter(Boolean));
+
+  // Para una talla dada y el color actualmente seleccionado, ¿hay stock?
+  function isSizeAvailableForColor(size: string, color: string) {
+    const variant = product.variants.find((v) => v.size === size && v.color === color);
+    return variant ? variant.inStock : false;
+  }
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [product.slug]);
@@ -77,9 +93,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
     router.push("/checkout");
   }
 
-  const images = product.images?.length
-    ? product.images
-    : [product.thumbnail].filter(Boolean);
+  // displayImages ya calculado arriba
 
   return (
     <div className="pt-28 pb-20">
@@ -106,16 +120,9 @@ export function ProductDetail({ product }: ProductDetailProps) {
               </div>
             ) : (
               <ProductGallery
-                images={images}
+                images={displayImages}
                 alt={product.name}
                 priority
-              />
-            )}
-            {product.preview && images.length > 1 && (
-              <ProductGallery
-                images={images}
-                alt={product.name}
-                className="mt-4"
               />
             )}
           </div>
@@ -145,20 +152,31 @@ export function ProductDetail({ product }: ProductDetailProps) {
                   Talla
                 </label>
                 <div className="flex flex-wrap gap-3">
-                  {sizes.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => pickVariant(size, selected?.color ?? colors[0] ?? "")}
-                      className={`px-6 py-3 rounded-full text-sm boty-transition boty-shadow ${
-                        selected?.size === size
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card text-foreground hover:bg-card/80"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                  {sizes.map((size) => {
+                    const available = isSizeAvailableForColor(size, selected?.color ?? colors[0] ?? "");
+                    const isSelected = selected?.size === size;
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        disabled={!available}
+                        onClick={() => pickVariant(size, selected?.color ?? colors[0] ?? "")}
+                        className={`relative px-6 py-3 rounded-full text-sm boty-transition boty-shadow disabled:opacity-40 disabled:cursor-not-allowed ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card text-foreground hover:bg-card/80"
+                        }`}
+                        title={!available ? "Agotado" : undefined}
+                      >
+                        {size}
+                        {!available && (
+                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="block w-3/4 border-t border-current opacity-40 rotate-[-30deg]" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -217,11 +235,17 @@ export function ProductDetail({ product }: ProductDetailProps) {
               </div>
             </div>
 
+            {selected && !selected.inStock && (
+              <p className="mb-4 text-sm font-medium text-destructive bg-destructive/5 rounded-xl px-4 py-2">
+                Esta combinación está agotada.
+              </p>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={!selected}
+                disabled={!selected || !selected.inStock}
                 className={`flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-sm tracking-wide boty-transition boty-shadow disabled:opacity-50 ${
                   isAdded
                     ? "bg-primary/80 text-primary-foreground"
@@ -240,7 +264,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
               <button
                 type="button"
                 onClick={handleBuyNow}
-                disabled={!selected}
+                disabled={!selected || !selected.inStock}
                 className="flex-1 inline-flex items-center justify-center gap-2 bg-transparent border border-foreground/20 text-foreground px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-foreground/5 disabled:opacity-50"
               >
                 Comprar ahora

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { extractAdminToken, extractAdminRefreshToken, requireAdminAuth, requireDevAuth } from '../../middleware/admin-auth.js';
 import {
   clearAllAdminSessionCookies,
@@ -414,11 +415,53 @@ v1MrpapsAdminRouter.patch('/variants/:variantId', async (req, res, next) => {
       sizeLabel: body.sizeLabel,
       colorLabel: body.colorLabel,
       retailPriceMxn: body.retailPriceMxn,
+      stockQuantity: body.stockQuantity,
       designId: body.designId,
       garmentColorHex: body.garmentColorHex,
       status: body.status,
     });
     res.json({ data });
+    void invalidateCatalogCache();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── Fotos por color ──────────────────────────────────────────────────────────
+
+v1MrpapsAdminRouter.get('/products/:productId/color-images', async (req, res, next) => {
+  try {
+    const rows = await productsRepo.listColorImagesByProductId(req.params.productId);
+    res.json({
+      data: rows.map((r) => ({ color: r.color_label, imageUrl: r.image_url })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1MrpapsAdminRouter.put('/products/:productId/color-images/:colorLabel', async (req, res, next) => {
+  try {
+    const { imageUrl } = z.object({ imageUrl: z.string().url() }).parse(req.body);
+    const row = await productsRepo.upsertColorImage(
+      req.params.productId,
+      decodeURIComponent(req.params.colorLabel),
+      imageUrl,
+    );
+    res.json({ data: { color: row.color_label, imageUrl: row.image_url } });
+    void invalidateCatalogCache();
+  } catch (err) {
+    next(err);
+  }
+});
+
+v1MrpapsAdminRouter.delete('/products/:productId/color-images/:colorLabel', async (req, res, next) => {
+  try {
+    await productsRepo.deleteColorImage(
+      req.params.productId,
+      decodeURIComponent(req.params.colorLabel),
+    );
+    res.status(204).end();
     void invalidateCatalogCache();
   } catch (err) {
     next(err);

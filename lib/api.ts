@@ -686,6 +686,7 @@ export async function adminUpdateProductVariant(
     sizeLabel?: string;
     colorLabel?: string;
     retailPriceMxn?: number;
+    stockQuantity?: number;
     designId?: string | null;
     garmentColorHex?: string;
     status?: "active" | "inactive" | "archived";
@@ -697,6 +698,45 @@ export async function adminUpdateProductVariant(
     body: JSON.stringify(body),
     cache: "no-store",
   });
+}
+
+export async function adminGetColorImages(
+  productId: string,
+): Promise<{ data: Array<{ color: string; imageUrl: string }> }> {
+  return apiFetch(`${V1}/admin/products/${encodeURIComponent(productId)}/color-images`, {
+    headers: adminHeaders(),
+    cache: "no-store",
+  });
+}
+
+export async function adminSetColorImage(
+  productId: string,
+  colorLabel: string,
+  imageUrl: string,
+): Promise<{ data: { color: string; imageUrl: string } }> {
+  return apiFetch(
+    `${V1}/admin/products/${encodeURIComponent(productId)}/color-images/${encodeURIComponent(colorLabel)}`,
+    {
+      method: "PUT",
+      headers: adminHeaders(),
+      body: JSON.stringify({ imageUrl }),
+      cache: "no-store",
+    },
+  );
+}
+
+export async function adminDeleteColorImage(
+  productId: string,
+  colorLabel: string,
+): Promise<void> {
+  await apiFetch(
+    `${V1}/admin/products/${encodeURIComponent(productId)}/color-images/${encodeURIComponent(colorLabel)}`,
+    {
+      method: "DELETE",
+      headers: adminHeaders(),
+      cache: "no-store",
+    },
+  );
 }
 
 // ─── Analytics / dashboard ───────────────────────────────────────────────────

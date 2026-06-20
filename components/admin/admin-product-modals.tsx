@@ -27,6 +27,7 @@ import {
 } from "@/components/boty/ui-patterns";
 import { AdminDrawer } from "@/components/admin/admin-drawer";
 import { AdminProductVariantsEditor } from "@/components/admin/admin-product-variants-editor";
+import { AdminColorImages } from "@/components/admin/admin-color-images";
 import {
   AdminProductGallery,
   MAX_PRODUCT_GALLERY,
@@ -400,7 +401,7 @@ type EditProductModalProps = {
 };
 
 export function EditProductModal({ open, product, onClose, onSaved }: EditProductModalProps) {
-  const [tab, setTab] = useState<"info" | "variants">("info");
+  const [tab, setTab] = useState<"info" | "variants" | "color-images">("info");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -518,9 +519,10 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
         tabs={[
           { id: "info", label: "Información" },
           { id: "variants", label: `Variantes (${product.variants.length})` },
+          { id: "color-images", label: "Fotos por color" },
         ]}
         active={tab}
-        onChange={(id) => setTab(id as "info" | "variants")}
+        onChange={(id) => setTab(id as "info" | "variants" | "color-images")}
       />
 
       {tab === "info" && (
@@ -625,6 +627,19 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
       )}
 
       {tab === "variants" && error && (
+        <p className="mt-3 text-sm text-destructive rounded-xl bg-destructive/5 px-3 py-2">{error}</p>
+      )}
+
+      {tab === "color-images" && (
+        <AdminColorImages
+          productId={product.id}
+          variants={product.variants}
+          disabled={busy}
+          onError={setError}
+        />
+      )}
+
+      {tab === "color-images" && error && (
         <p className="mt-3 text-sm text-destructive rounded-xl bg-destructive/5 px-3 py-2">{error}</p>
       )}
     </AdminDrawer>
