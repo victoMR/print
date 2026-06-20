@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ImageIcon, Trash2, Upload, Plus } from "lucide-react";
+import { ImageIcon, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   adminDeleteColorImage,
   adminGetColorImages,
@@ -9,7 +9,8 @@ import {
   adminUploadAsset,
 } from "@/lib/api";
 import { BRAND_COLORS } from "@/lib/garment-colors";
-import { BotyButton, BotyInput, BotyLabel, BotySurface } from "@/components/boty/ui-patterns";
+import { BotyButton, BotyInput, BotyLabel } from "@/components/boty/ui-patterns";
+import { cn } from "@/lib/utils";
 
 export type ColorImageEntry = { color: string; imageUrl: string };
 
@@ -17,14 +18,14 @@ type AdminColorImagesProps = {
   productId: string;
   disabled?: boolean;
   onError: (msg: string | null) => void;
-  /** Se llama cuando los colores cambian (para que el editor de variantes se actualice). */
   onColorsChanged?: (colors: ColorImageEntry[]) => void;
 };
 
+type AddFormState = { name: string; file: File | null; preview: string | null };
+
 /**
- * Gestiona los colores del producto con su foto asociada.
- * Los colores y sus fotos reemplazan la galería genérica del producto:
- * al seleccionar un color en tienda se muestra su foto.
+ * Grid visual de colores del producto.
+ * Cada color tiene su foto; las acciones son icónicas y no verbosas.
  */
 export function AdminColorImages({
   productId,
@@ -36,14 +37,11 @@ export function AdminColorImages({
   const [loading, setLoading] = useState(true);
   const [busyColor, setBusyColor] = useState<string | null>(null);
 
-  // Form para agregar nuevo color
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newColorName, setNewColorName] = useState("");
-  const [newColorFile, setNewColorFile] = useState<File | null>(null);
-  const [newColorPreview, setNewColorPreview] = useState<string | null>(null);
+  // Formulario de agregar (null = cerrado)
+  const [addForm, setAddForm] = useState<AddFormState | null>(null);
   const [addBusy, setAddBusy] = useState(false);
 
-  // Para subir/cambiar foto de un color existente
+  // Ref para input file de cambiar foto de color existente
   const changeFileRef = useRef<HTMLInputElement>(null);
   const pendingChangeColor = useRef<string | null>(null);
 
@@ -61,7 +59,7 @@ export function AdminColorImages({
     void reload().finally(() => setLoading(false));
   }, [reload]);
 
-  // ── Cambiar foto de color existente ──────────────────────────────────────────
+  // ─── Cambiar foto de un color existente ────────────────────────────────────
 
   function triggerChangePhoto(color: string) {
     pendingChangeColor.current = color;
@@ -86,10 +84,10 @@ export function AdminColorImages({
     }
   }
 
-  // ── Quitar color ──────────────────────────────────────────────────────────────
+  // ─── Quitar color ───────────────────────────────────────────────────────────
 
   async function handleDelete(color: string) {
-    if (!window.confirm(`¿Quitar el color "${color}"? Las variantes que lo usen quedarán inactivas si ya no tiene foto.`)) return;
+    if (!window.confirm(`¿Quitar el color "${color}"?`)) return;
     setBusyColor(color);
     onError(null);
     try {
@@ -102,33 +100,43 @@ export function AdminColorImages({
     }
   }
 
-  // ── Agregar nuevo color ───────────────────────────────────────────────────────
+  // ─── Agregar nuevo color ────────────────────────────────────────────────────
 
-  function pickNewFile(e: React.ChangeEvent<HTMLInputElement>) {
+  function openAddForm() {
+    setAddForm({ name: "", file: null, preview: null });
+    onError(null);
+  }
+
+  function closeAddForm() {
+    setAddForm(null);
+    onError(null);
+  }
+
+  function pickAddFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setNewColorFile(file);
-    setNewColorPreview(URL.createObjectURL(file));
+    setAddForm((prev) => prev
+      ? { ...prev, file, preview: URL.createObjectURL(file) }
+      : null,
+    );
   }
 
   async function handleAddColor(e: React.FormEvent) {
     e.preventDefault();
-    const colorName = newColorName.trim();
+    if (!addForm) return;
+    const colorName = addForm.name.trim();
     if (!colorName) { onError("Indica un nombre de color."); return; }
-    if (!newColorFile) { onError("Sube una foto para este color."); return; }
+    if (!addForm.file) { onError("Sube una foto para este color."); return; }
     if (colors.some((c) => c.color.toLowerCase() === colorName.toLowerCase())) {
       onError(`El color "${colorName}" ya está agregado.`); return;
     }
     setAddBusy(true);
     onError(null);
     try {
-      const uploaded = await adminUploadAsset(newColorFile, { kind: "thumbnails", productId });
+      const uploaded = await adminUploadAsset(addForm.file, { kind: "thumbnails", productId });
       await adminSetColorImage(productId, colorName, uploaded.data.url);
       await reload();
-      setNewColorName("");
-      setNewColorFile(null);
-      setNewColorPreview(null);
-      setShowAddForm(false);
+      closeAddForm();
     } catch (err) {
       onError(err instanceof Error ? err.message : "Error al agregar el color");
     } finally {
@@ -136,18 +144,23 @@ export function AdminColorImages({
     }
   }
 
-  // Colores predefinidos que aún no están en el producto
   const availableBrandColors = BRAND_COLORS.filter(
     (bc) => !colors.some((c) => c.color.toLowerCase() === bc.toLowerCase()),
   );
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground py-4">Cargando colores…</p>;
+    return (
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="aspect-square rounded-2xl bg-muted/40 animate-pulse" />
+        ))}
+      </div>
+    );
   }
 
   return (
     <div className="space-y-3">
-      {/* Input oculto para cambiar foto de un color ya existente */}
+      {/* Input oculto para cambiar foto */}
       <input
         ref={changeFileRef}
         type="file"
@@ -156,152 +169,170 @@ export function AdminColorImages({
         onChange={(e) => void handleChangeFile(e)}
       />
 
-      <p className="text-xs text-muted-foreground leading-relaxed">
-        Define los colores del producto y sube una foto para cada uno. Las fotos de color
-        son las imágenes que se muestran en tienda al seleccionar un color.
-      </p>
-
-      {/* Lista de colores actuales */}
-      {colors.length === 0 && !showAddForm && (
-        <p className="text-sm text-center text-muted-foreground py-4">
-          Sin colores. Agrega el primer color abajo.
-        </p>
-      )}
-
-      <div className="grid gap-2 sm:grid-cols-2">
+      {/* Grid de colores */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {colors.map((entry) => {
-          const isBusy = busyColor === entry.color || disabled;
+          const isBusy = busyColor === entry.color || !!disabled;
           return (
-            <BotySurface key={entry.color} className="p-3 flex items-center gap-3">
-              {/* Miniatura */}
-              <div className="w-14 h-14 rounded-xl overflow-hidden border border-border/60 shrink-0 bg-muted/30 flex items-center justify-center">
+            <div key={entry.color} className="group relative">
+              {/* Swatch con foto */}
+              <div className="aspect-square rounded-2xl overflow-hidden border border-border/50 bg-muted/20">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={entry.imageUrl} alt={entry.color} className="w-full h-full object-cover" />
+                <img
+                  src={entry.imageUrl}
+                  alt={entry.color}
+                  className="w-full h-full object-cover"
+                />
+                {/* Overlay en hover con acciones */}
+                <div className={cn(
+                  "absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2",
+                  isBusy && "opacity-100",
+                )}>
+                  {isBusy ? (
+                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => triggerChangePhoto(entry.color)}
+                        className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+                        title="Cambiar foto"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(entry.color)}
+                        className="p-2 rounded-full bg-white/20 hover:bg-red-500/80 text-white transition-colors"
+                        title="Quitar color"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-
-              {/* Nombre */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{entry.color}</p>
-              </div>
-
-              {/* Acciones */}
-              <div className="flex gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  disabled={!!isBusy}
-                  onClick={() => triggerChangePhoto(entry.color)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40"
-                  title="Cambiar foto"
-                >
-                  <Upload className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  disabled={!!isBusy}
-                  onClick={() => void handleDelete(entry.color)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
-                  title="Quitar color"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </BotySurface>
+              {/* Nombre del color */}
+              <p className="mt-1.5 text-xs text-center text-muted-foreground font-medium truncate px-0.5">
+                {entry.color}
+              </p>
+            </div>
           );
         })}
+
+        {/* Botón "Agregar color" como tarjeta */}
+        {!addForm && !disabled && (
+          <button
+            type="button"
+            onClick={openAddForm}
+            className="group aspect-square rounded-2xl border-2 border-dashed border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-colors flex flex-col items-center justify-center gap-1.5"
+          >
+            <Plus className="w-5 h-5 text-muted-foreground/50 group-hover:text-primary/70 transition-colors" />
+            <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70 transition-colors">Agregar</span>
+          </button>
+        )}
       </div>
 
-      {/* Formulario agregar color */}
-      {showAddForm ? (
-        <BotySurface className="p-4 border-primary/30 bg-primary/5">
+      {/* Formulario inline para agregar color */}
+      {addForm && (
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Nuevo color</p>
+            <button
+              type="button"
+              onClick={closeAddForm}
+              disabled={addBusy}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
           <form onSubmit={(e) => void handleAddColor(e)} className="space-y-3">
+            {/* Selector rápido de colores predefinidos */}
+            {availableBrandColors.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {availableBrandColors.map((bc) => (
+                  <button
+                    key={bc}
+                    type="button"
+                    onClick={() => setAddForm((prev) => prev ? { ...prev, name: bc } : null)}
+                    disabled={addBusy}
+                    className={cn(
+                      "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                      addForm.name === bc
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border/60 text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                    )}
+                  >
+                    {bc}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <BotyLabel>Nombre del color *</BotyLabel>
-                {/* Selector rápido de colores predefinidos */}
-                {availableBrandColors.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {availableBrandColors.map((bc) => (
-                      <button
-                        key={bc}
-                        type="button"
-                        onClick={() => setNewColorName(bc)}
-                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                          newColorName === bc
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "border-border/60 text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                        }`}
-                      >
-                        {bc}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <BotyLabel>Nombre del color</BotyLabel>
                 <BotyInput
-                  placeholder="Ej. Verde, Borgoña, Azul Rey…"
-                  value={newColorName}
-                  onChange={(e) => setNewColorName(e.target.value)}
+                  placeholder="Ej. Verde Bosque…"
+                  value={addForm.name}
+                  onChange={(e) => setAddForm((prev) => prev ? { ...prev, name: e.target.value } : null)}
                   disabled={addBusy}
                   required
                 />
               </div>
 
               <div>
-                <BotyLabel>Foto del color *</BotyLabel>
-                <label className={`flex flex-col items-center justify-center gap-1.5 w-full h-[72px] rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
-                  newColorPreview ? "border-primary/40 bg-primary/5" : "border-border/60 hover:border-primary/40 hover:bg-muted/20"
-                } ${addBusy ? "opacity-50 pointer-events-none" : ""}`}>
-                  {newColorPreview ? (
+                <BotyLabel>Foto del color</BotyLabel>
+                <label className={cn(
+                  "flex flex-col items-center justify-center gap-1 w-full h-[62px] rounded-xl border-2 border-dashed cursor-pointer transition-colors",
+                  addForm.preview
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-border/50 hover:border-primary/30 hover:bg-muted/20",
+                  addBusy && "opacity-50 pointer-events-none",
+                )}>
+                  {addForm.preview ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={newColorPreview} alt="preview" className="w-full h-full object-cover rounded-xl" />
+                    <img src={addForm.preview} alt="preview" className="w-full h-full object-cover rounded-xl" />
                   ) : (
                     <>
-                      <ImageIcon className="w-5 h-5 text-muted-foreground/60" />
-                      <span className="text-xs text-muted-foreground">PNG, JPG o WebP</span>
+                      <ImageIcon className="w-4 h-4 text-muted-foreground/50" />
+                      <span className="text-xs text-muted-foreground/60">PNG / JPG</span>
                     </>
                   )}
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
                     className="hidden"
-                    onChange={pickNewFile}
+                    onChange={pickAddFile}
                     disabled={addBusy}
                   />
                 </label>
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end">
-              <BotyButton
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={addBusy}
-                onClick={() => { setShowAddForm(false); setNewColorName(""); setNewColorFile(null); setNewColorPreview(null); onError(null); }}
-              >
+            <div className="flex justify-end gap-2">
+              <BotyButton type="button" variant="ghost" size="sm" disabled={addBusy} onClick={closeAddForm}>
                 Cancelar
               </BotyButton>
               <BotyButton
                 type="submit"
                 variant="primary"
                 size="sm"
-                disabled={addBusy || !newColorName.trim() || !newColorFile}
+                disabled={addBusy || !addForm.name.trim() || !addForm.file}
               >
                 {addBusy ? "Guardando…" : "Agregar color"}
               </BotyButton>
             </div>
           </form>
-        </BotySurface>
-      ) : (
-        <BotyButton
-          type="button"
-          variant="secondary"
-          size="sm"
-          disabled={!!disabled}
-          onClick={() => setShowAddForm(true)}
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Agregar color
-        </BotyButton>
+        </div>
+      )}
+
+      {colors.length === 0 && !addForm && (
+        <p className="text-xs text-muted-foreground text-center py-2">
+          Agrega los colores para empezar.
+        </p>
       )}
     </div>
   );

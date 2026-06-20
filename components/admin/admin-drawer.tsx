@@ -17,6 +17,8 @@ type AdminDrawerProps = {
   title: string;
   description?: string;
   children: React.ReactNode;
+  /** Barra de acciones pegada al fondo del drawer. */
+  footer?: React.ReactNode;
   /** Ancho del panel (default: panel amplio para formularios) */
   widthClassName?: string;
 };
@@ -27,6 +29,7 @@ export function AdminDrawer({
   title,
   description,
   children,
+  footer,
   widthClassName = "sm:max-w-2xl lg:max-w-3xl",
 }: AdminDrawerProps) {
   return (
@@ -62,6 +65,12 @@ export function AdminDrawer({
         </DrawerHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+
+        {footer && (
+          <div className="shrink-0 border-t border-border/60 px-6 py-4 bg-card/80 backdrop-blur-sm">
+            {footer}
+          </div>
+        )}
       </DrawerContent>
     </Drawer>
   );

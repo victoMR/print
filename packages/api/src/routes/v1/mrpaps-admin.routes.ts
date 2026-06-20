@@ -442,7 +442,7 @@ v1MrpapsAdminRouter.get('/products/:productId/color-images', async (req, res, ne
 
 v1MrpapsAdminRouter.put('/products/:productId/color-images/:colorLabel', async (req, res, next) => {
   try {
-    const { imageUrl } = z.object({ imageUrl: z.string().url() }).parse(req.body);
+    const { imageUrl } = z.object({ imageUrl: z.string().min(1) }).parse(req.body);
     const row = await productsRepo.upsertColorImage(
       req.params.productId,
       decodeURIComponent(req.params.colorLabel),
