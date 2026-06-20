@@ -18,9 +18,35 @@ type ProductDetailProps = {
 export function ProductDetail({ product }: ProductDetailProps) {
   const router = useRouter();
   const { addItem } = useCart();
-  const [variantId, setVariantId] = useState(product.variants[0]?.variantId);
-  const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
+
+  // ── Colores ordenados según colorImages (si existen), si no, desde variantes ──
+  const colors = useMemo(() => {
+    const fromImages = (product.colorImages ?? [])
+      .map((ci) => ci.color)
+      .filter((c) => product.variants.some((v) => v.color === c));
+    if (fromImages.length > 0) return fromImages;
+    return [...new Set(product.variants.map((v) => v.color))];
+  }, [product]);
+
+  // ── Tallas únicas preservando el orden que vienen del backend ───────────────
+  const allSizes = useMemo(
+    () => [...new Set(product.variants.map((v) => v.size))],
+    [product.variants],
+  );
+
+  // ── Selección inicial: primer color disponible → mejor talla disponible ─────
+  const initialVariantId = useMemo(() => {
+    const firstColor = colors[0];
+    const v =
+      product.variants.find((v) => v.color === firstColor && v.inStock) ??
+      product.variants.find((v) => v.color === firstColor) ??
+      product.variants.find((v) => v.inStock) ??
+      product.variants[0];
+    return v?.variantId;
+  }, [colors, product.variants]);
+
+  const [variantId, setVariantId] = useState(initialVariantId);
 
   const selected = useMemo(
     () => product.variants.find((v) => v.variantId === variantId),
@@ -28,28 +54,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
   );
 
   const maxQuantity = selected?.maxQuantity ?? MAX_CART_LINE_QUANTITY;
-
-  const sizes = [...new Set(product.variants.map((v) => v.size))];
-  const colors = [...new Set(product.variants.map((v) => v.color))];
-
-  const hasColorImages = (product.colorImages?.length ?? 0) > 0;
-
-  // Foto del color seleccionado (o del primer color si ninguno está seleccionado)
-  const selectedColorImage = selected?.color
-    ? (product.colorImages?.find((ci) => ci.color === selected.color)?.imageUrl ?? null)
-    : (product.colorImages?.[0]?.imageUrl ?? null);
-
-  // Si el producto tiene fotos por color, mostrar solo la del color activo.
-  // Si no tiene, usar la galería genérica como fallback.
-  const displayImages = hasColorImages
-    ? (selectedColorImage ? [selectedColorImage] : (product.colorImages?.map((ci) => ci.imageUrl) ?? []))
-    : (product.images?.length ? product.images : [product.thumbnail].filter(Boolean));
-
-  // Para una talla dada y el color actualmente seleccionado, ¿hay stock?
-  function isSizeAvailableForColor(size: string, color: string) {
-    const variant = product.variants.find((v) => v.size === size && v.color === color);
-    return variant ? variant.inStock : false;
-  }
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -59,13 +64,58 @@ export function ProductDetail({ product }: ProductDetailProps) {
     setQuantity((q) => clampCartLineQuantity(q, maxQuantity));
   }, [maxQuantity, variantId]);
 
-  function pickVariant(size: string, color: string) {
-    const match =
-      product.variants.find((v) => v.size === size && v.color === color) ??
-      product.variants.find((v) => v.size === size) ??
-      product.variants.find((v) => v.color === color);
-    if (match) setVariantId(match.variantId);
+  // ── Helpers de disponibilidad ────────────────────────────────────────────────
+
+  /** ¿Existe la combinación talla+color como variante activa? */
+  function variantExists(size: string, color: string) {
+    return product.variants.some((v) => v.size === size && v.color === color);
   }
+
+  /** ¿Tiene stock la combinación talla+color? */
+  function isInStock(size: string, color: string) {
+    return product.variants.find((v) => v.size === size && v.color === color)?.inStock ?? false;
+  }
+
+  /** ¿El color tiene al menos una talla con stock? */
+  function isColorAvailable(color: string) {
+    return product.variants.some((v) => v.color === color && v.inStock);
+  }
+
+  // ── Selección interactiva ────────────────────────────────────────────────────
+
+  function pickColor(color: string) {
+    const currentSize = selected?.size;
+    // Intentar mantener la talla actual; si no, la primera talla con stock; si no, cualquiera
+    const next =
+      (currentSize && product.variants.find((v) => v.color === color && v.size === currentSize && v.inStock)) ??
+      (currentSize && product.variants.find((v) => v.color === color && v.size === currentSize)) ??
+      product.variants.find((v) => v.color === color && v.inStock) ??
+      product.variants.find((v) => v.color === color);
+    if (next) setVariantId(next.variantId);
+  }
+
+  function pickSize(size: string) {
+    const currentColor = selected?.color;
+    const next =
+      (currentColor && product.variants.find((v) => v.size === size && v.color === currentColor && v.inStock)) ??
+      (currentColor && product.variants.find((v) => v.size === size && v.color === currentColor)) ??
+      product.variants.find((v) => v.size === size && v.inStock) ??
+      product.variants.find((v) => v.size === size);
+    if (next) setVariantId(next.variantId);
+  }
+
+  // ── Galería ──────────────────────────────────────────────────────────────────
+
+  const hasColorImages = (product.colorImages?.length ?? 0) > 0;
+  const selectedColorImage = selected?.color
+    ? (product.colorImages?.find((ci) => ci.color === selected.color)?.imageUrl ?? null)
+    : (product.colorImages?.[0]?.imageUrl ?? null);
+
+  const displayImages = hasColorImages
+    ? (selectedColorImage ? [selectedColorImage] : (product.colorImages?.map((ci) => ci.imageUrl) ?? []))
+    : (product.images?.length ? product.images : [product.thumbnail].filter(Boolean));
+
+  // ── Carrito ──────────────────────────────────────────────────────────────────
 
   function addSelectedToCart(openDrawer = true) {
     if (!selected) return false;
@@ -76,7 +126,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
         productName: product.name,
         variantLabel: `${selected.size} / ${selected.color}`,
         retailPriceMxn: selected.retailPriceMxn,
-        thumbnail: product.thumbnail,
+        thumbnail: selectedColorImage ?? product.thumbnail,
         maxQuantity,
       },
       quantity,
@@ -96,7 +146,9 @@ export function ProductDetail({ product }: ProductDetailProps) {
     router.push("/checkout");
   }
 
-  // displayImages calculado arriba junto con colorImages
+  const canBuy = !!selected && selected.inStock;
+
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="pt-28 pb-20">
@@ -110,6 +162,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
         </Link>
 
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
+          {/* ── Imagen ────────────────────────────────────────────────────────── */}
           <div>
             {product.preview ? (
               <div className="relative aspect-square rounded-3xl overflow-hidden bg-card boty-shadow">
@@ -122,15 +175,13 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 />
               </div>
             ) : (
-              <ProductGallery
-                images={displayImages}
-                alt={product.name}
-                priority
-              />
+              <ProductGallery images={displayImages} alt={product.name} priority />
             )}
           </div>
 
+          {/* ── Info + selectores ──────────────────────────────────────────────── */}
           <div className="flex flex-col">
+            {/* Nombre y descripción */}
             <div className="mb-8">
               <span className="text-sm tracking-[0.3em] uppercase text-primary mb-2 block">
                 Mr. Paps
@@ -141,76 +192,70 @@ export function ProductDetail({ product }: ProductDetailProps) {
               <p className="text-foreground/80 leading-relaxed">{product.description}</p>
             </div>
 
+            {/* Precio */}
             {selected && (
-              <div className="flex items-center gap-3 mb-8">
+              <div className="flex items-baseline gap-3 mb-8">
                 <span className="text-3xl font-medium text-foreground">
                   {formatMxn(selected.retailPriceMxn)}
                 </span>
+                {!selected.inStock && (
+                  <span className="text-sm text-destructive font-medium">Agotado</span>
+                )}
               </div>
             )}
 
-            {sizes.length > 0 && (
-              <div className="mb-6">
-                <label className="text-sm font-medium text-foreground mb-3 block">
-                  Talla
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  {sizes.map((size) => {
-                    const available = isSizeAvailableForColor(size, selected?.color ?? colors[0] ?? "");
-                    const isSelected = selected?.size === size;
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        disabled={!available}
-                        onClick={() => pickVariant(size, selected?.color ?? colors[0] ?? "")}
-                        className={`relative px-6 py-3 rounded-full text-sm boty-transition boty-shadow disabled:opacity-40 disabled:cursor-not-allowed ${
-                          isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-card text-foreground hover:bg-card/80"
-                        }`}
-                        title={!available ? "Agotado" : undefined}
-                      >
-                        {size}
-                        {!available && (
-                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <span className="block w-3/4 border-t border-current opacity-40 rotate-[-30deg]" />
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+            {/* ── Selector de color ─────────────────────────────────────────── */}
+            {colors.length > 0 && (
+              <div className="mb-7">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-medium text-foreground">Color</span>
+                  {selected?.color && (
+                    <span className="text-sm text-muted-foreground">— {selected.color}</span>
+                  )}
                 </div>
-              </div>
-            )}
-
-            {colors.length > 0 && colors.some((c) => c) && (
-              <div className="mb-6">
-                <label className="text-sm font-medium text-foreground mb-3 block">
-                  Color
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {colors.filter(Boolean).map((color) => {
+                <div className="flex flex-wrap gap-3">
+                  {colors.map((color) => {
                     const colorImg = product.colorImages?.find((ci) => ci.color === color);
                     const isSelected = selected?.color === color;
+                    const available = isColorAvailable(color);
+
                     return (
                       <button
                         key={color}
                         type="button"
-                        onClick={() => pickVariant(selected?.size ?? sizes[0] ?? "", color)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm boty-transition boty-shadow ${
-                          isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-card text-foreground hover:bg-card/80"
-                        }`}
+                        onClick={() => pickColor(color)}
+                        title={color}
+                        className={`relative group w-14 h-14 rounded-2xl overflow-hidden boty-transition boty-shadow
+                          ${isSelected
+                            ? "ring-2 ring-offset-2 ring-primary ring-offset-background"
+                            : "ring-1 ring-border/60 hover:ring-primary/40"}
+                          ${!available ? "opacity-50" : ""}
+                        `}
                       >
-                        {colorImg && (
-                          <span className={`w-5 h-5 rounded-full overflow-hidden border ${isSelected ? "border-white/40" : "border-border/60"}`}>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={colorImg.imageUrl} alt={color} className="w-full h-full object-cover" />
+                        {colorImg ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={colorImg.imageUrl}
+                            alt={color}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="w-full h-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground px-1 text-center leading-tight">
+                            {color}
                           </span>
                         )}
-                        {color}
+
+                        {/* Overlay agotado */}
+                        {!available && (
+                          <span className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                            <span className="block w-3/4 border-t border-foreground/40 rotate-[-30deg]" />
+                          </span>
+                        )}
+
+                        {/* Tooltip color name en hover */}
+                        <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs bg-foreground text-background rounded px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                          {color}
+                        </span>
                       </button>
                     );
                   })}
@@ -218,10 +263,63 @@ export function ProductDetail({ product }: ProductDetailProps) {
               </div>
             )}
 
+            {/* ── Selector de talla ──────────────────────────────────────────── */}
+            {allSizes.length > 0 && (
+              <div className="mb-7">
+                <span className="text-sm font-medium text-foreground mb-3 block">Talla</span>
+                <div className="flex flex-wrap gap-3">
+                  {allSizes.map((size) => {
+                    const exists = variantExists(size, selected?.color ?? colors[0] ?? "");
+                    const inStock = exists && isInStock(size, selected?.color ?? colors[0] ?? "");
+                    const isSelected = selected?.size === size;
+
+                    // No existe en este color: apagado con guión
+                    // Existe pero agotado: con línea diagonal
+                    // Disponible: normal
+
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        disabled={!exists || !inStock}
+                        onClick={() => exists ? pickSize(size) : undefined}
+                        title={!exists ? `No disponible en ${selected?.color ?? ""}` : (!inStock ? "Agotado" : undefined)}
+                        className={`relative px-6 py-3 rounded-full text-sm boty-transition boty-shadow
+                          ${isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : exists && inStock
+                              ? "bg-card text-foreground hover:bg-card/80"
+                              : "bg-card text-foreground/30 cursor-not-allowed"}
+                        `}
+                      >
+                        {size}
+                        {/* Diagonal para agotado */}
+                        {exists && !inStock && (
+                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-full overflow-hidden">
+                            <span className="block w-3/4 border-t border-current opacity-40 rotate-[-30deg]" />
+                          </span>
+                        )}
+                        {/* Punto para "no existe en este color" */}
+                        {!exists && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-muted-foreground/30" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Leyenda si hay tallas no disponibles en este color */}
+                {allSizes.some((s) => !variantExists(s, selected?.color ?? "")) && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Las tallas con punto · no están disponibles en este color.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* ── Cantidad ───────────────────────────────────────────────────── */}
             <div className="mb-8">
-              <label className="text-sm font-medium text-foreground mb-3 block">
-                Cantidad
-              </label>
+              <span className="text-sm font-medium text-foreground mb-3 block">Cantidad</span>
               <div className="inline-flex items-center gap-4 bg-card rounded-full px-2 py-2 boty-shadow">
                 <button
                   type="button"
@@ -231,14 +329,10 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="w-8 text-center font-medium text-foreground">
-                  {quantity}
-                </span>
+                <span className="w-8 text-center font-medium text-foreground">{quantity}</span>
                 <button
                   type="button"
-                  onClick={() =>
-                    setQuantity(clampCartLineQuantity(quantity + 1, maxQuantity))
-                  }
+                  onClick={() => setQuantity(clampCartLineQuantity(quantity + 1, maxQuantity))}
                   disabled={quantity >= maxQuantity}
                   className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground/60 hover:text-foreground boty-transition disabled:opacity-40"
                   aria-label="Aumentar cantidad"
@@ -248,22 +342,16 @@ export function ProductDetail({ product }: ProductDetailProps) {
               </div>
             </div>
 
-            {selected && !selected.inStock && (
-              <p className="mb-4 text-sm font-medium text-destructive bg-destructive/5 rounded-xl px-4 py-2">
-                Esta combinación está agotada.
-              </p>
-            )}
-
+            {/* ── Botones CTA ────────────────────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={!selected || !selected.inStock}
-                className={`flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-sm tracking-wide boty-transition boty-shadow disabled:opacity-50 ${
-                  isAdded
+                disabled={!canBuy}
+                className={`flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-sm tracking-wide boty-transition boty-shadow disabled:opacity-50
+                  ${isAdded
                     ? "bg-primary/80 text-primary-foreground"
-                    : "bg-primary text-primary-foreground hover:bg-primary/90"
-                }`}
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
               >
                 {isAdded ? (
                   <>
@@ -277,7 +365,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
               <button
                 type="button"
                 onClick={handleBuyNow}
-                disabled={!selected || !selected.inStock}
+                disabled={!canBuy}
                 className="flex-1 inline-flex items-center justify-center gap-2 bg-transparent border border-foreground/20 text-foreground px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-foreground/5 disabled:opacity-50"
               >
                 Comprar ahora

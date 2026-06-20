@@ -279,10 +279,10 @@ export function ProductGrid({ initialProducts = [] }: ProductGridProps) {
 
         <div className="text-center mt-12">
           <Link
-            href={`/shop?category=${selectedCategory}`}
-            className="inline-flex items-center justify-center gap-2 bg-transparent border border-white/20 text-white px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-white/10 min-h-11"
+            href="/shop"
+            className="inline-flex items-center justify-center gap-2 bg-white text-primary font-medium px-10 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-white/90 shadow-lg min-h-11"
           >
-            Ver todos en {PRODUCT_CATEGORY_LABELS[selectedCategory]}
+            Ver todo
           </Link>
         </div>
       </div>
