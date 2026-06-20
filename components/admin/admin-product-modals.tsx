@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { VariantsEditorHandle } from "@/components/admin/admin-product-variants-editor";
 import {
   adminCreateProduct,
   adminUpdateProduct,
@@ -173,8 +174,10 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
   const [category, setCategory] = useState<ProductCategory>("camiseta");
   const [status, setStatus] = useState<"active" | "inactive">("active");
   const [productColors, setProductColors] = useState<ColorImageEntry[]>([]);
+  const [variantsDirtyCount, setVariantsDirtyCount] = useState(0);
 
   const openedProductId = useRef<string | null>(null);
+  const variantsEditorRef = useRef<VariantsEditorHandle>(null);
 
   useEffect(() => {
     if (!product) return;
@@ -184,6 +187,7 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
       setTab("info");
       setError(null);
       setSaved(false);
+      setVariantsDirtyCount(0);
       setProductColors(product.colorImages ?? []);
     }
     setName(product.name);
@@ -220,8 +224,29 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
     }
   }
 
-  // Footer del drawer — solo aparece en la pestaña Info
-  const drawerFooter = tab === "info" ? (
+  async function handleSaveVariants() {
+    await variantsEditorRef.current?.saveAllDirty();
+  }
+
+  const saveLabel = tab === "info"
+    ? (busy ? "Guardando…" : "Guardar cambios")
+    : (busy ? "Guardando…" : variantsDirtyCount > 0
+        ? `Guardar ${variantsDirtyCount} cambio${variantsDirtyCount > 1 ? "s" : ""}`
+        : "Guardar cambios");
+
+  const saveDisabled = tab === "info"
+    ? (busy || !name.trim())
+    : (busy || variantsDirtyCount === 0);
+
+  function handleSave() {
+    if (tab === "info") {
+      void handleSaveInfo();
+    } else {
+      void handleSaveVariants();
+    }
+  }
+
+  const drawerFooter = (
     <div className="flex items-center justify-between gap-3">
       <p className={cn(
         "text-sm transition-opacity duration-300",
@@ -236,14 +261,14 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
         <BotyButton
           type="button"
           variant="primary"
-          disabled={busy || !name.trim()}
-          onClick={() => void handleSaveInfo()}
+          disabled={saveDisabled}
+          onClick={handleSave}
         >
-          {busy ? "Guardando…" : "Guardar cambios"}
+          {saveLabel}
         </BotyButton>
       </div>
     </div>
-  ) : undefined;
+  );
 
   return (
     <AdminDrawer
@@ -346,6 +371,7 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
       {tab === "variants" && (
         <>
           <AdminProductVariantsEditor
+            ref={variantsEditorRef}
             productId={product.id}
             productSlug={product.slug}
             productColors={productColors}
@@ -354,6 +380,7 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
             setBusy={setBusy}
             onError={setError}
             onChanged={onSaved}
+            onDirtyCountChange={setVariantsDirtyCount}
           />
           {error && (
             <p className="mt-4 text-sm text-destructive bg-destructive/5 rounded-xl px-3 py-2">{error}</p>
