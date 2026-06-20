@@ -359,6 +359,7 @@ export function EditProductModal({ open, product, onClose, onSaved }: EditProduc
             </p>
             <AdminColorImages
               productId={product.id}
+              variantColors={[...new Set(product.variants.map((v) => v.color))]}
               disabled={busy}
               onError={setError}
               onColorsChanged={setProductColors}

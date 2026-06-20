@@ -16,6 +16,8 @@ export type ColorImageEntry = { color: string; imageUrl: string };
 
 type AdminColorImagesProps = {
   productId: string;
+  /** Colores de las variantes del producto (para sugerirlos en el formulario de agregar). */
+  variantColors?: string[];
   disabled?: boolean;
   onError: (msg: string | null) => void;
   onColorsChanged?: (colors: ColorImageEntry[]) => void;
@@ -29,6 +31,7 @@ type AddFormState = { name: string; file: File | null; preview: string | null };
  */
 export function AdminColorImages({
   productId,
+  variantColors = [],
   disabled,
   onError,
   onColorsChanged,
@@ -143,8 +146,15 @@ export function AdminColorImages({
     }
   }
 
+  // Colores de variantes aún sin foto asignada (orden de prioridad en el picker)
+  const availableVariantColors = variantColors.filter(
+    (vc) => !colors.some((c) => c.color.toLowerCase() === vc.toLowerCase()),
+  );
+  // Brand colors no cubiertos por variantes ni por fotos ya subidas
   const availableBrandColors = BRAND_COLORS.filter(
-    (bc) => !colors.some((c) => c.color.toLowerCase() === bc.toLowerCase()),
+    (bc) =>
+      !colors.some((c) => c.color.toLowerCase() === bc.toLowerCase()) &&
+      !variantColors.some((vc) => vc.toLowerCase() === bc.toLowerCase()),
   );
 
   if (loading) {
@@ -248,25 +258,59 @@ export function AdminColorImages({
           </div>
 
           <div className="space-y-3">
-            {/* Selector rápido de colores predefinidos */}
+            {/* Colores de variantes sin foto — aparecen primero con indicador */}
+            {availableVariantColors.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+                  Colores de este producto
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {availableVariantColors.map((vc) => (
+                    <button
+                      key={vc}
+                      type="button"
+                      onClick={() => setAddForm((prev) => prev ? { ...prev, name: vc } : null)}
+                      disabled={addBusy}
+                      className={cn(
+                        "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                        addForm.name === vc
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-primary/40 text-foreground hover:border-primary hover:bg-primary/5",
+                      )}
+                    >
+                      {vc}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Selector rápido de colores predefinidos (brand colors) */}
             {availableBrandColors.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {availableBrandColors.map((bc) => (
-                  <button
-                    key={bc}
-                    type="button"
-                    onClick={() => setAddForm((prev) => prev ? { ...prev, name: bc } : null)}
-                    disabled={addBusy}
-                    className={cn(
-                      "text-xs px-2.5 py-1 rounded-full border transition-colors",
-                      addForm.name === bc
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border/60 text-muted-foreground hover:border-primary/50 hover:text-foreground",
-                    )}
-                  >
-                    {bc}
-                  </button>
-                ))}
+              <div className="space-y-1.5">
+                {availableVariantColors.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+                    Otros colores
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-1.5">
+                  {availableBrandColors.map((bc) => (
+                    <button
+                      key={bc}
+                      type="button"
+                      onClick={() => setAddForm((prev) => prev ? { ...prev, name: bc } : null)}
+                      disabled={addBusy}
+                      className={cn(
+                        "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                        addForm.name === bc
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border/60 text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                      )}
+                    >
+                      {bc}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 

@@ -24,7 +24,9 @@ export function ProductDetail({ product }: ProductDetailProps) {
   const colors = useMemo(() => {
     const fromImages = (product.colorImages ?? [])
       .map((ci) => ci.color)
-      .filter((c) => product.variants.some((v) => v.color === c));
+      .filter((c) =>
+        product.variants.some((v) => v.color.toLowerCase() === c.toLowerCase()),
+      );
     if (fromImages.length > 0) return fromImages;
     return [...new Set(product.variants.map((v) => v.color))];
   }, [product]);
@@ -108,7 +110,9 @@ export function ProductDetail({ product }: ProductDetailProps) {
 
   const hasColorImages = (product.colorImages?.length ?? 0) > 0;
   const selectedColorImage = selected?.color
-    ? (product.colorImages?.find((ci) => ci.color === selected.color)?.imageUrl ?? null)
+    ? (product.colorImages?.find(
+        (ci) => ci.color.toLowerCase() === selected.color.toLowerCase(),
+      )?.imageUrl ?? null)
     : (product.colorImages?.[0]?.imageUrl ?? null);
 
   const displayImages = hasColorImages
