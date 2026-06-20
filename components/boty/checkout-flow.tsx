@@ -44,7 +44,7 @@ const STEP_ORDER: Step[] = ["address", "confirm", "payment"];
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function BotyCheckoutFlow() {
-  const { items, clearCart, hydrated } = useCart();
+  const { items, inStockItems, outOfStockItems, clearCart, hydrated, removeItem } = useCart();
   const { user } = useCustomer();
   const router = useRouter();
 
@@ -134,15 +134,18 @@ export function BotyCheckoutFlow() {
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const cartItems = items.map((i) => ({
+  // Solo items con existencias van al pedido
+  const cartItems = inStockItems.map((i) => ({
     variantId: i.variantId,
     quantity: i.quantity,
     retailPriceMxn: i.retailPriceMxn,
   }));
 
+  const hasOutOfStock = outOfStockItems.length > 0;
+
   const productSubtotal = useMemo(() =>
-    items.reduce((sum, i) => sum + Number.parseFloat(i.retailPriceMxn) * i.quantity, 0),
-    [items]);
+    inStockItems.reduce((sum, i) => sum + Number.parseFloat(i.retailPriceMxn) * i.quantity, 0),
+    [inStockItems]);
 
   const address = {
     address1: recipient.address1,
@@ -294,7 +297,7 @@ export function BotyCheckoutFlow() {
   const completingCheckout =
     paymentOutcome != null || (step === "payment" && publicOrderId != null);
 
-  if (items.length === 0 && !completingCheckout) {
+  if (inStockItems.length === 0 && !completingCheckout) {
     return (
       <div className="max-w-md mx-auto text-center py-20 bg-card rounded-3xl boty-shadow px-8">
         <Package className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
@@ -315,6 +318,43 @@ export function BotyCheckoutFlow() {
   return (
     <>
     <div className="space-y-8 max-w-6xl mx-auto">
+
+      {/* ── Banner de items agotados ──────────────────────────────────────── */}
+      {hasOutOfStock && (
+        <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-4">
+          <p className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+            {outOfStockItems.length === 1
+              ? "Un producto ya no tiene existencias"
+              : `${outOfStockItems.length} productos ya no tienen existencias`}
+          </p>
+          <p className="text-xs text-amber-700 mb-3">
+            No se incluirán en tu pedido. Los demás artículos continúan disponibles.
+          </p>
+          <ul className="space-y-1.5 mb-3">
+            {outOfStockItems.map((i) => (
+              <li key={i.variantId} className="flex items-center justify-between gap-3 text-sm text-amber-800">
+                <span className="truncate">{i.productName} — <span className="text-amber-600">{i.variantLabel}</span></span>
+                <button
+                  type="button"
+                  onClick={() => removeItem(i.variantId)}
+                  className="shrink-0 text-xs underline underline-offset-2 text-amber-700 hover:text-amber-900"
+                >
+                  Quitar
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => outOfStockItems.forEach((i) => removeItem(i.variantId))}
+            className="text-xs font-medium text-amber-800 underline underline-offset-2 hover:text-amber-900"
+          >
+            Quitar todos los agotados
+          </button>
+        </div>
+      )}
+
       {/* ── Progress bar ─────────────────────────────────────────────────── */}
       <nav aria-label="Pasos del checkout" className="flex items-center justify-center gap-0">
         {STEPS.map((s, i) => {
@@ -697,7 +737,7 @@ export function BotyCheckoutFlow() {
 
             {/* Items */}
             <ul className="divide-y divide-border/50">
-              {items.map((item) => (
+              {inStockItems.map((item) => (
                 <li key={item.variantId} className="py-3 flex gap-3 items-center">
                   <div className="relative w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden bg-muted">
                     <RemoteImage

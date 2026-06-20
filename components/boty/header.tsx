@@ -41,9 +41,15 @@ export function Header({ className }: { className?: string }) {
           </button>
 
           <div className="hidden lg:flex items-center gap-8">
-            <Link href="/shop" className="text-sm tracking-wide text-foreground font-medium border border-foreground/25 px-4 py-1.5 rounded-full hover:border-foreground/50 hover:bg-foreground/5 boty-transition">
-              Shop
-            </Link>
+            {pathname.startsWith("/shop") ? (
+              <Link href="/" className="text-sm tracking-wide text-foreground/70 hover:text-foreground boty-transition">
+                Inicio
+              </Link>
+            ) : (
+              <Link href="/shop" className="text-sm tracking-wide text-foreground font-medium border border-foreground/25 px-4 py-1.5 rounded-full hover:border-foreground/50 hover:bg-foreground/5 boty-transition">
+                Shop
+              </Link>
+            )}
             <Link href="/seguimiento" className="text-sm tracking-wide text-foreground/70 hover:text-foreground boty-transition">
               Seguimiento
             </Link>
@@ -88,7 +94,11 @@ export function Header({ className }: { className?: string }) {
         {/* Mobile menu */}
         <div className={`lg:hidden overflow-hidden boty-transition ${isMenuOpen ? "max-h-64 pb-6" : "max-h-0"}`}>
           <div className="flex flex-col gap-4 pt-4 border-t border-border/50">
-            <Link href="/shop" className="text-sm font-medium text-foreground" onClick={() => setIsMenuOpen(false)}>Shop</Link>
+            {pathname.startsWith("/shop") ? (
+              <Link href="/" className="text-sm text-foreground/70 hover:text-foreground boty-transition" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
+            ) : (
+              <Link href="/shop" className="text-sm font-medium text-foreground" onClick={() => setIsMenuOpen(false)}>Shop</Link>
+            )}
             <Link href="/seguimiento" className="text-sm text-foreground/70 hover:text-foreground boty-transition" onClick={() => setIsMenuOpen(false)}>Seguimiento</Link>
             <Link href="/" className="text-sm text-foreground/70 hover:text-foreground boty-transition" onClick={() => setIsMenuOpen(false)}>About</Link>
             <Link href={accountHref} className="text-sm text-foreground/70 hover:text-foreground boty-transition" onClick={() => setIsMenuOpen(false)}>

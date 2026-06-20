@@ -17,6 +17,10 @@ const STORAGE_KEY = "mrpaps-cart-v3";
 
 type CartContextValue = {
   items: CartItem[];
+  /** Items con stock (para conteo y subtotal). */
+  inStockItems: CartItem[];
+  /** Items marcados como agotados por el último sync. */
+  outOfStockItems: CartItem[];
   count: number;
   itemCount: number;
   subtotal: number;
@@ -31,6 +35,8 @@ type CartContextValue = {
   removeItem: (variantId: string) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   clearCart: () => void;
+  /** Re-sincroniza el carrito contra el catálogo (actualiza stock). */
+  syncCart: () => Promise<void>;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -65,6 +71,7 @@ function sanitizeStoredItem(raw: unknown): CartItem | null {
     thumbnail: item.thumbnail,
     maxQuantity,
     quantity: clampCartLineQuantity(item.quantity ?? 1, maxQuantity),
+    // outOfStock se recalcula en cada sync — no se persiste
   };
 }
 
@@ -86,6 +93,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+  const runSync = useCallback(async (stored: CartItem[]): Promise<CartItem[]> => {
+    const synced = await syncCartWithCatalog(
+      stored.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+    );
+    return synced;
+  }, []);
+
   useEffect(() => {
     const stored = loadStoredItems();
     if (stored.length === 0) {
@@ -94,18 +108,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    void syncCartWithCatalog(
-      stored.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
-    )
+    void runSync(stored)
       .then((synced) => setItems(synced))
       .catch(() => setItems(stored))
       .finally(() => setHydrated(true));
-  }, []);
+  }, [runSync]);
 
+  // Persistir solo items con existencias (los agotados son efímeros)
   useEffect(() => {
     if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(items.filter((i) => !i.outOfStock)),
+    );
   }, [items, hydrated]);
+
+  const syncCart = useCallback(async () => {
+    setItems((prev) => {
+      void runSync(prev.filter((i) => !i.outOfStock))
+        .then((synced) => setItems(synced))
+        .catch(() => {/* mantener estado */});
+      return prev;
+    });
+  }, [runSync]);
 
   const addItem = useCallback(
     (
@@ -124,6 +149,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                   ...item,
                   quantity: clampCartLineQuantity(i.quantity + quantity, max),
                   maxQuantity: max,
+                  outOfStock: false,
                 }
               : i,
           );
@@ -134,6 +160,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ...item,
             maxQuantity: max,
             quantity: clampCartLineQuantity(quantity, max),
+            outOfStock: false,
           },
         ];
       });
@@ -165,23 +192,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => setItems([]), []);
 
+  const inStockItems = useMemo(() => items.filter((i) => !i.outOfStock), [items]);
+  const outOfStockItems = useMemo(() => items.filter((i) => i.outOfStock), [items]);
+
   const count = useMemo(
-    () => items.reduce((sum, item) => sum + item.quantity, 0),
-    [items],
+    () => inStockItems.reduce((sum, item) => sum + item.quantity, 0),
+    [inStockItems],
   );
 
   const subtotal = useMemo(
     () =>
-      items.reduce(
+      inStockItems.reduce(
         (sum, item) => sum + Number.parseFloat(item.retailPriceMxn) * item.quantity,
         0,
       ),
-    [items],
+    [inStockItems],
   );
 
   const value = useMemo(
     () => ({
       items,
+      inStockItems,
+      outOfStockItems,
       count,
       itemCount: count,
       subtotal,
@@ -192,9 +224,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem,
       updateQuantity,
       clearCart,
+      syncCart,
     }),
     [
       items,
+      inStockItems,
+      outOfStockItems,
       count,
       subtotal,
       hydrated,
@@ -203,6 +238,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem,
       updateQuantity,
       clearCart,
+      syncCart,
     ],
   );
 

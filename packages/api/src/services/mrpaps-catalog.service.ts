@@ -208,6 +208,19 @@ export async function syncCartLineItems(
     }
 
     if (isTrackedStock(variant.stock_quantity) && variant.stock_quantity < 1) {
+      // Mantener en el carrito pero marcado como agotado — el cliente ve el aviso
+      const dbPrice = Number(variant.retail_price_mxn).toFixed(2);
+      synced.push({
+        variantId: variant.id,
+        productSlug: variant.product.slug,
+        productName: variant.product.name,
+        variantLabel: variantLabel(variant.size_label, variant.color_label),
+        retailPriceMxn: dbPrice,
+        thumbnail: variant.product.thumbnail_url,
+        quantity: item.quantity,
+        maxQuantity: 0,
+        outOfStock: true,
+      });
       continue;
     }
 
@@ -223,6 +236,7 @@ export async function syncCartLineItems(
       thumbnail: variant.product.thumbnail_url,
       quantity,
       maxQuantity: maxPurchasableQuantity(variant.stock_quantity),
+      outOfStock: false,
     });
   }
 

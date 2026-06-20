@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/drawer";
 
 export function CartDrawer() {
-  const { items, removeItem, updateQuantity, isOpen, setIsOpen, itemCount, subtotal } = useCart();
+  const { items, inStockItems, outOfStockItems, removeItem, updateQuantity, isOpen, setIsOpen, itemCount, subtotal } = useCart();
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen} direction="right">
@@ -62,77 +62,109 @@ export function CartDrawer() {
               </DrawerClose>
             </div>
           ) : (
-            <div className="divide-y divide-border/50">
-              {items.map((item) => (
-                <div key={item.variantId} className="py-4 flex gap-4">
-                  {/* Thumbnail */}
-                  <Link
-                    href={`/product/${item.productSlug}`}
-                    onClick={() => setIsOpen(false)}
-                    className="relative w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden bg-muted block"
-                  >
-                    <RemoteImage
-                      src={item.thumbnail || "/placeholder.svg"}
-                      alt={item.productName}
-                      fill
-                      className="object-cover"
-                      sizes="80px"
-                    />
-                  </Link>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm text-foreground leading-tight truncate">
-                          {item.productName}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{item.variantLabel}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {formatMxn(item.retailPriceMxn)} c/u
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.variantId)}
-                        className="shrink-0 p-1 text-muted-foreground hover:text-destructive boty-transition rounded-full hover:bg-destructive/5"
-                        aria-label="Quitar del carrito"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Qty controls */}
-                    <div className="flex items-center justify-between mt-2.5">
-                      <div className="flex items-center border border-border rounded-full bg-background">
+            <div className="space-y-0">
+              {/* Items disponibles */}
+              <div className="divide-y divide-border/50">
+                {inStockItems.map((item) => (
+                  <div key={item.variantId} className="py-4 flex gap-4">
+                    <Link
+                      href={`/product/${item.productSlug}`}
+                      onClick={() => setIsOpen(false)}
+                      className="relative w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden bg-muted block"
+                    >
+                      <RemoteImage
+                        src={item.thumbnail || "/placeholder.svg"}
+                        alt={item.productName}
+                        fill
+                        className="object-cover"
+                        sizes="80px"
+                      />
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm text-foreground leading-tight truncate">{item.productName}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{item.variantLabel}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{formatMxn(item.retailPriceMxn)} c/u</p>
+                        </div>
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-muted boty-transition rounded-full"
-                          aria-label="Menos"
+                          onClick={() => removeItem(item.variantId)}
+                          className="shrink-0 p-1 text-muted-foreground hover:text-destructive boty-transition rounded-full hover:bg-destructive/5"
+                          aria-label="Quitar del carrito"
                         >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="w-7 text-center text-sm font-medium">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                          disabled={
-                            item.quantity >= (item.maxQuantity ?? MAX_CART_LINE_QUANTITY)
-                          }
-                          className="w-8 h-8 flex items-center justify-center hover:bg-muted boty-transition rounded-full disabled:opacity-40 disabled:pointer-events-none"
-                          aria-label="Más"
-                        >
-                          <Plus className="w-3 h-3" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                      <span className="text-sm font-semibold text-foreground">
-                        {formatMxn(Number.parseFloat(item.retailPriceMxn) * item.quantity)}
-                      </span>
+                      <div className="flex items-center justify-between mt-2.5">
+                        <div className="flex items-center border border-border rounded-full bg-background">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                            className="w-8 h-8 flex items-center justify-center hover:bg-muted boty-transition rounded-full"
+                            aria-label="Menos"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="w-7 text-center text-sm font-medium">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                            disabled={item.quantity >= (item.maxQuantity ?? MAX_CART_LINE_QUANTITY)}
+                            className="w-8 h-8 flex items-center justify-center hover:bg-muted boty-transition rounded-full disabled:opacity-40 disabled:pointer-events-none"
+                            aria-label="Más"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <span className="text-sm font-semibold text-foreground">
+                          {formatMxn(Number.parseFloat(item.retailPriceMxn) * item.quantity)}
+                        </span>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+
+              {/* Items agotados */}
+              {outOfStockItems.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-destructive/20">
+                  <p className="text-xs font-semibold text-destructive uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+                    Sin existencias — no se incluirán en tu pedido
+                  </p>
+                  <div className="divide-y divide-border/30">
+                    {outOfStockItems.map((item) => (
+                      <div key={item.variantId} className="py-3 flex gap-3 opacity-60">
+                        <div className="relative w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden bg-muted">
+                          <RemoteImage
+                            src={item.thumbnail || "/placeholder.svg"}
+                            alt={item.productName}
+                            fill
+                            className="object-cover grayscale"
+                            sizes="56px"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{item.productName}</p>
+                          <p className="text-xs text-muted-foreground">{item.variantLabel}</p>
+                          <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-wide text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+                            Agotado
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.variantId)}
+                          className="shrink-0 p-1 text-muted-foreground hover:text-destructive boty-transition rounded-full"
+                          aria-label="Quitar"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>

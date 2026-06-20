@@ -226,6 +226,8 @@ export type CartItem = {
   thumbnail: string;
   /** Tope por línea (catálogo); por defecto 100 en cliente. */
   maxQuantity?: number;
+  /** El sync detectó que no hay existencias — no se incluye en el pedido. */
+  outOfStock?: boolean;
 };
 
 export type CartSyncResponse = {

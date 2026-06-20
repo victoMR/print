@@ -207,13 +207,13 @@ export function ProductDetail({ product }: ProductDetailProps) {
             {/* ── Selector de color ─────────────────────────────────────────── */}
             {colors.length > 0 && (
               <div className="mb-7">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-baseline gap-2 mb-4">
                   <span className="text-sm font-medium text-foreground">Color</span>
                   {selected?.color && (
                     <span className="text-sm text-muted-foreground">— {selected.color}</span>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-4">
                   {colors.map((color) => {
                     const colorImg = product.colorImages?.find((ci) => ci.color === color);
                     const isSelected = selected?.color === color;
@@ -224,36 +224,32 @@ export function ProductDetail({ product }: ProductDetailProps) {
                         key={color}
                         type="button"
                         onClick={() => pickColor(color)}
-                        title={color}
-                        className={`relative group w-14 h-14 rounded-2xl overflow-hidden boty-transition boty-shadow
-                          ${isSelected
-                            ? "ring-2 ring-offset-2 ring-primary ring-offset-background"
-                            : "ring-1 ring-border/60 hover:ring-primary/40"}
-                          ${!available ? "opacity-50" : ""}
-                        `}
+                        className="flex flex-col items-center gap-2 group"
                       >
-                        {colorImg ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={colorImg.imageUrl}
-                            alt={color}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="w-full h-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground px-1 text-center leading-tight">
-                            {color}
-                          </span>
-                        )}
-
-                        {/* Overlay agotado */}
-                        {!available && (
-                          <span className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                            <span className="block w-3/4 border-t border-foreground/40 rotate-[-30deg]" />
-                          </span>
-                        )}
-
-                        {/* Tooltip color name en hover */}
-                        <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs bg-foreground text-background rounded px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                        <div className={`relative w-16 h-16 rounded-2xl overflow-hidden boty-transition
+                          ${isSelected
+                            ? "ring-2 ring-offset-2 ring-primary ring-offset-background shadow-md scale-105"
+                            : "ring-1 ring-border/50 hover:ring-primary/50 hover:scale-105 hover:shadow-sm"}
+                          ${!available ? "opacity-40" : ""}
+                        `}>
+                          {colorImg ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={colorImg.imageUrl} alt={color} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="w-full h-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground px-1 text-center leading-tight">
+                              {color}
+                            </span>
+                          )}
+                          {!available && (
+                            <span className="absolute inset-0 bg-white/50 flex items-center justify-center">
+                              <span className="block w-3/4 border-t-2 border-foreground/30 rotate-[-35deg]" />
+                            </span>
+                          )}
+                        </div>
+                        <span className={`text-xs font-medium leading-none transition-colors
+                          ${isSelected ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}
+                          ${!available ? "line-through opacity-50" : ""}
+                        `}>
                           {color}
                         </span>
                       </button>
@@ -266,53 +262,64 @@ export function ProductDetail({ product }: ProductDetailProps) {
             {/* ── Selector de talla ──────────────────────────────────────────── */}
             {allSizes.length > 0 && (
               <div className="mb-7">
-                <span className="text-sm font-medium text-foreground mb-3 block">Talla</span>
-                <div className="flex flex-wrap gap-3">
+                <span className="text-sm font-medium text-foreground mb-4 block">Talla</span>
+                <div className="flex flex-wrap gap-2.5">
                   {allSizes.map((size) => {
-                    const exists = variantExists(size, selected?.color ?? colors[0] ?? "");
-                    const inStock = exists && isInStock(size, selected?.color ?? colors[0] ?? "");
+                    const color = selected?.color ?? colors[0] ?? "";
+                    const exists = variantExists(size, color);
+                    const inStock = exists && isInStock(size, color);
                     const isSelected = selected?.size === size;
-
-                    // No existe en este color: apagado con guión
-                    // Existe pero agotado: con línea diagonal
-                    // Disponible: normal
 
                     return (
                       <button
                         key={size}
                         type="button"
-                        disabled={!exists || !inStock}
+                        disabled={!exists}
                         onClick={() => exists ? pickSize(size) : undefined}
-                        title={!exists ? `No disponible en ${selected?.color ?? ""}` : (!inStock ? "Agotado" : undefined)}
-                        className={`relative px-6 py-3 rounded-full text-sm boty-transition boty-shadow
+                        title={
+                          !exists ? `No disponible en ${color}` :
+                          !inStock ? "Agotado" : undefined
+                        }
+                        className={`relative w-14 h-14 rounded-2xl text-sm font-medium boty-transition
                           ${isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : exists && inStock
-                              ? "bg-card text-foreground hover:bg-card/80"
-                              : "bg-card text-foreground/30 cursor-not-allowed"}
+                            ? "bg-primary text-primary-foreground shadow-md"
+                            : !exists
+                              ? "bg-muted/30 text-foreground/25 cursor-not-allowed border border-dashed border-border/30"
+                              : !inStock
+                                ? "bg-card text-foreground/40 border border-border/40 cursor-not-allowed"
+                                : "bg-card text-foreground border border-border/60 hover:border-primary/60 hover:bg-primary/5 boty-shadow"}
                         `}
                       >
                         {size}
-                        {/* Diagonal para agotado */}
                         {exists && !inStock && (
-                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-full overflow-hidden">
-                            <span className="block w-3/4 border-t border-current opacity-40 rotate-[-30deg]" />
+                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl overflow-hidden">
+                            <span className="block w-3/4 border-t border-current opacity-50 rotate-[-35deg]" />
                           </span>
-                        )}
-                        {/* Punto para "no existe en este color" */}
-                        {!exists && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-muted-foreground/30" />
                         )}
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Leyenda si hay tallas no disponibles en este color */}
-                {allSizes.some((s) => !variantExists(s, selected?.color ?? "")) && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Las tallas con punto · no están disponibles en este color.
-                  </p>
+                {/* Leyenda inline */}
+                {(allSizes.some((s) => variantExists(s, selected?.color ?? "") && !isInStock(s, selected?.color ?? "")) ||
+                  allSizes.some((s) => !variantExists(s, selected?.color ?? ""))) && (
+                  <div className="flex flex-wrap gap-4 mt-3">
+                    {allSizes.some((s) => variantExists(s, selected?.color ?? "") && !isInStock(s, selected?.color ?? "")) && (
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="relative inline-flex w-5 h-5 items-center justify-center border border-border/40 rounded-lg overflow-hidden">
+                          <span className="block w-full border-t border-foreground/40 rotate-[-35deg]" />
+                        </span>
+                        Agotado
+                      </span>
+                    )}
+                    {allSizes.some((s) => !variantExists(s, selected?.color ?? "")) && (
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="inline-flex w-5 h-5 items-center justify-center border border-dashed border-border/30 rounded-lg bg-muted/30" />
+                        No disponible en este color
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             )}
