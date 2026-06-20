@@ -32,14 +32,17 @@ export function ProductDetail({ product }: ProductDetailProps) {
   const sizes = [...new Set(product.variants.map((v) => v.size))];
   const colors = [...new Set(product.variants.map((v) => v.color))];
 
-  // Foto correspondiente al color seleccionado (si existe en colorImages)
+  const hasColorImages = (product.colorImages?.length ?? 0) > 0;
+
+  // Foto del color seleccionado (o del primer color si ninguno está seleccionado)
   const selectedColorImage = selected?.color
     ? (product.colorImages?.find((ci) => ci.color === selected.color)?.imageUrl ?? null)
-    : null;
+    : (product.colorImages?.[0]?.imageUrl ?? null);
 
-  // Imagen(es) a mostrar en la galería: si hay foto del color seleccionado, va primero
-  const displayImages = selectedColorImage
-    ? [selectedColorImage, ...(product.images ?? []).filter((img) => img !== selectedColorImage)]
+  // Si el producto tiene fotos por color, mostrar solo la del color activo.
+  // Si no tiene, usar la galería genérica como fallback.
+  const displayImages = hasColorImages
+    ? (selectedColorImage ? [selectedColorImage] : (product.colorImages?.map((ci) => ci.imageUrl) ?? []))
     : (product.images?.length ? product.images : [product.thumbnail].filter(Boolean));
 
   // Para una talla dada y el color actualmente seleccionado, ¿hay stock?
@@ -93,7 +96,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
     router.push("/checkout");
   }
 
-  // displayImages ya calculado arriba
+  // displayImages calculado arriba junto con colorImages
 
   return (
     <div className="pt-28 pb-20">
@@ -186,21 +189,31 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 <label className="text-sm font-medium text-foreground mb-3 block">
                   Color
                 </label>
-                <div className="flex flex-wrap gap-3">
-                  {colors.filter(Boolean).map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => pickVariant(selected?.size ?? sizes[0] ?? "", color)}
-                      className={`px-6 py-3 rounded-full text-sm boty-transition boty-shadow ${
-                        selected?.color === color
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card text-foreground hover:bg-card/80"
-                      }`}
-                    >
-                      {color}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-2">
+                  {colors.filter(Boolean).map((color) => {
+                    const colorImg = product.colorImages?.find((ci) => ci.color === color);
+                    const isSelected = selected?.color === color;
+                    return (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => pickVariant(selected?.size ?? sizes[0] ?? "", color)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm boty-transition boty-shadow ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card text-foreground hover:bg-card/80"
+                        }`}
+                      >
+                        {colorImg && (
+                          <span className={`w-5 h-5 rounded-full overflow-hidden border ${isSelected ? "border-white/40" : "border-border/60"}`}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={colorImg.imageUrl} alt={color} className="w-full h-full object-cover" />
+                          </span>
+                        )}
+                        {color}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

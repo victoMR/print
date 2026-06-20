@@ -71,7 +71,10 @@ export async function getAdminProductWithVariants(productId: string) {
   const product = await productsRepo.getProductById(productId);
   if (!product) throw new NotFoundError('admin.product');
 
-  const variants = await productsRepo.listVariantsByProductIdAdmin(product.id);
+  const [variants, colorImageRows] = await Promise.all([
+    productsRepo.listVariantsByProductIdAdmin(product.id),
+    productsRepo.listColorImagesByProductId(product.id),
+  ]);
 
   return {
     id: product.id,
@@ -85,6 +88,7 @@ export async function getAdminProductWithVariants(productId: string) {
     templateId: product.template_id,
     defaultGarmentColor: product.default_garment_color,
     composition: product.composition,
+    colorImages: colorImageRows.map((ci) => ({ color: ci.color_label, imageUrl: ci.image_url })),
     variants: await variantsWithOrderCounts(variants),
   };
 }

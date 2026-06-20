@@ -463,6 +463,7 @@ export function ProductComposer({
           <AdminProductVariantsEditor
             productId={editProductId}
             productSlug={editProductSlug}
+            productColors={[]}
             defaultGarmentColor={garmentColor}
             busy={busy}
             setBusy={setBusy}

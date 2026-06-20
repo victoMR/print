@@ -347,6 +347,8 @@ export type AdminProductDetail = AdminProductSummary & {
   templateId?: string | null;
   defaultGarmentColor?: string;
   composition?: ProductComposition;
+  /** Colores del producto con su foto (definen qué colores están disponibles). */
+  colorImages?: Array<{ color: string; imageUrl: string }>;
   variants: AdminProductVariant[];
 };
 

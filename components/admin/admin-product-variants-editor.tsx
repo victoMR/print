@@ -7,6 +7,7 @@ import {
   adminUpdateProductVariant,
 } from "@/lib/api";
 import type { AdminProductVariant } from "@/lib/api-types";
+import type { ColorImageEntry } from "@/components/admin/admin-color-images";
 import { GARMENT_SIZES } from "@/lib/garment-sizes";
 import { slugifyName } from "@/lib/composer-export";
 import { cn, formatMxn } from "@/lib/utils";
@@ -23,6 +24,8 @@ import { AlertCircle, Plus } from "lucide-react";
 type AdminProductVariantsEditorProps = {
   productId: string;
   productSlug: string;
+  /** Colores disponibles del producto (de AdminColorImages). */
+  productColors: ColorImageEntry[];
   defaultGarmentColor?: string;
   busy: boolean;
   setBusy: (v: boolean) => void;
@@ -36,6 +39,9 @@ type RowDraft = {
   retailPriceMxn: string;
   stockQuantity: string;
 };
+
+/** Estado de stock por color para el formulario de agregar talla. */
+type ColorStock = { color: string; selected: boolean; stock: string };
 
 const STATUS_LABEL: Record<AdminProductVariant["status"], string> = {
   active: "Activa",
@@ -52,6 +58,7 @@ const STATUS_BADGE: Record<AdminProductVariant["status"], string> = {
 export function AdminProductVariantsEditor({
   productId,
   productSlug,
+  productColors,
   defaultGarmentColor = "#FFFFFF",
   busy,
   setBusy,
@@ -62,15 +69,24 @@ export function AdminProductVariantsEditor({
   const [drafts, setDrafts] = useState<Record<string, RowDraft>>({});
   const [loading, setLoading] = useState(true);
 
-  // Add-one form
+  // Add form state
   const [newSize, setNewSize] = useState<string>(GARMENT_SIZES[2]); // M
-  const [newColor, setNewColor] = useState("Estándar");
   const [newPrice, setNewPrice] = useState("");
-  const [newStock, setNewStock] = useState("0");
+  const [colorStocks, setColorStocks] = useState<ColorStock[]>([]);
 
-  // Ref so onChanged never causes reload to be recreated
   const onChangedRef = useRef(onChanged);
   useEffect(() => { onChangedRef.current = onChanged; }, [onChanged]);
+
+  // Sync colorStocks when productColors changes (don't reset if already set)
+  useEffect(() => {
+    setColorStocks((prev) => {
+      const next: ColorStock[] = productColors.map((pc) => {
+        const existing = prev.find((cs) => cs.color === pc.color);
+        return existing ?? { color: pc.color, selected: false, stock: "0" };
+      });
+      return next;
+    });
+  }, [productColors]);
 
   const reload = useCallback(async () => {
     onError(null);
@@ -98,19 +114,21 @@ export function AdminProductVariantsEditor({
     setDrafts((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
   }
 
+  function patchColorStock(color: string, patch: Partial<ColorStock>) {
+    setColorStocks((prev) =>
+      prev.map((cs) => (cs.color === color ? { ...cs, ...patch } : cs)),
+    );
+  }
+
+  // ── Guardar variante existente ────────────────────────────────────────────────
+
   async function saveRow(variant: AdminProductVariant) {
     const d = drafts[variant.id];
     if (!d) return;
     const price = Number.parseFloat(d.retailPriceMxn);
-    if (!Number.isFinite(price) || price <= 0) {
-      onError("Precio inválido en la fila.");
-      return;
-    }
+    if (!Number.isFinite(price) || price <= 0) { onError("Precio inválido en la fila."); return; }
     const stock = Number.parseInt(d.stockQuantity, 10);
-    if (!Number.isFinite(stock) || stock < 0) {
-      onError("Inventario inválido en la fila.");
-      return;
-    }
+    if (!Number.isFinite(stock) || stock < 0) { onError("Inventario inválido en la fila."); return; }
     setBusy(true);
     onError(null);
     try {
@@ -119,7 +137,6 @@ export function AdminProductVariantsEditor({
         colorLabel: d.color.trim(),
         retailPriceMxn: price,
         stockQuantity: stock,
-        // SKU se genera automáticamente; no se edita desde UI
       });
       await reload();
     } catch (err) {
@@ -128,6 +145,8 @@ export function AdminProductVariantsEditor({
       setBusy(false);
     }
   }
+
+  // ── Cambiar estado de variante ────────────────────────────────────────────────
 
   async function setVariantStatus(variant: AdminProductVariant, status: AdminProductVariant["status"]) {
     if (status !== "active" && variant.orderItemCount > 0) {
@@ -148,42 +167,54 @@ export function AdminProductVariantsEditor({
     }
   }
 
-  async function handleAddOne(e: React.FormEvent) {
+  // ── Agregar talla con colores seleccionados ───────────────────────────────────
+
+  async function handleAddSize(e: React.FormEvent) {
     e.preventDefault();
     const price = Number.parseFloat(newPrice);
-    if (!Number.isFinite(price) || price <= 0) {
-      onError("Indica un precio válido.");
-      return;
+    if (!Number.isFinite(price) || price <= 0) { onError("Indica un precio válido."); return; }
+
+    const selected = colorStocks.filter((cs) => cs.selected);
+    if (selected.length === 0) { onError("Selecciona al menos un color."); return; }
+
+    for (const cs of selected) {
+      const stock = Number.parseInt(cs.stock, 10);
+      if (!Number.isFinite(stock) || stock < 0) {
+        onError(`Inventario inválido para "${cs.color}".`); return;
+      }
     }
-    const stock = Number.parseInt(newStock, 10);
-    if (!Number.isFinite(stock) || stock < 0) {
-      onError("Indica un inventario válido (0 = sin límite).");
-      return;
-    }
-    const size = newSize.trim();
-    const color = newColor.trim() || "Estándar";
+
     setBusy(true);
     onError(null);
     try {
-      await adminCreateProductVariant(productId, {
-        sku: `${productSlug}-${slugifyName(size)}-${slugifyName(color)}`.slice(0, 50),
-        sizeLabel: size,
-        colorLabel: color,
-        retailPriceMxn: price,
-        garmentColorHex: defaultGarmentColor,
-      });
-      // Actualizar stock si se indicó un valor mayor a 0
-      if (stock > 0) {
-        const res = await adminGetProduct(productId);
-        const created = res.data.variants.find(
-          (v: { size: string; color: string; id: string }) => v.size === size && v.color === color,
-        );
-        if (created) {
-          await adminUpdateProductVariant(created.id, { stockQuantity: stock });
+      for (const cs of selected) {
+        const stock = Number.parseInt(cs.stock, 10);
+        const size = newSize.trim();
+        const color = cs.color;
+        const sku = `${productSlug}-${slugifyName(size)}-${slugifyName(color)}`.slice(0, 50);
+
+        await adminCreateProductVariant(productId, {
+          sku,
+          sizeLabel: size,
+          colorLabel: color,
+          retailPriceMxn: price,
+          garmentColorHex: defaultGarmentColor,
+        });
+
+        if (stock > 0) {
+          const res = await adminGetProduct(productId);
+          const created = res.data.variants.find(
+            (v: { size: string; color: string; id: string }) =>
+              v.size === size && v.color === color,
+          );
+          if (created) {
+            await adminUpdateProductVariant(created.id, { stockQuantity: stock });
+          }
         }
       }
+
       setNewPrice("");
-      setNewStock("0");
+      setColorStocks((prev) => prev.map((cs) => ({ ...cs, selected: false, stock: "0" })));
       await reload();
     } catch (err) {
       onError(err instanceof Error ? err.message : "No se pudo agregar la variante");
@@ -198,6 +229,12 @@ export function AdminProductVariantsEditor({
 
   const activeCount = variants.filter((v) => v.status === "active").length;
 
+  // Agrupar variantes por talla para mejor lectura
+  const variantsBySize = variants.reduce<Record<string, AdminProductVariant[]>>((acc, v) => {
+    (acc[v.size] = acc[v.size] ?? []).push(v);
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-5">
       {/* Info banner */}
@@ -207,196 +244,252 @@ export function AdminProductVariantsEditor({
           <div>
             <p>
               <strong className="text-foreground">Las variantes no se eliminan</strong> cuando tienen
-              pedidos — solo se desactivan. Los pedidos conservan talla y precio del momento de la compra.
+              pedidos — solo se desactivan. Los pedidos conservan talla, color y precio del momento de compra.
             </p>
             <p className="mt-1.5 text-xs">
               {activeCount} activa{activeCount !== 1 ? "s" : ""} en tienda · {variants.length} en total
+              {" · "}Inventario{" "}
+              <span className="font-medium text-foreground">0 = sin límite</span> (print-on-demand)
             </p>
           </div>
         </div>
       </BotySurface>
 
-      {/* Variants table */}
+      {/* Tabla de variantes existentes */}
       {variants.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-6">
-          Sin variantes. Agrega tallas y precios abajo.
+          Sin variantes. Agrega tallas abajo.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border/60">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-2.5">Talla</th>
-                <th className="px-4 py-2.5">Color</th>
-                <th className="px-4 py-2.5">Precio MXN</th>
-                <th className="px-4 py-2.5 text-center" title="0 = sin límite (print-on-demand)">Inventario</th>
-                <th className="px-4 py-2.5">Estado</th>
-                <th className="px-4 py-2.5 text-center">Pedidos</th>
-                <th className="px-4 py-2.5 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {variants.map((v) => {
-                const d = drafts[v.id];
-                if (!d) return null;
-                return (
-                  <tr
-                    key={v.id}
-                    className={cn(
-                      "border-t border-border/40",
-                      v.status !== "active" && "opacity-60 bg-muted/10",
-                    )}
-                  >
-                    <td className="px-4 py-2">
-                      <BotyInput
-                        value={d.size}
-                        onChange={(e) => patchDraft(v.id, { size: e.target.value })}
-                        className="w-16 text-center font-medium"
-                        disabled={busy}
-                      />
-                    </td>
-                    <td className="px-4 py-2">
-                      <BotyInput
-                        value={d.color}
-                        onChange={(e) => patchDraft(v.id, { color: e.target.value })}
-                        className="min-w-[6rem]"
-                        disabled={busy}
-                      />
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-muted-foreground text-xs">$</span>
-                        <BotyInput
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          value={d.retailPriceMxn}
-                          onChange={(e) => patchDraft(v.id, { retailPriceMxn: e.target.value })}
-                          className="w-24"
-                          disabled={busy}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      <BotyInput
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={d.stockQuantity}
-                        onChange={(e) => patchDraft(v.id, { stockQuantity: e.target.value })}
-                        className="w-20 text-center"
-                        disabled={busy}
-                        title="0 = sin límite (print-on-demand)"
-                      />
-                    </td>
-                    <td className="px-4 py-2">
-                      <BotyBadge className={STATUS_BADGE[v.status]}>{STATUS_LABEL[v.status]}</BotyBadge>
-                    </td>
-                    <td className="px-4 py-2 text-center tabular-nums text-muted-foreground text-xs">
-                      {v.orderItemCount > 0 ? (
-                        <span title="Pedidos que incluyen esta variante">{v.orderItemCount}</span>
-                      ) : (
-                        <span className="text-muted-foreground/40">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="flex justify-end gap-1.5">
-                        <BotyButton
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          disabled={busy}
-                          onClick={() => void saveRow(v)}
+        <div className="space-y-3">
+          {Object.entries(variantsBySize).map(([size, sizeVariants]) => (
+            <BotySurface key={size} className="overflow-hidden p-0">
+              <div className="px-4 py-2 bg-muted/40 border-b border-border/40">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Talla {size}
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground border-b border-border/30">
+                      <th className="px-4 py-2">Color</th>
+                      <th className="px-4 py-2">Precio MXN</th>
+                      <th className="px-4 py-2 text-center">Inventario</th>
+                      <th className="px-4 py-2">Estado</th>
+                      <th className="px-4 py-2 text-center">Pedidos</th>
+                      <th className="px-4 py-2 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sizeVariants.map((v) => {
+                      const d = drafts[v.id];
+                      if (!d) return null;
+                      return (
+                        <tr
+                          key={v.id}
+                          className={cn(
+                            "border-t border-border/30",
+                            v.status !== "active" && "opacity-60 bg-muted/10",
+                          )}
                         >
-                          Guardar
-                        </BotyButton>
-                        {v.status === "active" ? (
-                          <BotyButton
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            disabled={busy}
-                            onClick={() => void setVariantStatus(v, "inactive")}
-                          >
-                            Desactivar
-                          </BotyButton>
-                        ) : (
-                          <BotyButton
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            disabled={busy}
-                            onClick={() => void setVariantStatus(v, "active")}
-                          >
-                            Activar
-                          </BotyButton>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          <td className="px-4 py-2 font-medium">{v.color}</td>
+                          <td className="px-4 py-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-muted-foreground text-xs">$</span>
+                              <BotyInput
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={d.retailPriceMxn}
+                                onChange={(e) => patchDraft(v.id, { retailPriceMxn: e.target.value })}
+                                className="w-24"
+                                disabled={busy}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <BotyInput
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={d.stockQuantity}
+                              onChange={(e) => patchDraft(v.id, { stockQuantity: e.target.value })}
+                              className="w-20 text-center"
+                              disabled={busy}
+                            />
+                          </td>
+                          <td className="px-4 py-2">
+                            <BotyBadge className={STATUS_BADGE[v.status]}>
+                              {STATUS_LABEL[v.status]}
+                            </BotyBadge>
+                          </td>
+                          <td className="px-4 py-2 text-center tabular-nums text-muted-foreground text-xs">
+                            {v.orderItemCount > 0 ? (
+                              <span>{v.orderItemCount}</span>
+                            ) : (
+                              <span className="text-muted-foreground/40">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2">
+                            <div className="flex justify-end gap-1.5">
+                              <BotyButton
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                disabled={busy}
+                                onClick={() => void saveRow(v)}
+                              >
+                                Guardar
+                              </BotyButton>
+                              {v.status === "active" ? (
+                                <BotyButton
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={busy}
+                                  onClick={() => void setVariantStatus(v, "inactive")}
+                                >
+                                  Desactivar
+                                </BotyButton>
+                              ) : (
+                                <BotyButton
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={busy}
+                                  onClick={() => void setVariantStatus(v, "active")}
+                                >
+                                  Activar
+                                </BotyButton>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </BotySurface>
+          ))}
         </div>
       )}
 
-      {/* Add variant form */}
+      {/* Formulario para agregar nueva talla */}
       <BotySurface className="p-5">
         <h4 className="font-medium flex items-center gap-2 mb-4">
           <Plus className="w-4 h-4 text-primary" />
           Agregar talla
         </h4>
-        <form onSubmit={(e) => void handleAddOne(e)} className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <BotyLabel>Talla</BotyLabel>
-            <AdminSelect
-              value={newSize}
-              onValueChange={setNewSize}
-              disabled={busy}
-              options={GARMENT_SIZES.map((s) => ({ value: s, label: s }))}
-            />
-          </div>
-          <div>
-            <BotyLabel>Color</BotyLabel>
-            <BotyInput
-              value={newColor}
-              onChange={(e) => setNewColor(e.target.value)}
-              placeholder="Ej. Negro, Blanco…"
-              disabled={busy}
-            />
-          </div>
-          <div>
-            <BotyLabel>Precio de venta (MXN)</BotyLabel>
-            <BotyInput
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={newPrice}
-              onChange={(e) => setNewPrice(e.target.value)}
-              placeholder="499.00"
-              required
-              disabled={busy}
-            />
-          </div>
-          <div>
-            <BotyLabel>Inventario inicial (0 = sin límite)</BotyLabel>
-            <BotyInput
-              type="number"
-              min="0"
-              step="1"
-              value={newStock}
-              onChange={(e) => setNewStock(e.target.value)}
-              placeholder="0"
-              disabled={busy}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <BotyButton type="submit" variant="primary" size="sm" disabled={busy}>
-              Agregar {newSize} / {newColor || "color"}
+
+        {productColors.length === 0 ? (
+          <p className="text-sm text-amber-700 bg-amber-500/10 rounded-xl px-4 py-3">
+            Primero agrega los colores del producto en la pestaña{" "}
+            <strong>Información</strong>.
+          </p>
+        ) : (
+          <form onSubmit={(e) => void handleAddSize(e)} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <BotyLabel>Talla</BotyLabel>
+                <AdminSelect
+                  value={newSize}
+                  onValueChange={setNewSize}
+                  disabled={busy}
+                  options={GARMENT_SIZES.map((s) => ({ value: s, label: s }))}
+                />
+              </div>
+              <div>
+                <BotyLabel>Precio de venta (MXN)</BotyLabel>
+                <BotyInput
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  placeholder="499.00"
+                  required
+                  disabled={busy}
+                />
+              </div>
+            </div>
+
+            {/* Colores con stock individual */}
+            <div>
+              <BotyLabel>Colores disponibles para talla {newSize}</BotyLabel>
+              <p className="text-xs text-muted-foreground mb-2">
+                Selecciona los colores e indica el inventario de cada uno (0 = sin límite).
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {colorStocks.map((cs) => {
+                  const colorEntry = productColors.find((pc) => pc.color === cs.color);
+                  return (
+                    <label
+                      key={cs.color}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors select-none",
+                        cs.selected
+                          ? "border-primary/40 bg-primary/5"
+                          : "border-border/50 hover:border-border",
+                        busy && "pointer-events-none opacity-50",
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={cs.selected}
+                        onChange={(e) => patchColorStock(cs.color, { selected: e.target.checked })}
+                        className="w-4 h-4 rounded accent-primary shrink-0"
+                        disabled={busy}
+                      />
+
+                      {/* Miniatura de color */}
+                      {colorEntry && (
+                        <div className="w-8 h-8 rounded-lg overflow-hidden border border-border/40 shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={colorEntry.imageUrl} alt={cs.color} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+
+                      <span className="text-sm font-medium flex-1">{cs.color}</span>
+
+                      {cs.selected && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">Stock:</span>
+                          <BotyInput
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={cs.stock}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              patchColorStock(cs.color, { stock: e.target.value });
+                            }}
+                            onClick={(e) => e.preventDefault()}
+                            onFocus={(e) => e.stopPropagation()}
+                            className="w-16 text-center text-sm"
+                            disabled={busy}
+                          />
+                        </div>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <BotyButton
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={busy || !colorStocks.some((cs) => cs.selected)}
+            >
+              Agregar {colorStocks.filter((cs) => cs.selected).length > 0
+                ? `${newSize} en ${colorStocks.filter((cs) => cs.selected).length} color(es)`
+                : newSize}
             </BotyButton>
-          </div>
-        </form>
+          </form>
+        )}
       </BotySurface>
 
       {activeCount > 0 && (
