@@ -164,7 +164,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
           {/* ── Imagen ────────────────────────────────────────────────────────── */}
           <div>
-            {product.preview ? (
+            {product.preview && !hasColorImages ? (
               <div className="relative aspect-square rounded-3xl overflow-hidden bg-card boty-shadow">
                 <ProductMockupPreview
                   preview={product.preview}
