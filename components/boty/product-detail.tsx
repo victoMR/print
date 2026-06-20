@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Minus, Plus, Check } from "lucide-react";
+import { ChevronLeft, Minus, Plus, Check, CheckCircle2 } from "lucide-react";
 import type { CatalogProductDetail } from "@/lib/api-types";
 import { ProductMockupPreview } from "@/components/boty/product-mockup-preview";
 import { ProductGallery } from "@/components/boty/product-gallery";
@@ -175,7 +175,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 />
               </div>
             ) : (
-              <ProductGallery images={displayImages} alt={product.name} priority />
+              <ProductGallery key={selected?.color ?? "default"} images={displayImages} alt={product.name} priority />
             )}
           </div>
 
@@ -213,7 +213,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
                     <span className="text-sm text-muted-foreground">— {selected.color}</span>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {colors.map((color) => {
                     const colorImg = product.colorImages?.find((ci) => ci.color === color);
                     const isSelected = selected?.color === color;
@@ -224,34 +224,40 @@ export function ProductDetail({ product }: ProductDetailProps) {
                         key={color}
                         type="button"
                         onClick={() => pickColor(color)}
-                        className="flex flex-col items-center gap-2 group"
-                      >
-                        <div className={`relative w-16 h-16 rounded-2xl overflow-hidden boty-transition
+                        className={`relative rounded-2xl overflow-hidden text-left boty-transition
                           ${isSelected
-                            ? "ring-2 ring-offset-2 ring-primary ring-offset-background shadow-md scale-105"
-                            : "ring-1 ring-border/50 hover:ring-primary/50 hover:scale-105 hover:shadow-sm"}
-                          ${!available ? "opacity-40" : ""}
-                        `}>
+                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-md"
+                            : "ring-1 ring-border/40 hover:ring-primary/40 hover:shadow-sm"}
+                          ${!available ? "opacity-50" : ""}
+                        `}
+                      >
+                        <div className="aspect-square relative overflow-hidden bg-muted">
                           {colorImg ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={colorImg.imageUrl} alt={color} className="w-full h-full object-cover" />
                           ) : (
-                            <span className="w-full h-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground px-1 text-center leading-tight">
-                              {color}
-                            </span>
+                            <div className="w-full h-full flex items-center justify-center p-1">
+                              <span className="text-[10px] text-muted-foreground text-center leading-tight">{color}</span>
+                            </div>
                           )}
                           {!available && (
-                            <span className="absolute inset-0 bg-white/50 flex items-center justify-center">
-                              <span className="block w-3/4 border-t-2 border-foreground/30 rotate-[-35deg]" />
-                            </span>
+                            <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
+                              <span className="block w-3/4 border-t-2 border-foreground/20 rotate-[-35deg]" />
+                            </div>
+                          )}
+                          {isSelected && (
+                            <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow">
+                              <CheckCircle2 className="w-3 h-3 text-primary-foreground" />
+                            </div>
                           )}
                         </div>
-                        <span className={`text-xs font-medium leading-none transition-colors
-                          ${isSelected ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}
-                          ${!available ? "line-through opacity-50" : ""}
-                        `}>
-                          {color}
-                        </span>
+                        <div className="px-2 py-1.5 bg-card border-t border-border/30">
+                          <p className={`text-xs font-medium truncate leading-tight
+                            ${isSelected ? "text-primary" : "text-foreground/70"}
+                          `}>
+                            {color}
+                          </p>
+                        </div>
                       </button>
                     );
                   })}
@@ -300,27 +306,6 @@ export function ProductDetail({ product }: ProductDetailProps) {
                     );
                   })}
                 </div>
-
-                {/* Leyenda inline */}
-                {(allSizes.some((s) => variantExists(s, selected?.color ?? "") && !isInStock(s, selected?.color ?? "")) ||
-                  allSizes.some((s) => !variantExists(s, selected?.color ?? ""))) && (
-                  <div className="flex flex-wrap gap-4 mt-3">
-                    {allSizes.some((s) => variantExists(s, selected?.color ?? "") && !isInStock(s, selected?.color ?? "")) && (
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <span className="relative inline-flex w-5 h-5 items-center justify-center border border-border/40 rounded-lg overflow-hidden">
-                          <span className="block w-full border-t border-foreground/40 rotate-[-35deg]" />
-                        </span>
-                        Agotado
-                      </span>
-                    )}
-                    {allSizes.some((s) => !variantExists(s, selected?.color ?? "")) && (
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <span className="inline-flex w-5 h-5 items-center justify-center border border-dashed border-border/30 rounded-lg bg-muted/30" />
-                        No disponible en este color
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
             )}
 
