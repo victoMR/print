@@ -78,11 +78,15 @@ function publicBaseUrl(): string | null {
   return configured.replace(/\/$/, '');
 }
 
+/** Siempre ruta relativa — el frontend resuelve vía rewrite `/uploads` → API. */
 function publicUrl(relativePath: string): string {
+  return `/uploads/${relativePath}`;
+}
+
+/** URL absoluta para correos o integraciones externas cuando haga falta. */
+export function absoluteAssetUrl(relativePath: string): string {
   const base = publicBaseUrl();
-  if (!base) {
-    return `/uploads/${relativePath}`;
-  }
+  if (!base) return publicUrl(relativePath);
   return `${base}/uploads/${relativePath}`;
 }
 

@@ -10,6 +10,7 @@ import { ProductGallery } from "@/components/boty/product-gallery";
 import { useCart } from "@/lib/cart-context";
 import { clampCartLineQuantity, MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
 import { formatMxn } from "@/lib/utils";
+import { normalizeAssetUrl } from "@/lib/asset-url";
 
 type ProductDetailProps = {
   product: CatalogProductDetail;
@@ -116,8 +117,12 @@ export function ProductDetail({ product }: ProductDetailProps) {
     : (product.colorImages?.[0]?.imageUrl ?? null);
 
   const displayImages = hasColorImages
-    ? (selectedColorImage ? [selectedColorImage] : (product.colorImages?.map((ci) => ci.imageUrl) ?? []))
-    : (product.images?.length ? product.images : [product.thumbnail].filter(Boolean));
+    ? (selectedColorImage
+        ? [normalizeAssetUrl(selectedColorImage)]
+        : (product.colorImages?.map((ci) => normalizeAssetUrl(ci.imageUrl)).filter(Boolean) ?? []))
+    : (product.images?.length
+        ? product.images.map((url) => normalizeAssetUrl(url)).filter(Boolean)
+        : [normalizeAssetUrl(product.thumbnail)].filter(Boolean));
 
   // ── Carrito ──────────────────────────────────────────────────────────────────
 

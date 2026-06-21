@@ -29,9 +29,11 @@ import * as ordersRepo from '../../db/mrpaps-orders.repository.js';
 import { changeOrderStatus } from '../../services/mrpaps-order-status.service.js';
 import * as productsRepo from '../../db/mrpaps-products.repository.js';
 import {
+  normalizeAssetUrl,
   normalizeProductImages,
   replacePrimaryImage,
   resolveProductImages,
+  resolveProductThumbnail,
 } from '../../lib/product-images.js';
 import * as adminAuth from '../../services/admin-auth.service.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
@@ -429,11 +431,26 @@ v1MrpapsAdminRouter.patch('/variants/:variantId', async (req, res, next) => {
 
 // ─── Fotos por color ──────────────────────────────────────────────────────────
 
+async function syncProductCoverFromColorImages(productId: string): Promise<string | undefined> {
+  const product = await productsRepo.getProductById(productId);
+  if (!product) return undefined;
+
+  const colorImages = await productsRepo.listColorImagesByProductId(productId);
+  const thumbnail = resolveProductThumbnail(product, colorImages);
+  if (thumbnail) {
+    await productsRepo.updateProductAdmin(productId, { thumbnail_url: thumbnail });
+  }
+  return product.slug;
+}
+
 v1MrpapsAdminRouter.get('/products/:productId/color-images', async (req, res, next) => {
   try {
     const rows = await productsRepo.listColorImagesByProductId(req.params.productId);
     res.json({
-      data: rows.map((r) => ({ color: r.color_label, imageUrl: r.image_url })),
+      data: rows.map((r) => ({
+        color: r.color_label,
+        imageUrl: normalizeAssetUrl(r.image_url),
+      })),
     });
   } catch (err) {
     next(err);
@@ -443,13 +460,20 @@ v1MrpapsAdminRouter.get('/products/:productId/color-images', async (req, res, ne
 v1MrpapsAdminRouter.put('/products/:productId/color-images/:colorLabel', async (req, res, next) => {
   try {
     const { imageUrl } = z.object({ imageUrl: z.string().min(1) }).parse(req.body);
+    const normalizedUrl = normalizeAssetUrl(imageUrl);
+    if (!normalizedUrl.startsWith('/uploads/')) {
+      throw new BadRequestError('URL de imagen inválida.');
+    }
     const row = await productsRepo.upsertColorImage(
       req.params.productId,
       decodeURIComponent(req.params.colorLabel),
-      imageUrl,
+      normalizedUrl,
     );
-    res.json({ data: { color: row.color_label, imageUrl: row.image_url } });
-    void invalidateCatalogCache();
+    const slug = await syncProductCoverFromColorImages(req.params.productId);
+    res.json({
+      data: { color: row.color_label, imageUrl: normalizeAssetUrl(row.image_url) },
+    });
+    void invalidateCatalogCache(slug);
   } catch (err) {
     next(err);
   }
@@ -457,12 +481,14 @@ v1MrpapsAdminRouter.put('/products/:productId/color-images/:colorLabel', async (
 
 v1MrpapsAdminRouter.delete('/products/:productId/color-images/:colorLabel', async (req, res, next) => {
   try {
+    const product = await productsRepo.getProductById(req.params.productId);
     await productsRepo.deleteColorImage(
       req.params.productId,
       decodeURIComponent(req.params.colorLabel),
     );
+    const slug = product ? await syncProductCoverFromColorImages(req.params.productId) : undefined;
     res.status(204).end();
-    void invalidateCatalogCache();
+    void invalidateCatalogCache(slug ?? product?.slug);
   } catch (err) {
     next(err);
   }

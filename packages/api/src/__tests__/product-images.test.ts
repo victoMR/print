@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  normalizeAssetUrl,
   normalizeProductImages,
   replacePrimaryImage,
   resolveProductImages,
+  resolveProductThumbnail,
 } from '../lib/product-images.js';
 
 describe('product-images', () => {
@@ -39,5 +41,20 @@ describe('product-images', () => {
       '/b.webp',
       '/c.webp',
     ]);
+  });
+
+  it('normaliza URLs absolutas del API a rutas same-origin', () => {
+    expect(normalizeAssetUrl('http://localhost:4000/uploads/products/x.webp')).toBe(
+      '/uploads/products/x.webp',
+    );
+  });
+
+  it('usa foto por color cuando no hay galería ni thumbnail', () => {
+    expect(
+      resolveProductThumbnail(
+        { thumbnail_url: '', gallery_urls: [] },
+        [{ image_url: 'http://localhost:4000/uploads/color.webp' }],
+      ),
+    ).toBe('/uploads/color.webp');
   });
 });

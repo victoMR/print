@@ -3,7 +3,7 @@ import * as productsRepo from '../db/mrpaps-products.repository.js';
 import type { MrpapsProductVariantRow } from '../db/mrpaps.types.js';
 import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { slugify } from './mrpaps-catalog.service.js';
-import { resolveProductImages } from '../lib/product-images.js';
+import { normalizeAssetUrl, resolveProductImages } from '../lib/product-images.js';
 
 export type AdminVariantDto = {
   id: string;
@@ -88,7 +88,10 @@ export async function getAdminProductWithVariants(productId: string) {
     templateId: product.template_id,
     defaultGarmentColor: product.default_garment_color,
     composition: product.composition,
-    colorImages: colorImageRows.map((ci) => ({ color: ci.color_label, imageUrl: ci.image_url })),
+    colorImages: colorImageRows.map((ci) => ({
+      color: ci.color_label,
+      imageUrl: normalizeAssetUrl(ci.image_url),
+    })),
     variants: await variantsWithOrderCounts(variants),
   };
 }

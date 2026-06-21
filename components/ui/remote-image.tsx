@@ -1,6 +1,7 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
+import { normalizeAssetUrl } from "@/lib/asset-url";
 import { isNextImageSrc } from "@/lib/next-image-hosts";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ export function RemoteImage({
   onLoad,
   ...rest
 }: RemoteImageProps) {
-  const resolved = src || "/placeholder.svg";
+  const resolved = normalizeAssetUrl(src) || "/placeholder.svg";
 
   if (isNextImageSrc(resolved)) {
     return (
@@ -54,6 +55,7 @@ export function RemoteImage({
         loading={priority ? "eager" : "lazy"}
         decoding="async"
         onLoad={onLoad}
+        {...rest}
       />
     );
   }
@@ -67,6 +69,7 @@ export function RemoteImage({
       loading={priority ? "eager" : "lazy"}
       decoding="async"
       onLoad={onLoad}
+      {...rest}
     />
   );
 }

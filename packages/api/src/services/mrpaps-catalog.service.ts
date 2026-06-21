@@ -13,7 +13,11 @@ import {
 } from '../lib/cart-limits.js';
 import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { logger } from '../lib/logger.js';
-import { resolveProductImages } from '../lib/product-images.js';
+import {
+  normalizeAssetUrl,
+  resolveProductImages,
+  resolveProductThumbnail,
+} from '../lib/product-images.js';
 
 const STALE_CART_MESSAGE =
   'Tu carrito tiene productos que ya no existen en el catálogo. Vacía el carrito y vuelve a agregar los artículos desde la tienda.';
@@ -61,6 +65,9 @@ async function listPublicProductsUncached(
   const total = products.length;
   const start = (page - 1) * limit;
   const pageProducts = products.slice(start, start + limit);
+  const colorImagesMap = await productsRepo.batchListColorImagesByProductIds(
+    pageProducts.map((p) => p.id),
+  );
 
   const data = (
     await Promise.all(
@@ -70,12 +77,13 @@ async function listPublicProductsUncached(
 
         const prices = variants.map((v) => Number(v.retail_price_mxn)).filter((p) => p > 0);
         const priceFromMxn = prices.length ? Math.min(...prices).toFixed(2) : '0.00';
+        const colorImages = colorImagesMap.get(product.id) ?? [];
 
         return {
           id: product.id,
           slug: product.slug,
           name: product.name,
-          thumbnail: resolveProductImages(product)[0] ?? product.thumbnail_url,
+          thumbnail: resolveProductThumbnail(product, colorImages),
           images: resolveProductImages(product),
           category: product.category,
           priceFromMxn,
@@ -126,17 +134,21 @@ async function getPublicProductUncached(idOrSlug: string) {
   ]);
 
   const images = resolveProductImages(product);
+  const thumbnail = resolveProductThumbnail(product, colorImages);
 
   return {
     id: product.id,
     slug: product.slug,
     name: product.name,
     description: product.description,
-    thumbnail: images[0] ?? product.thumbnail_url,
-    images,
+    thumbnail,
+    images: images.length > 0 ? images : (thumbnail ? [thumbnail] : []),
     category: product.category,
     preview,
-    colorImages: colorImages.map((ci) => ({ color: ci.color_label, imageUrl: ci.image_url })),
+    colorImages: colorImages.map((ci) => ({
+      color: ci.color_label,
+      imageUrl: normalizeAssetUrl(ci.image_url),
+    })),
     variants: variants.map((v) => ({
       variantId: v.id,
       size: v.size_label,

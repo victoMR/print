@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { ShoppingBag } from "lucide-react";
+import { resolveProductImageSrc } from "@/lib/asset-url";
 import type { CatalogProductSummary } from "@/lib/api-types";
 import { formatMxn } from "@/lib/utils";
 
@@ -21,6 +22,8 @@ export function CatalogProductCard({
   showQuickAdd = false,
 }: CatalogProductCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageSrc = resolveProductImageSrc(product.thumbnail);
 
   return (
     <Link
@@ -38,14 +41,18 @@ export function CatalogProductCard({
             }`}
           />
           <RemoteImage
-            src={product.thumbnail || "/placeholder.svg"}
+            src={imageFailed ? "/placeholder.svg" : imageSrc}
             alt={product.name}
             fill
             className={`object-cover boty-transition group-hover:scale-105 transition-opacity duration-500 ${
-              imageLoaded ? "opacity-100" : "opacity-0"
+              imageLoaded || imageFailed ? "opacity-100" : "opacity-0"
             }`}
             sizes="(max-width: 768px) 50vw, 25vw"
             onLoad={() => setImageLoaded(true)}
+            onError={() => {
+              setImageFailed(true);
+              setImageLoaded(true);
+            }}
           />
           {showQuickAdd && (
             <span
