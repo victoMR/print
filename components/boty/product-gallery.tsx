@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,11 @@ export function ProductGallery({
 }: ProductGalleryProps) {
   const gallery = images.filter(Boolean);
   const [activeIndex, setActiveIndex] = useState(0);
+  const galleryKey = gallery.join("|");
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [galleryKey]);
 
   if (gallery.length === 0) {
     return (

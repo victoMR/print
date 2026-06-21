@@ -16,17 +16,37 @@ type ProductDetailProps = {
   product: CatalogProductDetail;
 };
 
+function normalizeColorKey(color: string): string {
+  return color.toLowerCase().trim();
+}
+
+function colorsMatch(a: string, b: string): boolean {
+  return normalizeColorKey(a) === normalizeColorKey(b);
+}
+
 export function ProductDetail({ product }: ProductDetailProps) {
   const router = useRouter();
   const { addItem } = useCart();
   const [isAdded, setIsAdded] = useState(false);
+
+  // ── Mapa color → foto (normalizado para evitar fallos por mayúsculas/espacios) ──
+  const colorImageByKey = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const ci of product.colorImages ?? []) {
+      const url = normalizeAssetUrl(ci.imageUrl);
+      if (url) map.set(normalizeColorKey(ci.color), url);
+    }
+    return map;
+  }, [product.colorImages]);
+
+  const hasColorImages = colorImageByKey.size > 0;
 
   // ── Colores ordenados según colorImages (si existen), si no, desde variantes ──
   const colors = useMemo(() => {
     const fromImages = (product.colorImages ?? [])
       .map((ci) => ci.color)
       .filter((c) =>
-        product.variants.some((v) => v.color.toLowerCase() === c.toLowerCase()),
+        product.variants.some((v) => colorsMatch(v.color, c)),
       );
     if (fromImages.length > 0) return fromImages;
     return [...new Set(product.variants.map((v) => v.color))];
@@ -42,8 +62,8 @@ export function ProductDetail({ product }: ProductDetailProps) {
   const initialVariantId = useMemo(() => {
     const firstColor = colors[0];
     const v =
-      product.variants.find((v) => v.color === firstColor && v.inStock) ??
-      product.variants.find((v) => v.color === firstColor) ??
+      product.variants.find((v) => colorsMatch(v.color, firstColor) && v.inStock) ??
+      product.variants.find((v) => colorsMatch(v.color, firstColor)) ??
       product.variants.find((v) => v.inStock) ??
       product.variants[0];
     return v?.variantId;
@@ -71,37 +91,48 @@ export function ProductDetail({ product }: ProductDetailProps) {
 
   /** ¿Existe la combinación talla+color como variante activa? */
   function variantExists(size: string, color: string) {
-    return product.variants.some((v) => v.size === size && v.color === color);
+    return product.variants.some((v) => v.size === size && colorsMatch(v.color, color));
   }
 
   /** ¿Tiene stock la combinación talla+color? */
   function isInStock(size: string, color: string) {
-    return product.variants.find((v) => v.size === size && v.color === color)?.inStock ?? false;
+    return product.variants.find((v) => v.size === size && colorsMatch(v.color, color))?.inStock ?? false;
   }
 
   /** ¿El color tiene al menos una talla con stock? */
   function isColorAvailable(color: string) {
-    return product.variants.some((v) => v.color === color && v.inStock);
+    return product.variants.some((v) => colorsMatch(v.color, color) && v.inStock);
+  }
+
+  function findVariant(color: string, size?: string, preferInStock = false) {
+    const matches = product.variants.filter((v) => colorsMatch(v.color, color));
+    if (matches.length === 0) return undefined;
+
+    if (size) {
+      const withSize = matches.filter((v) => v.size === size);
+      if (withSize.length > 0) {
+        return withSize.find((v) => v.inStock) ?? withSize[0];
+      }
+    }
+
+    if (preferInStock) {
+      return matches.find((v) => v.inStock) ?? matches[0];
+    }
+
+    return matches[0];
   }
 
   // ── Selección interactiva ────────────────────────────────────────────────────
 
   function pickColor(color: string) {
-    const currentSize = selected?.size;
-    // Intentar mantener la talla actual; si no, la primera talla con stock; si no, cualquiera
-    const next =
-      (currentSize && product.variants.find((v) => v.color === color && v.size === currentSize && v.inStock)) ??
-      (currentSize && product.variants.find((v) => v.color === color && v.size === currentSize)) ??
-      product.variants.find((v) => v.color === color && v.inStock) ??
-      product.variants.find((v) => v.color === color);
+    const next = findVariant(color, selected?.size, true);
     if (next) setVariantId(next.variantId);
   }
 
   function pickSize(size: string) {
-    const currentColor = selected?.color;
+    const color = selected?.color ?? colors[0] ?? "";
     const next =
-      (currentColor && product.variants.find((v) => v.size === size && v.color === currentColor && v.inStock)) ??
-      (currentColor && product.variants.find((v) => v.size === size && v.color === currentColor)) ??
+      findVariant(color, size, true) ??
       product.variants.find((v) => v.size === size && v.inStock) ??
       product.variants.find((v) => v.size === size);
     if (next) setVariantId(next.variantId);
@@ -109,20 +140,17 @@ export function ProductDetail({ product }: ProductDetailProps) {
 
   // ── Galería ──────────────────────────────────────────────────────────────────
 
-  const hasColorImages = (product.colorImages?.length ?? 0) > 0;
-  const selectedColorImage = selected?.color
-    ? (product.colorImages?.find(
-        (ci) => ci.color.toLowerCase() === selected.color.toLowerCase(),
-      )?.imageUrl ?? null)
-    : (product.colorImages?.[0]?.imageUrl ?? null);
+  const selectedColorImageUrl = selected?.color
+    ? colorImageByKey.get(normalizeColorKey(selected.color)) ?? null
+    : null;
 
-  const displayImages = hasColorImages
-    ? (selectedColorImage
-        ? [normalizeAssetUrl(selectedColorImage)]
-        : (product.colorImages?.map((ci) => normalizeAssetUrl(ci.imageUrl)).filter(Boolean) ?? []))
-    : (product.images?.length
-        ? product.images.map((url) => normalizeAssetUrl(url)).filter(Boolean)
-        : [normalizeAssetUrl(product.thumbnail)].filter(Boolean));
+  const displayImages = selectedColorImageUrl
+    ? [selectedColorImageUrl]
+    : hasColorImages
+      ? [...colorImageByKey.values()]
+      : (product.images?.length
+          ? product.images.map((url) => normalizeAssetUrl(url)).filter(Boolean)
+          : [normalizeAssetUrl(product.thumbnail)].filter(Boolean));
 
   // ── Carrito ──────────────────────────────────────────────────────────────────
 
@@ -135,7 +163,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
         productName: product.name,
         variantLabel: `${selected.size} / ${selected.color}`,
         retailPriceMxn: selected.retailPriceMxn,
-        thumbnail: selectedColorImage ?? product.thumbnail,
+        thumbnail: selectedColorImageUrl ?? product.thumbnail,
         maxQuantity,
       },
       quantity,
@@ -184,7 +212,12 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 />
               </div>
             ) : (
-              <ProductGallery key={selected?.color ?? "default"} images={displayImages} alt={product.name} priority />
+              <ProductGallery
+                key={selectedColorImageUrl ?? selected?.color ?? "default"}
+                images={displayImages}
+                alt={product.name}
+                priority
+              />
             )}
           </div>
 
@@ -224,7 +257,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 </div>
                 <div className="flex flex-wrap gap-2.5">
                   {colors.map((color) => {
-                    const isSelected = selected?.color === color;
+                    const isSelected = selected?.color ? colorsMatch(selected.color, color) : false;
                     const available = isColorAvailable(color);
 
                     return (
