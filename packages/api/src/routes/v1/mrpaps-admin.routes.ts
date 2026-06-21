@@ -436,10 +436,14 @@ async function syncProductCoverFromColorImages(productId: string): Promise<strin
   if (!product) return undefined;
 
   const colorImages = await productsRepo.listColorImagesByProductId(productId);
-  const thumbnail = resolveProductThumbnail(product, colorImages);
-  if (thumbnail) {
-    await productsRepo.updateProductAdmin(productId, { thumbnail_url: thumbnail });
-  }
+  const cover = resolveProductThumbnail(product, colorImages);
+  if (!cover) return product.slug;
+
+  const gallery = resolveProductImages(product, colorImages);
+  await productsRepo.updateProductAdmin(productId, {
+    thumbnail_url: cover,
+    gallery_urls: gallery.length > 0 ? gallery : [cover],
+  });
   return product.slug;
 }
 

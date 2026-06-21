@@ -14,12 +14,16 @@ export function normalizeAssetUrl(url: string | null | undefined): string {
   return trimmed;
 }
 
+function isPlaceholderAssetUrl(url: string): boolean {
+  return normalizeAssetUrl(url).includes("/uploads/_placeholders/");
+}
+
 export function resolveProductImageSrc(
   ...candidates: Array<string | null | undefined>
 ): string {
   for (const candidate of candidates) {
     const normalized = normalizeAssetUrl(candidate);
-    if (normalized) return normalized;
+    if (normalized && !isPlaceholderAssetUrl(normalized)) return normalized;
   }
   return "/placeholder.svg";
 }

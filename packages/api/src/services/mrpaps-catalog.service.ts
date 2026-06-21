@@ -133,7 +133,7 @@ async function getPublicProductUncached(idOrSlug: string) {
     buildProductPreview(product),
   ]);
 
-  const images = resolveProductImages(product);
+  const images = resolveProductImages(product, colorImages);
   const thumbnail = resolveProductThumbnail(product, colorImages);
 
   return {

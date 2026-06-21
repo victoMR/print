@@ -57,4 +57,16 @@ describe('product-images', () => {
       ),
     ).toBe('/uploads/color.webp');
   });
+
+  it('ignora placeholder de galería y usa foto por color', () => {
+    expect(
+      resolveProductThumbnail(
+        {
+          thumbnail_url: '/uploads/_placeholders/product.webp',
+          gallery_urls: ['/uploads/_placeholders/product.webp'],
+        },
+        [{ image_url: '/uploads/products/p1/thumbnails/red.webp' }],
+      ),
+    ).toBe('/uploads/products/p1/thumbnails/red.webp');
+  });
 });

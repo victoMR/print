@@ -1,6 +1,8 @@
 /** Máximo de fotos por producto en catálogo. */
 export const MAX_PRODUCT_GALLERY = 12;
 
+const PLACEHOLDER_PATH = '/uploads/_placeholders/';
+
 /** Convierte URLs absolutas del API (`http://host/uploads/...`) a ruta same-origin. */
 export function normalizeAssetUrl(url: string | null | undefined): string {
   if (!url?.trim()) return '';
@@ -17,37 +19,44 @@ export function normalizeAssetUrl(url: string | null | undefined): string {
   return trimmed;
 }
 
+export function isPlaceholderAssetUrl(url: string | null | undefined): boolean {
+  const normalized = normalizeAssetUrl(url);
+  return normalized.includes(PLACEHOLDER_PATH);
+}
+
 export function parseGalleryUrls(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
     .map((url) => normalizeAssetUrl(url))
-    .filter(Boolean);
+    .filter((url) => url.length > 0 && !isPlaceholderAssetUrl(url));
 }
 
-export function resolveProductImages(product: {
-  thumbnail_url: string;
-  gallery_urls?: unknown;
-}): string[] {
+export function resolveProductImages(
+  product: { thumbnail_url: string; gallery_urls?: unknown },
+  colorImageRows?: Array<{ image_url: string }>,
+): string[] {
   const gallery = parseGalleryUrls(product.gallery_urls);
   if (gallery.length > 0) return gallery;
+
   const thumb = normalizeAssetUrl(product.thumbnail_url);
+  if (thumb && !isPlaceholderAssetUrl(thumb)) return [thumb];
+
+  const fromColor = (colorImageRows ?? [])
+    .map((row) => normalizeAssetUrl(row.image_url))
+    .filter(Boolean);
+  if (fromColor.length > 0) return fromColor;
+
   if (thumb) return [thumb];
   return [];
 }
 
-/** Portada pública: galería → thumbnail legacy → primera foto por color. */
+/** Portada pública: fotos por color → galería real → thumbnail legacy → placeholder. */
 export function resolveProductThumbnail(
   product: { thumbnail_url: string; gallery_urls?: unknown },
   colorImageRows?: Array<{ image_url: string }>,
 ): string {
-  const fromGallery = resolveProductImages(product)[0];
-  if (fromGallery) return fromGallery;
-
-  const fromColor = colorImageRows?.[0]?.image_url;
-  if (fromColor) return normalizeAssetUrl(fromColor);
-
-  return normalizeAssetUrl(product.thumbnail_url);
+  return resolveProductImages(product, colorImageRows)[0] ?? '';
 }
 
 /** Sincroniza thumbnail con la primera foto de la galería. */
