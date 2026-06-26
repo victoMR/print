@@ -154,7 +154,7 @@ async function getPublicProductUncached(idOrSlug: string) {
       size: v.size_label,
       color: v.color_label,
       retailPriceMxn: Number(v.retail_price_mxn).toFixed(2),
-      garmentColorHex: v.garment_color_hex ?? product.default_garment_color ?? '#FFFFFF',
+      garmentColorHex: v.garment_color_hex ?? product.default_garment_color ?? undefined,
       inStock: !isTrackedStock(v.stock_quantity) || v.stock_quantity > 0,
       maxQuantity: maxPurchasableQuantity(v.stock_quantity),
     })),

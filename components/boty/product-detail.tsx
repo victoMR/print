@@ -24,6 +24,32 @@ function colorsMatch(a: string, b: string): boolean {
   return normalizeColorKey(a) === normalizeColorKey(b);
 }
 
+// Default hex colors for common Spanish color names used as swatches
+const COLOR_HEX_DEFAULTS: Record<string, string> = {
+  "blanco":        "#F8F5EF",
+  "blanco puro":   "#FFFFFF",
+  "negro":         "#1C1B1A",
+  "gris":          "#8E8A85",
+  "gris claro":    "#C2BFBA",
+  "gris obscuro":  "#3D3B38",
+  "gris oscuro":   "#3D3B38",
+  "borgoña":       "#5C1A24",
+  "verde":         "#2A5C3F",
+  "verde obscuro": "#1E4030",
+  "azul":          "#2C5F8A",
+  "azul marino":   "#1B2E4B",
+  "marino":        "#1B2E4B",
+  "beige":         "#D4C5A9",
+  "arena":         "#C9B99A",
+  "crema":         "#F5F0E6",
+  "café":          "#6B4226",
+  "rojo":          "#C0392B",
+  "naranja":       "#D4622A",
+  "amarillo":      "#D4A020",
+  "morado":        "#6B3580",
+  "rosa":          "#D4607A",
+};
+
 type AccordionSection = {
   title: string;
   content: string;
@@ -169,17 +195,33 @@ export function ProductDetail({ product }: ProductDetailProps) {
     if (next) setVariantId(next.variantId);
   }
 
-  const selectedColorImageUrl = selected?.color
-    ? colorImageByKey.get(normalizeColorKey(selected.color)) ?? null
-    : null;
+  const selectedColorImageUrl = useMemo(() => {
+    if (!selected?.color) return null;
+    // Search colorImages directly (most reliable)
+    for (const ci of product.colorImages ?? []) {
+      if (colorsMatch(ci.color, selected.color)) {
+        const url = normalizeAssetUrl(ci.imageUrl);
+        return url || null;
+      }
+    }
+    // Fallback to pre-built map
+    return colorImageByKey.get(normalizeColorKey(selected.color)) ?? null;
+  }, [selected?.color, product.colorImages, colorImageByKey]);
 
-  const displayImages = selectedColorImageUrl
-    ? [selectedColorImageUrl]
-    : hasColorImages
-      ? [...colorImageByKey.values()]
-      : (product.images?.length
-          ? product.images.map((url) => normalizeAssetUrl(url)).filter(Boolean)
-          : [normalizeAssetUrl(product.thumbnail)].filter(Boolean));
+  const displayImages = useMemo(() => {
+    // Color-specific image takes priority
+    if (selectedColorImageUrl) return [selectedColorImageUrl];
+
+    // No URL for selected color — show general product images (NOT other colors' images)
+    const productImgs = product.images?.length
+      ? (product.images.map((url) => normalizeAssetUrl(url)).filter(Boolean) as string[])
+      : ([normalizeAssetUrl(product.thumbnail)].filter(Boolean) as string[]);
+
+    if (productImgs.length) return productImgs;
+
+    // Last resort: any color image
+    return [...colorImageByKey.values()];
+  }, [selectedColorImageUrl, product.images, product.thumbnail, colorImageByKey]);
 
   function addSelectedToCart(openDrawer = true) {
     if (!selected) return false;
@@ -241,7 +283,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
               </div>
             ) : (
               <ProductGallery
-                key={`${selected?.color ?? "default"}__${selectedColorImageUrl ?? "no-img"}`}
+                key={`color:${selected?.color ?? "default"}`}
                 images={displayImages}
                 alt={product.name}
                 priority
@@ -299,7 +341,8 @@ export function ProductDetail({ product }: ProductDetailProps) {
                   {colors.map((color) => {
                     const isSelected = selected?.color ? colorsMatch(selected.color, color) : false;
                     const available = isColorAvailable(color);
-                    const hexColor = product.variants.find((v) => colorsMatch(v.color, color))?.garmentColorHex?.trim() || null;
+                    const variantHex = product.variants.find((v) => colorsMatch(v.color, color))?.garmentColorHex?.trim() || null;
+                    const hexColor = variantHex ?? COLOR_HEX_DEFAULTS[normalizeColorKey(color)] ?? null;
 
                     return (
                       <button
@@ -320,13 +363,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
                           borderRadius: "50%",
                         }}
                         aria-label={color}
-                      >
-                        {!hexColor && (
-                          <span className="absolute inset-0 flex items-center justify-center text-[8px] uppercase text-[#2A2726]/60 font-sans leading-none text-center pointer-events-none">
-                            {color.charAt(0)}
-                          </span>
-                        )}
-                      </button>
+                      />
                     );
                   })}
                 </div>
