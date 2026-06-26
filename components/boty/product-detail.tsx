@@ -241,7 +241,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
               </div>
             ) : (
               <ProductGallery
-                key={selectedColorImageUrl ?? selected?.color ?? "default"}
+                key={`${selected?.color ?? "default"}__${selectedColorImageUrl ?? "no-img"}`}
                 images={displayImages}
                 alt={product.name}
                 priority
@@ -299,7 +299,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
                   {colors.map((color) => {
                     const isSelected = selected?.color ? colorsMatch(selected.color, color) : false;
                     const available = isColorAvailable(color);
-                    const hexColor = product.variants.find((v) => colorsMatch(v.color, color))?.garmentColorHex;
+                    const hexColor = product.variants.find((v) => colorsMatch(v.color, color))?.garmentColorHex?.trim() || null;
 
                     return (
                       <button
