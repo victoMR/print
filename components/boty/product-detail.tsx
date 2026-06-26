@@ -104,10 +104,13 @@ export function ProductDetail({ product }: ProductDetailProps) {
 
   const colorImageByKey = useMemo(() => {
     const map = new Map<string, string>();
+    console.log("[ProductDetail] colorImages raw:", product.colorImages);
     for (const ci of product.colorImages ?? []) {
       const url = normalizeAssetUrl(ci.imageUrl);
+      console.log(`[ProductDetail] colorImage: color="${ci.color}" imageUrl="${ci.imageUrl}" normalized="${url}"`);
       if (url) map.set(normalizeColorKey(ci.color), url);
     }
+    console.log("[ProductDetail] colorImageByKey:", Object.fromEntries(map));
     return map;
   }, [product.colorImages]);
 
@@ -201,11 +204,14 @@ export function ProductDetail({ product }: ProductDetailProps) {
     for (const ci of product.colorImages ?? []) {
       if (colorsMatch(ci.color, selected.color)) {
         const url = normalizeAssetUrl(ci.imageUrl);
+        console.log(`[ProductDetail] selectedColor="${selected.color}" matched ci.color="${ci.color}" url="${url}"`);
         return url || null;
       }
     }
     // Fallback to pre-built map
-    return colorImageByKey.get(normalizeColorKey(selected.color)) ?? null;
+    const fromMap = colorImageByKey.get(normalizeColorKey(selected.color)) ?? null;
+    console.log(`[ProductDetail] selectedColor="${selected.color}" NOT found in colorImages, map lookup="${fromMap}"`);
+    return fromMap;
   }, [selected?.color, product.colorImages, colorImageByKey]);
 
   const displayImages = useMemo(() => {
