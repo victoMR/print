@@ -38,7 +38,7 @@ export function Header({ className }: { className?: string }) {
 
       {/* Main nav */}
       <nav className="bg-[#F5F0E6] border-b border-[#D4CFC5]">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between h-[60px]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between h-[80px]">
 
           {/* Logo */}
           <Link href="/" className="shrink-0">

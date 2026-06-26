@@ -30,10 +30,10 @@ export function Hero() {
             className="font-serif text-[#f8f9fa] uppercase leading-none animate-blur-in opacity-0"
             style={{ animationDelay: "0.3s", animationFillMode: "forwards" }}
           >
-            <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-[0.06em] mb-2">
+            <span className="block text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl tracking-[0.08em] mb-1.5">
               LUJO SILENCIOSO.
             </span>
-            <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-[0.06em]">
+            <span className="block text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl tracking-[0.08em]">
               PRESENCIA QUE PERMANECE.
             </span>
           </h1>
