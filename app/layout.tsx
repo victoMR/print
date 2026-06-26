@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Playfair_Display } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { CartProvider } from "@/lib/cart-context";
 import { CustomerProvider } from "@/lib/customer-context";
@@ -13,20 +12,6 @@ import {
   organizationJsonLd,
 } from "@/lib/seo";
 import "./globals.css";
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-dm-sans",
-  weight: ["300", "400", "500", "600"],
-  display: "swap",
-});
-
-const playfairDisplay = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
 
 const defaultMeta = buildDefaultMetadata();
 
@@ -46,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FAFAFA",
+  themeColor: "#F5F0E6",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -59,9 +44,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body
-        className={`${dmSans.variable} ${playfairDisplay.variable} font-sans antialiased`}
-      >
+      <head>
+        <link rel="stylesheet" href="https://use.typekit.net/txn2dvr.css" />
+      </head>
+      <body className="font-sans antialiased">
         <JsonLd data={organizationJsonLd()} />
         <CustomerProvider>
           <CartProvider>{children}</CartProvider>

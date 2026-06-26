@@ -1,3 +1,5 @@
+import { Header } from "@/components/boty/header";
+import { Footer } from "@/components/boty/footer";
 import { CartView } from "@/components/cart/CartView";
 import type { Metadata } from "next";
 import { noIndexRobots } from "@/lib/seo";
@@ -10,11 +12,17 @@ export const metadata: Metadata = {
 
 export default function CarritoPage() {
   return (
-    <section className="px-4 pb-16 md:px-6">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="text-3xl font-bold mb-8">Tu carrito</h1>
-        <CartView />
+    <main className="min-h-screen flex flex-col bg-[#F5F0E6]">
+      <Header />
+      <div className="flex-1 pt-[100px]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-10">
+          <h1 className="font-serif text-4xl md:text-5xl tracking-[0.08em] uppercase text-[#2A2726] mb-10">
+            CARRITO
+          </h1>
+          <CartView />
+        </div>
       </div>
-    </section>
+      <Footer />
+    </main>
   );
 }

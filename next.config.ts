@@ -10,10 +10,10 @@ const csp = [
   // TODO: migrate to nonce-based CSP via Next.js middleware for full XSS protection.
   // 'unsafe-eval' removed — it was never needed in production and disables eval()-based attacks.
   "script-src 'self' 'unsafe-inline' https://js.stripe.com https://va.vercel-scripts.com https://*.vercel-scripts.com",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://use.typekit.net",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob:",
-  "font-src 'self' data:",
+  "font-src 'self' data: https://use.typekit.net https://p.typekit.net",
   `connect-src 'self' ${apiOrigin} https://api.stripe.com https://vitals.vercel-insights.com https://*.vercel-insights.com`,
   "frame-src https://js.stripe.com https://hooks.stripe.com",
   "object-src 'none'",
@@ -27,7 +27,6 @@ const nextConfig: NextConfig = {
       { source: "/catalogo", destination: "/shop", permanent: true },
       { source: "/producto/:slug", destination: "/product/:slug", permanent: true },
       { source: "/aviso-de-privacidad", destination: "/privacidad", permanent: true },
-      { source: "/carrito", destination: "/checkout", permanent: false },
     ];
   },
   async rewrites() {
@@ -62,6 +61,7 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: NEXT_IMAGE_REMOTE_PATTERNS,
+    qualities: [75, 90],
   },
 };
 

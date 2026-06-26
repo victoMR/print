@@ -5,7 +5,6 @@ import { Search, X } from "lucide-react";
 import type { CatalogProductSummary } from "@/lib/api-types";
 import { fetchCatalogProducts } from "@/lib/api";
 import { CatalogProductCard } from "./catalog-product-card";
-import { cn } from "@/lib/utils";
 
 type ShopPageContentProps = {
   products: CatalogProductSummary[];
@@ -14,7 +13,6 @@ type ShopPageContentProps = {
 const CATALOG_LIMIT = 48;
 const SEARCH_DEBOUNCE_MS = 300;
 
-/** Página Shop — productos del API con búsqueda por nombre. */
 export function ShopPageContent({ products: initialProducts }: ShopPageContentProps) {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,87 +78,96 @@ export function ShopPageContent({ products: initialProducts }: ShopPageContentPr
       ([entry]) => {
         if (entry.isIntersecting) setIsVisible(true);
       },
-      { threshold: 0.1 },
+      { threshold: 0.05 },
     );
     const node = gridRef.current;
     if (node) observer.observe(node);
-    return () => { if (node) observer.unobserve(node); };
+    return () => {
+      if (node) observer.unobserve(node);
+    };
   }, []);
 
   const emptyMessage = searchQuery
     ? `No encontramos productos para «${searchQuery}».`
-    : "No hay productos disponibles. Asegúrate de que el backend esté corriendo.";
+    : "No hay productos disponibles en este momento.";
 
   return (
-    <div className="pt-28 pb-20">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <span className="text-sm tracking-[0.3em] uppercase text-primary mb-4 block">
-            Colección
-          </span>
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl text-foreground mb-4 text-balance">
-            Nuestra colección
+    <div className="pt-[100px]">
+      {/* Page header */}
+      <div className="border-b border-[#D4CFC5] bg-[#F5F0E6]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
+          <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl tracking-[0.08em] uppercase text-[#2A2726]">
+            COLECCIÓN
           </h1>
-          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Sudaderas, gorras, tenis y más. Precios en MXN con IVA.
-          </p>
         </div>
+      </div>
 
-        <div className="mb-10">
-          <label htmlFor="shop-search" className="sr-only">
-            Buscar productos
-          </label>
-          <div className="relative max-w-xl mx-auto">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
-              aria-hidden
-            />
-            <input
-              id="shop-search"
-              type="search"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Buscar por nombre o descripción…"
-              autoComplete="off"
-              aria-describedby="shop-search-hint"
-              className={cn(
-                "w-full pl-11 pr-10 py-3 rounded-2xl glass bg-transparent text-foreground placeholder:text-muted-foreground",
-                "outline-none focus:ring-2 focus:ring-primary/30 boty-transition",
-              )}
-            />
-            {searchInput.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setSearchInput("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground rounded-full"
-                aria-label="Limpiar búsqueda"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        {/* Search + sort bar */}
+        <div className="flex items-center justify-between py-5 border-b border-[#D4CFC5]">
+          <div className="flex items-center gap-3">
+            <label htmlFor="shop-search" className="text-[11px] tracking-[0.18em] uppercase text-[#7A756E]">
+              FILTRAR
+            </label>
           </div>
-          <p id="shop-search-hint" className="sr-only">
-            Los resultados se actualizan al escribir.
-          </p>
-        </div>
 
-        {filteredProducts.length === 0 && !searchLoading ? (
-          <div className="text-center py-16 bg-card rounded-3xl boty-shadow">
-            <p className="text-muted-foreground">{emptyMessage}</p>
-          </div>
-        ) : (
-          <div ref={gridRef} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map((product, index) => (
-              <CatalogProductCard
-                key={product.id}
-                product={product}
-                index={index}
-                isVisible={isVisible}
-                showQuickAdd
+          <div className="flex items-center gap-6">
+            {/* Search */}
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7A756E] pointer-events-none"
+                aria-hidden
               />
-            ))}
+              <input
+                id="shop-search"
+                type="search"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Buscar…"
+                autoComplete="off"
+                className="pl-9 pr-8 py-2 text-[11px] tracking-[0.1em] bg-transparent border border-[#D4CFC5] text-[#2A2726] placeholder:text-[#7A756E] outline-none focus:border-[#2A2726] boty-transition w-48"
+              />
+              {searchInput.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSearchInput("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[#7A756E] hover:text-[#2A2726]"
+                  aria-label="Limpiar búsqueda"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <span className="text-[11px] tracking-[0.18em] uppercase text-[#7A756E]">
+              ORDENAR POR
+            </span>
           </div>
-        )}
+        </div>
+
+        {/* Product grid */}
+        <div className="py-10">
+          {filteredProducts.length === 0 && !searchLoading ? (
+            <div className="text-center py-20 border border-[#D4CFC5]">
+              <p className="text-[12px] tracking-[0.15em] uppercase text-[#7A756E]">{emptyMessage}</p>
+            </div>
+          ) : (
+            <div
+              ref={gridRef}
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12"
+            >
+              {filteredProducts.map((product, index) => (
+                <CatalogProductCard
+                  key={product.id}
+                  product={product}
+                  index={index}
+                  isVisible={isVisible}
+                  showQuickAdd={false}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

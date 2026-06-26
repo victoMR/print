@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { RemoteImage } from "@/components/ui/remote-image";
-import { ShoppingBag } from "lucide-react";
 import { resolveProductImageSrc } from "@/lib/asset-url";
 import type { CatalogProductSummary } from "@/lib/api-types";
 import { formatMxn } from "@/lib/utils";
@@ -28,54 +27,42 @@ export function CatalogProductCard({
   return (
     <Link
       href={`/product/${product.slug}`}
-      className={`group transition-all duration-700 ease-out ${
-        isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+      className={`group block transition-all duration-700 ease-out ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       }`}
-      style={{ transitionDelay: `${index * 80}ms` }}
+      style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="bg-card rounded-3xl overflow-hidden boty-shadow boty-transition group-hover:scale-[1.02]">
-        <div className="relative aspect-square bg-muted overflow-hidden">
-          <div
-            className={`absolute inset-0 bg-gradient-to-br from-muted via-muted/50 to-muted animate-pulse transition-opacity duration-500 ${
-              imageLoaded ? "opacity-0" : "opacity-100"
-            }`}
-          />
-          <RemoteImage
-            src={imageFailed ? "/placeholder.svg" : imageSrc}
-            alt={product.name}
-            fill
-            className={`object-cover boty-transition group-hover:scale-105 transition-opacity duration-500 ${
-              imageLoaded || imageFailed ? "opacity-100" : "opacity-0"
-            }`}
-            sizes="(max-width: 768px) 50vw, 25vw"
-            onLoad={() => setImageLoaded(true)}
-            onError={() => {
-              setImageFailed(true);
-              setImageLoaded(true);
-            }}
-          />
-          {showQuickAdd && (
-            <span
-              className="absolute bottom-4 right-4 w-12 h-12 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 boty-transition boty-shadow"
-              aria-hidden
-            >
-              <ShoppingBag className="w-5 h-5 text-foreground" />
-            </span>
-          )}
-        </div>
+      {/* Image */}
+      <div className="relative aspect-[4/5] overflow-hidden bg-[#EBE7DB]">
+        <div
+          className={`absolute inset-0 bg-[#EBE7DB] animate-pulse transition-opacity duration-500 ${
+            imageLoaded ? "opacity-0" : "opacity-100"
+          }`}
+        />
+        <RemoteImage
+          src={imageFailed ? "/placeholder.svg" : imageSrc}
+          alt={product.name}
+          fill
+          className={`object-cover boty-transition group-hover:scale-[1.04] transition-opacity duration-500 ${
+            imageLoaded || imageFailed ? "opacity-100" : "opacity-0"
+          }`}
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          onLoad={() => setImageLoaded(true)}
+          onError={() => {
+            setImageFailed(true);
+            setImageLoaded(true);
+          }}
+        />
+      </div>
 
-        <div className="p-6">
-          <h3 className="font-serif text-xl text-foreground mb-1">{product.name}</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {product.variantCount}{" "}
-            {product.variantCount === 1 ? "variante" : "variantes"}
-          </p>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-medium text-foreground">
-              Desde {formatMxn(product.priceFromMxn)}
-            </span>
-          </div>
-        </div>
+      {/* Info */}
+      <div className="pt-4 pb-2">
+        <h3 className="text-[13px] tracking-[0.12em] uppercase text-[#2A2726] font-sans mb-1 line-clamp-1">
+          {product.name}
+        </h3>
+        <p className="text-[12px] text-[#7A756E] tracking-[0.08em]">
+          {formatMxn(product.priceFromMxn)}
+        </p>
       </div>
     </Link>
   );

@@ -5,7 +5,7 @@ export const SITE_NAME = "Mr. Paps";
 export const SITE_TAGLINE = "Tienda POD";
 export const DEFAULT_DESCRIPTION =
   "Productos personalizados impresos bajo demanda con envío a todo México.";
-export const DEFAULT_OG_IMAGE_PATH = "/images/posters/hero.jpg";
+export const DEFAULT_OG_IMAGE_PATH = "/og-image.png";
 
 const PRODUCTION_SITE_URL = "https://mrpapshop.com";
 

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Minus, Plus, Check } from "lucide-react";
+import { ChevronLeft, Minus, Plus, Check, ChevronDown } from "lucide-react";
 import type { CatalogProductDetail } from "@/lib/api-types";
 import { ProductMockupPreview } from "@/components/boty/product-mockup-preview";
 import { ProductGallery } from "@/components/boty/product-gallery";
@@ -24,12 +24,58 @@ function colorsMatch(a: string, b: string): boolean {
   return normalizeColorKey(a) === normalizeColorKey(b);
 }
 
+type AccordionSection = {
+  title: string;
+  content: string;
+};
+
+const accordionSections: AccordionSection[] = [
+  {
+    title: "DETALLES",
+    content: "Prenda confeccionada con materiales de alta calidad. Impresión bajo demanda con tecnología DTG de alta resolución.",
+  },
+  {
+    title: "ENVÍOS Y DEVOLUCIONES",
+    content: "Envío estimado 5–14 días. Devoluciones aceptadas hasta 15 días después de recibido el pedido. Consulta nuestros términos para más detalles.",
+  },
+  {
+    title: "COMPOSICIÓN Y CUIDADOS",
+    content: "Lavar a máquina en frío. No usar blanqueador. Planchar a temperatura baja si es necesario. Ver etiqueta interior para instrucciones completas.",
+  },
+];
+
+function AccordionItem({ title, content }: AccordionSection) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-t border-[#D4CFC5]">
+      <button
+        type="button"
+        className="w-full flex items-center justify-between py-4 text-left"
+        onClick={() => setOpen(!open)}
+      >
+        <span className="text-[11px] tracking-[0.22em] uppercase font-sans text-[#2A2726]">
+          {title}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-[#7A756E] boty-transition ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div
+        className={`overflow-hidden boty-transition ${open ? "max-h-48 pb-4" : "max-h-0"}`}
+      >
+        <p className="text-[12px] leading-relaxed text-[#7A756E] tracking-[0.05em]">
+          {content}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function ProductDetail({ product }: ProductDetailProps) {
   const router = useRouter();
   const { addItem } = useCart();
   const [isAdded, setIsAdded] = useState(false);
 
-  // ── Mapa color → foto (normalizado para evitar fallos por mayúsculas/espacios) ──
   const colorImageByKey = useMemo(() => {
     const map = new Map<string, string>();
     for (const ci of product.colorImages ?? []) {
@@ -41,24 +87,19 @@ export function ProductDetail({ product }: ProductDetailProps) {
 
   const hasColorImages = colorImageByKey.size > 0;
 
-  // ── Colores ordenados según colorImages (si existen), si no, desde variantes ──
   const colors = useMemo(() => {
     const fromImages = (product.colorImages ?? [])
       .map((ci) => ci.color)
-      .filter((c) =>
-        product.variants.some((v) => colorsMatch(v.color, c)),
-      );
+      .filter((c) => product.variants.some((v) => colorsMatch(v.color, c)));
     if (fromImages.length > 0) return fromImages;
     return [...new Set(product.variants.map((v) => v.color))];
   }, [product]);
 
-  // ── Tallas únicas preservando el orden que vienen del backend ───────────────
   const allSizes = useMemo(
     () => [...new Set(product.variants.map((v) => v.size))],
     [product.variants],
   );
 
-  // ── Selección inicial: primer color disponible → mejor talla disponible ─────
   const initialVariantId = useMemo(() => {
     const firstColor = colors[0];
     const v =
@@ -87,19 +128,14 @@ export function ProductDetail({ product }: ProductDetailProps) {
     setQuantity((q) => clampCartLineQuantity(q, maxQuantity));
   }, [maxQuantity, variantId]);
 
-  // ── Helpers de disponibilidad ────────────────────────────────────────────────
-
-  /** ¿Existe la combinación talla+color como variante activa? */
   function variantExists(size: string, color: string) {
     return product.variants.some((v) => v.size === size && colorsMatch(v.color, color));
   }
 
-  /** ¿Tiene stock la combinación talla+color? */
   function isInStock(size: string, color: string) {
     return product.variants.find((v) => v.size === size && colorsMatch(v.color, color))?.inStock ?? false;
   }
 
-  /** ¿El color tiene al menos una talla con stock? */
   function isColorAvailable(color: string) {
     return product.variants.some((v) => colorsMatch(v.color, color) && v.inStock);
   }
@@ -107,22 +143,17 @@ export function ProductDetail({ product }: ProductDetailProps) {
   function findVariant(color: string, size?: string, preferInStock = false) {
     const matches = product.variants.filter((v) => colorsMatch(v.color, color));
     if (matches.length === 0) return undefined;
-
     if (size) {
       const withSize = matches.filter((v) => v.size === size);
       if (withSize.length > 0) {
         return withSize.find((v) => v.inStock) ?? withSize[0];
       }
     }
-
     if (preferInStock) {
       return matches.find((v) => v.inStock) ?? matches[0];
     }
-
     return matches[0];
   }
-
-  // ── Selección interactiva ────────────────────────────────────────────────────
 
   function pickColor(color: string) {
     const next = findVariant(color, selected?.size, true);
@@ -138,8 +169,6 @@ export function ProductDetail({ product }: ProductDetailProps) {
     if (next) setVariantId(next.variantId);
   }
 
-  // ── Galería ──────────────────────────────────────────────────────────────────
-
   const selectedColorImageUrl = selected?.color
     ? colorImageByKey.get(normalizeColorKey(selected.color)) ?? null
     : null;
@@ -151,8 +180,6 @@ export function ProductDetail({ product }: ProductDetailProps) {
       : (product.images?.length
           ? product.images.map((url) => normalizeAssetUrl(url)).filter(Boolean)
           : [normalizeAssetUrl(product.thumbnail)].filter(Boolean));
-
-  // ── Carrito ──────────────────────────────────────────────────────────────────
 
   function addSelectedToCart(openDrawer = true) {
     if (!selected) return false;
@@ -185,24 +212,25 @@ export function ProductDetail({ product }: ProductDetailProps) {
 
   const canBuy = !!selected && selected.inStock;
 
-  // ── Render ───────────────────────────────────────────────────────────────────
-
   return (
-    <div className="pt-28 pb-20">
+    <div className="pt-[100px] pb-20 bg-[#F5F0E6]">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <Link
-          href="/shop"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground boty-transition mb-8"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Volver a la tienda
-        </Link>
+        {/* Breadcrumb */}
+        <div className="py-4 border-b border-[#D4CFC5] mb-10">
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 text-[11px] tracking-[0.15em] uppercase text-[#7A756E] hover:text-[#2A2726] boty-transition"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            VOLVER A LA TIENDA
+          </Link>
+        </div>
 
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
-          {/* ── Imagen ────────────────────────────────────────────────────────── */}
+          {/* Gallery */}
           <div>
             {product.preview && !hasColorImages ? (
-              <div className="relative aspect-square rounded-3xl overflow-hidden bg-card boty-shadow">
+              <div className="relative aspect-[4/5] overflow-hidden bg-[#EBE7DB]">
                 <ProductMockupPreview
                   preview={product.preview}
                   fallbackThumbnail={product.thumbnail || "/placeholder.svg"}
@@ -221,64 +249,81 @@ export function ProductDetail({ product }: ProductDetailProps) {
             )}
           </div>
 
-          {/* ── Info + selectores ──────────────────────────────────────────────── */}
+          {/* Product info */}
           <div className="flex flex-col">
-            {/* Nombre y descripción */}
-            <div className="mb-8">
-              <span className="text-sm tracking-[0.3em] uppercase text-primary mb-2 block">
-                Mr. Paps
-              </span>
-              <h1 className="font-serif text-4xl md:text-5xl text-foreground mb-3">
-                {product.name}
-              </h1>
-              <p className="text-foreground/80 leading-relaxed">{product.description}</p>
-            </div>
+            {/* Collection label */}
+            <span className="text-[10px] tracking-[0.3em] uppercase text-[#7A756E] mb-3 font-sans block">
+              COLECCIÓN
+            </span>
 
-            {/* Precio */}
+            {/* Product name */}
+            <h1 className="font-serif text-4xl md:text-5xl tracking-[0.06em] uppercase text-[#2A2726] mb-4 leading-tight">
+              {product.name}
+            </h1>
+
+            {/* Price */}
             {selected && (
-              <div className="flex items-baseline gap-3 mb-8">
-                <span className="text-3xl font-medium text-foreground">
+              <div className="flex items-center gap-4 mb-6">
+                <span className="text-2xl font-sans tracking-[0.06em] text-[#2A2726]">
                   {formatMxn(selected.retailPriceMxn)}
                 </span>
                 {!selected.inStock && (
-                  <span className="text-sm text-destructive font-medium">Agotado</span>
+                  <span className="text-[11px] tracking-[0.15em] uppercase text-destructive">
+                    AGOTADO
+                  </span>
                 )}
               </div>
             )}
 
-            {/* ── Selector de color ─────────────────────────────────────────── */}
+            {/* Description */}
+            {product.description && (
+              <p className="text-[13px] leading-relaxed text-[#7A756E] mb-8 tracking-[0.04em]">
+                {product.description}
+              </p>
+            )}
+
+            {/* Color selector */}
             {colors.length > 0 && (
               <div className="mb-7">
-                <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-sm font-medium text-foreground">Color</span>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[11px] tracking-[0.2em] uppercase font-sans text-[#2A2726]">
+                    COLOR:
+                  </span>
                   {selected?.color && (
-                    <span className="text-sm text-muted-foreground">— {selected.color}</span>
+                    <span className="text-[11px] tracking-[0.2em] uppercase font-sans text-[#7A756E]">
+                      {selected.color.toUpperCase()}
+                    </span>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2.5">
                   {colors.map((color) => {
                     const isSelected = selected?.color ? colorsMatch(selected.color, color) : false;
                     const available = isColorAvailable(color);
+                    const hexColor = product.variants.find((v) => colorsMatch(v.color, color))?.garmentColorHex;
 
                     return (
                       <button
                         key={color}
                         type="button"
-                        onClick={() => pickColor(color)}
-                        className={`relative px-3.5 py-2 rounded-full text-xs font-medium boty-transition
-                          ${isSelected
-                            ? "bg-primary text-primary-foreground shadow-md"
-                            : available
-                              ? "bg-card border border-border/60 text-foreground hover:border-primary/60 hover:bg-primary/5 boty-shadow"
-                              : "bg-muted/40 border border-dashed border-border/40 text-foreground/35 cursor-not-allowed"}
-                        `}
+                        onClick={() => available ? pickColor(color) : undefined}
                         disabled={!available}
-                        title={!available ? "Sin stock en este color" : undefined}
+                        title={!available ? "Sin stock en este color" : color}
+                        className={`relative w-8 h-8 boty-transition border-2 ${
+                          isSelected
+                            ? "border-[#2A2726]"
+                            : available
+                              ? "border-transparent hover:border-[#2A2726]/40"
+                              : "border-transparent opacity-30 cursor-not-allowed"
+                        }`}
+                        style={{
+                          backgroundColor: hexColor ?? "#D4CFC5",
+                          borderRadius: "50%",
+                        }}
+                        aria-label={color}
                       >
-                        {color}
-                        {!available && (
-                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-full overflow-hidden">
-                            <span className="block w-3/4 border-t border-current opacity-40 rotate-[-20deg]" />
+                        {!hexColor && (
+                          <span className="absolute inset-0 flex items-center justify-center text-[8px] uppercase text-[#2A2726]/60 font-sans leading-none text-center pointer-events-none">
+                            {color.charAt(0)}
                           </span>
                         )}
                       </button>
@@ -288,11 +333,21 @@ export function ProductDetail({ product }: ProductDetailProps) {
               </div>
             )}
 
-            {/* ── Selector de talla ──────────────────────────────────────────── */}
+            {/* Size selector */}
             {allSizes.length > 0 && (
               <div className="mb-7">
-                <span className="text-sm font-medium text-foreground mb-4 block">Talla</span>
-                <div className="flex flex-wrap gap-2.5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] tracking-[0.2em] uppercase font-sans text-[#2A2726]">
+                    TALLA: {selected?.size}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-[11px] tracking-[0.15em] uppercase text-[#7A756E] underline underline-offset-2 hover:text-[#2A2726] boty-transition"
+                  >
+                    GUÍA DE TALLAS
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {allSizes.map((size) => {
                     const color = selected?.color ?? colors[0] ?? "";
                     const exists = variantExists(size, color);
@@ -305,24 +360,20 @@ export function ProductDetail({ product }: ProductDetailProps) {
                         type="button"
                         disabled={!exists}
                         onClick={() => exists ? pickSize(size) : undefined}
-                        title={
-                          !exists ? `No disponible en ${color}` :
-                          !inStock ? "Agotado" : undefined
-                        }
-                        className={`relative w-14 h-14 rounded-2xl text-sm font-medium boty-transition
-                          ${isSelected
-                            ? "bg-primary text-primary-foreground shadow-md"
+                        className={`relative w-14 h-11 text-[11px] tracking-[0.15em] uppercase font-sans boty-transition border ${
+                          isSelected
+                            ? "bg-[#2A2726] text-[#f8f9fa] border-[#2A2726]"
                             : !exists
-                              ? "bg-muted/30 text-foreground/25 cursor-not-allowed border border-dashed border-border/30"
+                              ? "border-[#D4CFC5] text-[#D4CFC5] cursor-not-allowed"
                               : !inStock
-                                ? "bg-card text-foreground/40 border border-border/40 cursor-not-allowed"
-                                : "bg-card text-foreground border border-border/60 hover:border-primary/60 hover:bg-primary/5 boty-shadow"}
-                        `}
+                                ? "border-[#D4CFC5] text-[#D4CFC5]/60 cursor-not-allowed"
+                                : "border-[#D4CFC5] text-[#2A2726] hover:border-[#2A2726]"
+                        }`}
                       >
                         {size}
                         {exists && !inStock && (
-                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl overflow-hidden">
-                            <span className="block w-3/4 border-t border-current opacity-50 rotate-[-35deg]" />
+                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+                            <span className="block w-3/4 border-t border-current opacity-40 rotate-[-35deg]" />
                           </span>
                         )}
                       </button>
@@ -332,64 +383,76 @@ export function ProductDetail({ product }: ProductDetailProps) {
               </div>
             )}
 
-            {/* ── Cantidad ───────────────────────────────────────────────────── */}
+            {/* Quantity */}
             <div className="mb-8">
-              <span className="text-sm font-medium text-foreground mb-3 block">Cantidad</span>
-              <div className="inline-flex items-center gap-4 bg-card rounded-full px-2 py-2 boty-shadow">
+              <span className="text-[11px] tracking-[0.2em] uppercase font-sans text-[#2A2726] mb-3 block">
+                CANTIDAD
+              </span>
+              <div className="inline-flex items-center border border-[#D4CFC5]">
                 <button
                   type="button"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground/60 hover:text-foreground boty-transition"
+                  className="w-10 h-10 flex items-center justify-center text-[#7A756E] hover:text-[#2A2726] boty-transition border-r border-[#D4CFC5]"
                   aria-label="Disminuir cantidad"
                 >
-                  <Minus className="w-4 h-4" />
+                  <Minus className="w-3.5 h-3.5" />
                 </button>
-                <span className="w-8 text-center font-medium text-foreground">{quantity}</span>
+                <span className="w-12 text-center text-[13px] font-sans text-[#2A2726]">
+                  {quantity}
+                </span>
                 <button
                   type="button"
                   onClick={() => setQuantity(clampCartLineQuantity(quantity + 1, maxQuantity))}
                   disabled={quantity >= maxQuantity}
-                  className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground/60 hover:text-foreground boty-transition disabled:opacity-40"
+                  className="w-10 h-10 flex items-center justify-center text-[#7A756E] hover:text-[#2A2726] boty-transition border-l border-[#D4CFC5] disabled:opacity-40"
                   aria-label="Aumentar cantidad"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
-            {/* ── Botones CTA ────────────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-10">
+            {/* CTA buttons */}
+            <div className="flex flex-col gap-3 mb-8">
               <button
                 type="button"
                 onClick={handleAddToCart}
                 disabled={!canBuy}
-                className={`flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-sm tracking-wide boty-transition boty-shadow disabled:opacity-50
-                  ${isAdded
-                    ? "bg-primary/80 text-primary-foreground"
-                    : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+                className={`w-full py-4 text-[11px] tracking-[0.25em] uppercase font-sans boty-transition disabled:opacity-50 ${
+                  isAdded
+                    ? "bg-[#1E5A43] text-[#f8f9fa]"
+                    : "bg-[#5C1A24] text-[#f8f9fa] hover:bg-[#4A1520]"
+                }`}
               >
                 {isAdded ? (
-                  <>
+                  <span className="flex items-center justify-center gap-2">
                     <Check className="w-4 h-4" />
-                    Agregado al carrito
-                  </>
+                    AGREGADO AL CARRITO
+                  </span>
                 ) : (
-                  "Agregar al carrito"
+                  "AGREGAR AL CARRITO"
                 )}
               </button>
               <button
                 type="button"
                 onClick={handleBuyNow}
                 disabled={!canBuy}
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-transparent border border-foreground/20 text-foreground px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-foreground/5 disabled:opacity-50"
+                className="w-full py-4 text-[11px] tracking-[0.25em] uppercase font-sans border border-[#2A2726] text-[#2A2726] hover:bg-[#2A2726] hover:text-[#f8f9fa] boty-transition disabled:opacity-50"
               >
-                Comprar ahora
+                COMPRAR AHORA
               </button>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Envío estimado 5–14 días · Aduana incluida para México · IVA incluido
+            <p className="text-[11px] tracking-[0.08em] text-[#7A756E] mb-10">
+              Envío estimado 5–14 días · IVA incluido para México
             </p>
+
+            {/* Accordion */}
+            <div>
+              {accordionSections.map((section) => (
+                <AccordionItem key={section.title} {...section} />
+              ))}
+            </div>
           </div>
         </div>
       </div>
