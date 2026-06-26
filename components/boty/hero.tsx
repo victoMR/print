@@ -1,94 +1,79 @@
 "use client";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
 const HEADER_HEIGHT = 112;
 const MIN_HERO_VH = 52;
-const ANIM_MS = 950;
+const ANIM_MS = 750;
 
-type Phase = "open" | "closing" | "closed" | "opening";
+// Fast start, smooth deceleration — feels immediately responsive
+const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
 
 export function Hero() {
+  const [scrollY, setScrollY] = useState(0);
   const [windowH, setWindowH] = useState(0);
-  const [phase, setPhase] = useState<Phase>("open");
-  const phaseRef = useRef<Phase>("open");
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animatingRef = useRef(false);
+  const animTargetRef = useRef<number>(0);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     const update = () => setWindowH(window.innerHeight);
     update();
     window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  // If user navigates back to top while closed (back button, etc.), reset phase
-  useEffect(() => {
-    const onScroll = () => {
-      if (window.scrollY === 0 && phaseRef.current === "closed") {
-        phaseRef.current = "open";
-        setPhase("open");
-      }
-    };
+    const onScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const close = useCallback(() => {
-    if (phaseRef.current === "closed" || phaseRef.current === "closing") return;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    phaseRef.current = "closing";
-    setPhase("closing");
-    // After CSS transition finishes, silently jump scroll so page continues normally
-    timerRef.current = setTimeout(() => {
-      const threshold = Math.round(window.innerHeight * (1 - MIN_HERO_VH / 100));
-      window.scrollTo({ top: threshold, behavior: "instant" });
-      phaseRef.current = "closed";
-      setPhase("closed");
-    }, ANIM_MS);
-  }, []);
-
-  const open = useCallback(() => {
-    if (phaseRef.current === "open" || phaseRef.current === "opening") return;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    // Jump scroll to top immediately so page is ready when animation finishes
-    window.scrollTo({ top: 0, behavior: "instant" });
-    phaseRef.current = "opening";
-    setPhase("opening");
-    timerRef.current = setTimeout(() => {
-      phaseRef.current = "open";
-      setPhase("open");
-    }, ANIM_MS);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   useEffect(() => {
     if (windowH === 0) return;
 
-    const onWheel = (e: WheelEvent) => {
-      const cur = phaseRef.current;
-      const threshold = Math.round(windowH * (1 - MIN_HERO_VH / 100));
-      const inZone = window.scrollY <= threshold;
+    const threshold = Math.round(windowH * (1 - MIN_HERO_VH / 100));
 
-      if (cur !== "closed" || inZone) {
+    const animateTo = (target: number) => {
+      // Don't restart if already heading to the same target
+      if (animatingRef.current && animTargetRef.current === target) return;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      animatingRef.current = true;
+      animTargetRef.current = target;
+      const start = window.scrollY;
+      const diff = target - start;
+      const startTime = performance.now();
+
+      const step = (now: number) => {
+        const t = Math.min((now - startTime) / ANIM_MS, 1);
+        window.scrollTo({ top: start + diff * easeOutCubic(t), behavior: "instant" });
+        if (t < 1) {
+          rafRef.current = requestAnimationFrame(step);
+        } else {
+          animatingRef.current = false;
+          rafRef.current = null;
+        }
+      };
+      rafRef.current = requestAnimationFrame(step);
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      if (window.scrollY < threshold || animatingRef.current) {
         e.preventDefault();
-        if (e.deltaY > 0 && (cur === "open" || cur === "opening")) close();
-        if (e.deltaY < 0 && cur !== "open" && cur !== "opening") open();
+        const target = e.deltaY > 0 ? threshold : 0;
+        animateTo(target);
       }
     };
 
     let touchStartY = 0;
     const onTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
     const onTouchMove = (e: TouchEvent) => {
-      const cur = phaseRef.current;
-      const threshold = Math.round(windowH * (1 - MIN_HERO_VH / 100));
-      if (cur !== "closed" || window.scrollY <= threshold) e.preventDefault();
+      if (window.scrollY < threshold || animatingRef.current) e.preventDefault();
     };
     const onTouchEnd = (e: TouchEvent) => {
       const dy = touchStartY - e.changedTouches[0].clientY;
-      const cur = phaseRef.current;
-      if (Math.abs(dy) > 30) {
-        if (dy > 0 && (cur === "open" || cur === "opening")) close();
-        if (dy < 0 && cur !== "open" && cur !== "opening") open();
+      if (Math.abs(dy) > 30 && (window.scrollY < threshold || animatingRef.current)) {
+        animateTo(dy > 0 ? threshold : 0);
       }
     };
 
@@ -101,13 +86,13 @@ export function Hero() {
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [windowH, close, open]);
+  }, [windowH]);
 
-  // heroVh is the TARGET of the CSS transition — React sets the new value,
-  // CSS transition animates from the previous value to the new one.
-  const heroVh = phase === "closed" || phase === "closing" ? MIN_HERO_VH : 100;
-  const isTransitioning = phase === "closing" || phase === "opening";
+  const heroVh = windowH > 0
+    ? Math.max(MIN_HERO_VH, 100 * (1 - scrollY / windowH))
+    : 100;
 
   const wrapperH = windowH > 0
     ? `${windowH + HEADER_HEIGHT}px`
@@ -120,9 +105,6 @@ export function Hero() {
         style={{
           top: `${HEADER_HEIGHT}px`,
           height: `${heroVh}vh`,
-          transition: isTransitioning
-            ? `height ${ANIM_MS}ms cubic-bezier(0.76, 0, 0.24, 1)`
-            : "none",
         }}
       >
         {/* Background photo */}

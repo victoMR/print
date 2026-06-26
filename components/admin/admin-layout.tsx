@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AdminSessionUser } from "@/lib/admin-session";
+import { Logo } from "@/components/ui/Logo";
 
 export type AdminTab = "dashboard" | "orders" | "products" | "users";
 // | "prototypes" | "designs" — ocultos temporalmente
@@ -19,8 +20,6 @@ const BASE_TABS: { id: AdminTab; label: string; icon: typeof ClipboardList; desc
   { id: "orders", label: "Pedidos", icon: ClipboardList, description: "Gestión y envíos" },
   { id: "products", label: "Productos", icon: Shirt, description: "Catálogo tienda" },
   { id: "users", label: "Usuarios", icon: Users, description: "Roles y accesos", devOnly: true },
-  // { id: "prototypes", label: "Prototipos", icon: Sparkles, description: "Referencias imprenta" },
-  // { id: "designs", label: "Diseños", icon: ImageIcon, description: "Biblioteca de arte" },
 ];
 
 function getTabs(role: AdminSessionUser["role"]) {
@@ -51,40 +50,47 @@ export function AdminLayout({
   const TABS = getTabs(user.role);
 
   return (
-    <div className="min-h-screen bg-[#f4f1ec]">
+    <div className="min-h-screen bg-[#F5F0E6]">
       <div className="lg:flex">
-        {/* Sidebar desktop */}
-        <aside className="hidden lg:flex lg:w-72 lg:flex-col lg:fixed lg:inset-y-0 border-r border-border/80 bg-card/95 backdrop-blur-md">
-          <div className="p-6 border-b border-border/60">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">Panel</p>
-            <h1 className="font-serif text-2xl mt-1">Mr. Paps</h1>
-            <div className="flex items-center gap-2 mt-2">
-              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+        {/* Sidebar desktop — dark, matches brand aesthetic */}
+        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-[#2A2726]">
+          {/* Brand header */}
+          <div className="px-6 py-5 border-b border-[#f8f9fa]/10">
+            <Logo color="#f8f9fa" className="w-28 mb-4" />
+            <p className="text-[10px] uppercase tracking-[0.28em] text-[#f8f9fa]/40 font-sans">
+              Panel Admin
+            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-[11px] text-[#f8f9fa]/55 truncate font-sans">{user.email}</p>
               {user.role === "dev" && (
-                <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-primary/10 text-primary uppercase tracking-wide">
+                <span className="shrink-0 text-[9px] font-sans px-1.5 py-0.5 bg-[#5C1A24] text-[#f8f9fa] uppercase tracking-widest">
                   dev
                 </span>
               )}
             </div>
           </div>
 
-          <nav className="flex-1 p-4 space-y-1">
+          {/* Nav items — left border indicator, no rounded corners */}
+          <nav className="flex-1 py-2">
             {TABS.map(({ id, label, icon: Icon, description }) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => onTabChange(id)}
                 className={cn(
-                  "w-full flex items-start gap-3 px-4 py-3 rounded-2xl text-left boty-transition",
+                  "w-full flex items-center gap-3 px-6 py-3.5 text-left boty-transition border-l-2",
                   tab === id
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                    ? "border-[#5C1A24] bg-[#f8f9fa]/5 text-[#f8f9fa]"
+                    : "border-transparent text-[#f8f9fa]/45 hover:text-[#f8f9fa]/75 hover:bg-[#f8f9fa]/4",
                 )}
               >
-                <Icon className="w-5 h-5 shrink-0 mt-0.5" />
+                <Icon className="w-4 h-4 shrink-0" />
                 <span>
-                  <span className="block text-sm font-medium">{label}</span>
-                  <span className={cn("block text-xs mt-0.5", tab === id ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                  <span className="block text-[11px] tracking-[0.16em] uppercase font-sans">{label}</span>
+                  <span className={cn(
+                    "block text-[10px] mt-0.5 font-sans",
+                    tab === id ? "text-[#f8f9fa]/45" : "text-[#f8f9fa]/28",
+                  )}>
                     {description}
                   </span>
                 </span>
@@ -92,51 +98,52 @@ export function AdminLayout({
             ))}
           </nav>
 
-          <div className="p-4 border-t border-border/60 space-y-2">
+          {/* Bottom actions */}
+          <div className="py-3 border-t border-[#f8f9fa]/10">
             <button
               type="button"
               onClick={onRefresh}
               disabled={busy}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-sm border border-border/80 hover:bg-background boty-transition disabled:opacity-50"
+              className="w-full flex items-center gap-2.5 px-6 py-2.5 text-[10px] tracking-[0.18em] uppercase font-sans text-[#f8f9fa]/40 hover:text-[#f8f9fa]/70 boty-transition disabled:opacity-25"
             >
-              <RefreshCw className={cn("w-4 h-4", busy && "animate-spin")} />
+              <RefreshCw className={cn("w-3.5 h-3.5 shrink-0", busy && "animate-spin")} />
               Actualizar datos
             </button>
             <button
               type="button"
               onClick={onLogout}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-sm text-muted-foreground hover:bg-destructive/5 hover:text-destructive boty-transition"
+              className="w-full flex items-center gap-2.5 px-6 py-2.5 text-[10px] tracking-[0.18em] uppercase font-sans text-[#f8f9fa]/40 hover:text-[#f8f9fa]/70 boty-transition"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
               Cerrar sesión
             </button>
           </div>
         </aside>
 
-        {/* Contenido */}
-        <div className="lg:pl-72 flex-1 min-w-0">
-          {/* Top bar móvil + desktop */}
-          <header className="sticky top-0 z-40 border-b border-border/60 bg-card/90 backdrop-blur-md px-4 sm:px-8 py-4">
+        {/* Content area */}
+        <div className="lg:pl-64 flex-1 min-w-0">
+          {/* Top bar */}
+          <header className="sticky top-0 z-40 border-b border-[#D4CFC5] bg-[#F5F0E6] px-4 sm:px-8 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="lg:hidden w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <LayoutDashboard className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-4">
+                <div className="lg:hidden">
+                  <Logo color="#2A2726" className="w-24" />
                 </div>
                 <div>
-                  <p className="font-serif text-xl lg:text-2xl">
+                  <p className="font-serif text-xl text-[#2A2726]">
                     {TABS.find((t) => t.id === tab)?.label ?? "Admin"}
                   </p>
-                  <p className="text-xs text-muted-foreground hidden sm:block">
+                  <p className="text-[10px] tracking-[0.2em] uppercase font-sans text-[#2A2726]/45 mt-0.5 hidden sm:block">
                     {TABS.find((t) => t.id === tab)?.description}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={onRefresh}
                   disabled={busy}
-                  className="lg:hidden p-2.5 rounded-xl border border-border/80 hover:bg-background disabled:opacity-50"
+                  className="lg:hidden p-2 border border-[#D4CFC5] text-[#2A2726]/55 hover:text-[#2A2726] boty-transition disabled:opacity-35"
                   aria-label="Actualizar"
                 >
                   <RefreshCw className={cn("w-4 h-4", busy && "animate-spin")} />
@@ -144,7 +151,7 @@ export function AdminLayout({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="lg:hidden p-2.5 rounded-xl border border-border/80 text-muted-foreground"
+                  className="lg:hidden p-2 border border-[#D4CFC5] text-[#2A2726]/55 hover:text-[#2A2726] boty-transition"
                   aria-label="Salir"
                 >
                   <LogOut className="w-4 h-4" />
@@ -152,16 +159,18 @@ export function AdminLayout({
               </div>
             </div>
 
-            {/* Tabs móvil */}
-            <nav className="lg:hidden flex gap-2 mt-4 overflow-x-auto pb-1">
+            {/* Mobile tabs — rectangular, no rounded corners */}
+            <nav className="lg:hidden flex mt-4 overflow-x-auto border border-[#D4CFC5]">
               {TABS.map(({ id, label }) => (
                 <button
                   key={id}
                   type="button"
                   onClick={() => onTabChange(id)}
                   className={cn(
-                    "px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap shrink-0 boty-transition",
-                    tab === id ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground",
+                    "px-4 py-2.5 text-[10px] tracking-[0.18em] uppercase font-sans whitespace-nowrap shrink-0 boty-transition border-r border-[#D4CFC5] last:border-r-0",
+                    tab === id
+                      ? "bg-[#2A2726] text-[#f8f9fa]"
+                      : "text-[#2A2726]/55 hover:text-[#2A2726]",
                   )}
                 >
                   {label}
@@ -172,9 +181,9 @@ export function AdminLayout({
 
           <main className="w-full min-w-0 p-4 sm:p-6 lg:p-8">
             {error && (
-              <p className="mb-6 text-sm text-destructive bg-destructive/10 rounded-2xl px-4 py-3 border border-destructive/20">
+              <div className="mb-6 text-sm text-[#DC2626] bg-[#DC2626]/8 px-4 py-3 border border-[#DC2626]/20 font-sans">
                 {error}
-              </p>
+              </div>
             )}
             {children}
           </main>

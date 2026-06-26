@@ -1,7 +1,21 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { BotySurface } from "@/components/boty/ui-patterns";
+
+/** Card base para el panel admin — sin bordes redondeados, paleta de marca. */
+export function AdminSurface({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("border border-[#D4CFC5] bg-white", className)}>
+      {children}
+    </div>
+  );
+}
 
 /** Grid estándar para cards del panel admin. */
 export const ADMIN_GRID_CLASS =
@@ -13,7 +27,7 @@ export const ADMIN_FILTER_SURFACE_CLASS =
 
 /** Estado vacío estándar. */
 export const ADMIN_EMPTY_SURFACE_CLASS =
-  "p-12 text-center text-muted-foreground text-sm";
+  "p-12 text-center text-[#2A2726]/50 text-sm";
 
 type AdminGridCardProps = {
   media: React.ReactNode;
@@ -38,20 +52,20 @@ export function AdminGridCard({
   children,
 }: AdminGridCardProps) {
   const surface = (
-    <BotySurface
+    <AdminSurface
       className={cn(
         "overflow-hidden flex flex-col h-full p-0 boty-transition",
-        onClick && "hover:border-primary/40",
+        onClick && "hover:border-[#5C1A24]/40",
         dimmed && "opacity-60",
         className,
       )}
     >
-      <div className="relative aspect-[4/3] bg-muted overflow-hidden shrink-0 group/media">{media}</div>
+      <div className="relative aspect-[4/3] bg-[#EBE7DB] overflow-hidden shrink-0 group/media">{media}</div>
       <div className="p-4 flex-1 flex flex-col gap-2 min-h-[132px]">
         {children}
         {footer ? <div className="mt-auto pt-2">{footer}</div> : null}
       </div>
-    </BotySurface>
+    </AdminSurface>
   );
 
   if (onClick) {
