@@ -18,7 +18,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
   return (
     <main className="flex min-h-screen flex-col bg-background">
-      <Header />
+      <Header alwaysVisible />
       <div className="flex flex-1 items-center justify-center px-6 py-24">
         <GlassCard strong className="max-w-lg w-full p-10 text-center boty-shadow">
           <span className="mb-4 block text-sm tracking-[0.3em] uppercase text-primary">

@@ -47,7 +47,7 @@ export function HomeEditorialGrid() {
         <Link
           key={block.label}
           href={block.href}
-          className="group relative aspect-[3/4] overflow-hidden"
+          className="group relative h-[38vh] overflow-hidden"
           style={{ backgroundColor: block.bgColor }}
         >
           {/* Background image */}

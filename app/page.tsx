@@ -22,7 +22,7 @@ export default async function HomePage() {
   return (
     <main>
       <JsonLd data={websiteJsonLd()} />
-      <Header />
+      <Header alwaysVisible />
       <Hero />
       <HomeEditorialGrid />
       <Footer />

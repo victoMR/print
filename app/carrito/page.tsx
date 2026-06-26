@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function CarritoPage() {
   return (
     <main className="min-h-screen flex flex-col bg-[#F5F0E6]">
-      <Header />
+      <Header alwaysVisible />
       <div className="flex-1 pt-[100px]">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-10">
           <h1 className="font-serif text-4xl md:text-5xl tracking-[0.08em] uppercase text-[#2A2726] mb-10">

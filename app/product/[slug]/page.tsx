@@ -44,7 +44,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   return (
     <main className="min-h-screen">
       <JsonLd data={[productJsonLd(product), productBreadcrumbJsonLd(product)]} />
-      <Header />
+      <Header alwaysVisible />
       <ProductDetail product={product} />
       <Footer />
     </main>

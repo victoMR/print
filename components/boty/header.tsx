@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ShoppingBag } from "lucide-react";
@@ -17,15 +17,26 @@ const navLinks = [
   { label: "CONTACTO", href: "/" },
 ];
 
-export function Header({ className }: { className?: string }) {
+export function Header({ className, alwaysVisible = false }: { className?: string; alwaysVisible?: boolean }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { setIsOpen, itemCount } = useCart();
   const pathname = usePathname();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const visible = alwaysVisible || scrolled;
 
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50",
+        "fixed top-0 left-0 right-0 z-50 transition-transform duration-500 ease-out",
+        visible ? "translate-y-0" : "-translate-y-full",
         className,
       )}
     >

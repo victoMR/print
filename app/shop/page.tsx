@@ -28,7 +28,7 @@ export default async function ShopPage() {
 
   return (
     <main className="min-h-screen flex flex-col">
-      <Header />
+      <Header alwaysVisible />
       <div className="flex-1">
         <ShopPageContent products={products} />
       </div>

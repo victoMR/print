@@ -19,7 +19,7 @@ export default function SeguimientoPage() {
 
   return (
     <main className="min-h-screen flex flex-col">
-      <Header />
+      <Header alwaysVisible />
       <div className="flex-1 pt-28 pb-12 px-4 sm:px-6">
         <div className="max-w-md mx-auto space-y-8">
           <BotyPageHeader

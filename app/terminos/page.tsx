@@ -16,7 +16,7 @@ export default async function TerminosPage() {
 
   return (
     <main className="min-h-screen flex flex-col">
-      <Header />
+      <Header alwaysVisible />
       <LegalTextDocument content={content} />
       <Footer variant="compact" />
     </main>
