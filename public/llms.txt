@@ -34,10 +34,12 @@ Contratos completos: docs/ORCHESTRATION.md en el repositorio.
 
 - No incluir tokens, claves Stripe ni Printful en este archivo.
 - RFC del cliente solo si solicita factura (CFDI vía PAC del comercio).
-- Aviso de privacidad: https://mrpaps.mx/privacidad (ajustar `NEXT_PUBLIC_SITE_URL` en despliegue)
+- Aviso de privacidad: https://mrpapshop.com/privacidad
 
 ## Contacto
 
 - Marca: Mr. Paps
-- Privacidad: privacidad@mrpaps.mx
+- WhatsApp (contacto principal): +1 (402) 547 1685 — https://wa.me/14025471685
+- Correo: contacto@mrpapshop.com
+- Instagram: https://www.instagram.com/mr._paps_
 - Idioma principal: español (México)

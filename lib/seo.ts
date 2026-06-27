@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
 import type { CatalogProductDetail } from "./api-types";
+import {
+  LEGAL_CONTACT_EMAIL,
+  SITE_INSTAGRAM_URL,
+  SITE_WHATSAPP_PHONE_E164,
+  SITE_WHATSAPP_URL,
+} from "./legal/config";
 
 export const SITE_NAME = "Mr. Paps";
 export const SITE_TAGLINE = "Tienda POD";
@@ -135,6 +141,24 @@ export function organizationJsonLd() {
     logo: absoluteUrl(DEFAULT_OG_IMAGE_PATH),
     description: DEFAULT_DESCRIPTION,
     areaServed: { "@type": "Country", name: "México" },
+    email: LEGAL_CONTACT_EMAIL,
+    telephone: SITE_WHATSAPP_PHONE_E164,
+    sameAs: [SITE_INSTAGRAM_URL],
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        contactType: "customer service",
+        telephone: SITE_WHATSAPP_PHONE_E164,
+        url: SITE_WHATSAPP_URL,
+        availableLanguage: ["Spanish", "English"],
+      },
+      {
+        "@type": "ContactPoint",
+        contactType: "customer service",
+        email: LEGAL_CONTACT_EMAIL,
+        availableLanguage: ["Spanish"],
+      },
+    ],
   };
 }
 

@@ -8,14 +8,15 @@ import { CartDrawer } from "./cart-drawer";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
+import { SITE_WHATSAPP_URL } from "@/lib/legal/config";
 
 const navLinks = [
   { label: "SHOP", href: "/shop" },
   { label: "COLECCIONES", href: "/shop" },
-  { label: "ABOUT", href: "/" },
+  { label: "ABOUT", href: "/nosotros" },
   { label: "JOURNAL", href: "/" },
-  { label: "CONTACTO", href: "/" },
-];
+  { label: "CONTACTO", href: SITE_WHATSAPP_URL, external: true },
+] as const;
 
 export function Header({ className, alwaysVisible = false }: { className?: string; alwaysVisible?: boolean }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -58,20 +59,30 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
 
           {/* Desktop nav links */}
           <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className={cn(
-                  "text-[11px] tracking-[0.18em] uppercase boty-transition",
-                  pathname === link.href
-                    ? "text-[#2A2726]"
-                    : "text-[#2A2726]/60 hover:text-[#2A2726]",
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              "external" in link && link.external ? (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="text-[11px] tracking-[0.18em] uppercase boty-transition text-[#2A2726]/60 hover:text-[#2A2726]"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={cn(
+                    "text-[11px] tracking-[0.18em] uppercase boty-transition",
+                    pathname === link.href
+                      ? "text-[#2A2726]"
+                      : "text-[#2A2726]/60 hover:text-[#2A2726]",
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ),
+            )}
           </div>
 
           {/* Right side */}
@@ -117,16 +128,27 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
           )}
         >
           <div className="flex flex-col px-6 py-4 gap-4 bg-[#F5F0E6]">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="text-[11px] tracking-[0.2em] uppercase text-[#2A2726]/70 hover:text-[#2A2726] boty-transition py-1"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              "external" in link && link.external ? (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="text-[11px] tracking-[0.2em] uppercase text-[#2A2726]/70 hover:text-[#2A2726] boty-transition py-1"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-[11px] tracking-[0.2em] uppercase text-[#2A2726]/70 hover:text-[#2A2726] boty-transition py-1"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ),
+            )}
           </div>
         </div>
       </nav>

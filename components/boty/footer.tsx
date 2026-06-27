@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
+import {
+  LEGAL_CONTACT_EMAIL,
+  LEGAL_CONTACT_MAILTO,
+  SITE_INSTAGRAM_URL,
+  SITE_WHATSAPP_URL,
+} from "@/lib/legal/config";
 
 const footerColumns = [
   {
@@ -26,6 +32,7 @@ const footerColumns = [
   {
     title: "INFORMACIÓN",
     links: [
+      { name: "NOSOTROS", href: "/nosotros" },
       { name: "ENVÍOS Y DEVOLUCIONES", href: "/" },
       { name: "TÉRMINOS Y CONDICIONES", href: "/terminos" },
       { name: "PRIVACIDAD", href: "/privacidad" },
@@ -35,17 +42,16 @@ const footerColumns = [
   {
     title: "CONTACTO",
     links: [
-      { name: "CONTACTO", href: "/" },
-      { name: "WHATSAPP", href: "/" },
+      { name: "WHATSAPP", href: SITE_WHATSAPP_URL, external: true },
+      { name: LEGAL_CONTACT_EMAIL, href: LEGAL_CONTACT_MAILTO, external: true },
     ],
   },
 ];
 
 const socialLinks = [
-  { name: "INSTAGRAM", href: "/" },
-  { name: "TIKTOK", href: "/" },
-  { name: "YOUTUBE", href: "/" },
-  { name: "EMAIL", href: "/" },
+  { name: "INSTAGRAM", href: SITE_INSTAGRAM_URL, external: true },
+  { name: "WHATSAPP", href: SITE_WHATSAPP_URL, external: true },
+  { name: "EMAIL", href: LEGAL_CONTACT_MAILTO, external: true },
 ];
 
 type FooterProps = {
@@ -90,6 +96,12 @@ export function Footer({ variant = "full" }: FooterProps) {
                   <a
                     key={link.name}
                     href={link.href}
+                    {...(link.external
+                      ? {
+                          target: link.href.startsWith("mailto:") ? undefined : "_blank",
+                          rel: link.href.startsWith("mailto:") ? undefined : "noopener noreferrer",
+                        }
+                      : {})}
                     className="text-[10px] tracking-[0.18em] uppercase text-[#f8f9fa]/70 hover:text-[#f8f9fa] boty-transition"
                   >
                     {link.name}
@@ -118,7 +130,7 @@ function FooterColumn({
   links,
 }: {
   title: string;
-  links: { name: string; href: string }[];
+  links: { name: string; href: string; external?: boolean }[];
 }) {
   return (
     <div>
@@ -128,12 +140,24 @@ function FooterColumn({
       <ul className="space-y-2.5">
         {links.map((link) => (
           <li key={link.name}>
-            <Link
-              href={link.href}
-              className="text-[10px] tracking-[0.15em] uppercase text-[#f8f9fa]/60 hover:text-[#f8f9fa] boty-transition"
-            >
-              {link.name}
-            </Link>
+            {link.external ? (
+              <a
+                href={link.href}
+                {...(link.href.startsWith("mailto:")
+                  ? {}
+                  : { target: "_blank", rel: "noopener noreferrer" })}
+                className="text-[10px] tracking-[0.15em] uppercase text-[#f8f9fa]/60 hover:text-[#f8f9fa] boty-transition"
+              >
+                {link.name}
+              </a>
+            ) : (
+              <Link
+                href={link.href}
+                className="text-[10px] tracking-[0.15em] uppercase text-[#f8f9fa]/60 hover:text-[#f8f9fa] boty-transition"
+              >
+                {link.name}
+              </Link>
+            )}
           </li>
         ))}
       </ul>
