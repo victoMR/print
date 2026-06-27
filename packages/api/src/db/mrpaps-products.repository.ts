@@ -110,7 +110,7 @@ export async function updateProductAdmin(
     category?: MrpapsProductCategory;
   }>,
 ): Promise<MrpapsProductRow> {
-  const { clause, values } = buildUpdateSet(patch);
+  const { clause, values } = buildUpdateSet(patch, 2, ['gallery_urls', 'composition']);
   return queryRequired<MrpapsProductRow>(
     `UPDATE mrpaps_products SET ${clause}, updated_at = NOW() WHERE id = $1 RETURNING *`,
     [productId, ...values],

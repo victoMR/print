@@ -44,16 +44,24 @@ export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>)
 export function buildUpdateSet(
   patch: Record<string, unknown>,
   startIndex = 2,
+  jsonbColumns: readonly string[] = [],
 ): { clause: string; values: unknown[] } {
   const entries = Object.entries(patch).filter(([, value]) => value !== undefined);
   if (entries.length === 0) {
     throw new Error('Empty update patch');
   }
+  const jsonbSet = new Set(jsonbColumns);
   const values: unknown[] = [];
   const clause = entries
     .map(([key], index) => {
-      values.push(entries[index]![1]);
-      return `${key} = $${startIndex + index}`;
+      let value = entries[index]![1];
+      if (jsonbSet.has(key)) {
+        value = JSON.stringify(value);
+      }
+      values.push(value);
+      return jsonbSet.has(key)
+        ? `${key} = $${startIndex + index}::jsonb`
+        : `${key} = $${startIndex + index}`;
     })
     .join(', ');
   return { clause, values };
