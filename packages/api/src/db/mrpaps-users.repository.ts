@@ -147,6 +147,7 @@ export async function listOrdersByUser(
     `SELECT id, public_id, order_number, status, total_mxn::text, ordered_at
      FROM mrpaps_orders
      WHERE user_id = $1
+       AND payment_status IN ('paid', 'refunded')
      ORDER BY ordered_at DESC`,
     [userId],
   );
