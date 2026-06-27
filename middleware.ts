@@ -22,12 +22,19 @@ function buildCsp(nonce: string): string {
   ].join("; ");
 }
 
+// Rutas solo accesibles sin sesión de cliente (redirect a /cuenta si ya hay sesión).
+const CUSTOMER_GUEST_ONLY = ["/login", "/registro"];
+
+// Rutas que requieren sesión de cliente activa (redirect a /login si no hay sesión).
+const CUSTOMER_PROTECTED = ["/cuenta"];
+
 /**
  * Genera un nonce criptográfico por request y lo aplica al CSP.
- * También protege /admin en el edge: sin cookie admin_token → login de panel.
+ * También protege rutas de admin y aplica guardas de sesión de cliente.
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hasCustomerSession = Boolean(request.cookies.get("customer_token"));
 
   // Admin redirect — antes de generar nonce para no hacer trabajo innecesario.
   if (pathname.startsWith("/admin")) {
@@ -38,6 +45,22 @@ export function middleware(request: NextRequest) {
         loginUrl.searchParams.set("redirect", pathname);
         return NextResponse.redirect(loginUrl);
       }
+    }
+  }
+
+  // Rutas guest-only: si ya tiene sesión, redirigir a /cuenta.
+  if (CUSTOMER_GUEST_ONLY.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+    if (hasCustomerSession) {
+      return NextResponse.redirect(new URL("/cuenta", request.url));
+    }
+  }
+
+  // Rutas protegidas: si no tiene sesión, redirigir a /login con ?redirect=.
+  if (CUSTOMER_PROTECTED.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+    if (!hasCustomerSession) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
     }
   }
 

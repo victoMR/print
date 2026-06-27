@@ -19,7 +19,7 @@ export const LEGAL_ENTITY = {
   tradeName: "Mr. Paps",
   legalName: "Alondra berenice lira Hernández",
   rfc: "LIHA031226757",
-  address: "Calzada de Belén y Preescolar Niños de Belén, Av. Belén 533, Lomas de San Pedrito, 76148 Santiago de Querétaro, Qro.",
+  address: "Condominio pavia, Av. Punta Nte. 380, 76116 CD del sol, Qro",
   representative: "Alondra berenice lira Hernández",
   phone: SITE_WHATSAPP_PHONE_DISPLAY,
   jurisdictionState: "Querétaro",
