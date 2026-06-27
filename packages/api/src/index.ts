@@ -58,6 +58,15 @@ async function main(): Promise<void> {
   app.listen(port, () => {
     logger.info({ port }, 'API Mr. Paps escuchando');
   });
+
+  // Libera reservas de stock de órdenes abandonadas cada 5 minutos.
+  const { stockExpiryJob } = await import('./jobs/stockExpiry.job.js');
+  const STOCK_EXPIRY_MS = 5 * 60 * 1000;
+  setInterval(() => {
+    stockExpiryJob().catch((err) => logger.error({ err }, 'stockExpiryJob falló'));
+  }, STOCK_EXPIRY_MS);
+  // Run once immediately so the first window is covered on restart.
+  stockExpiryJob().catch((err) => logger.warn({ err }, 'stockExpiryJob arranque inicial falló'));
 }
 
 main().catch((err) => {

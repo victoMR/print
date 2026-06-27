@@ -110,12 +110,14 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
 
     const itemRows: MrpapsOrderItemRow[] = [];
     for (const item of items) {
-      const available =
+      // Reserve stock at order creation (standard soft-reservation model).
+      // POD variants (stock_quantity = 0) return 0 — no deduction needed.
+      const deducted =
         item.inventory_reserved_qty != null
           ? item.inventory_reserved_qty
-          : await productsRepo.assertVariantStockAvailableTx(client, item.variant_id, item.quantity);
+          : await productsRepo.reserveVariantStockTx(client, item.variant_id, item.quantity);
 
-      if (available === false) {
+      if (deducted === false) {
         throw new BadRequestError(
           'No hay suficiente stock para completar el pedido. Actualiza tu carrito e intenta de nuevo.',
         );
@@ -132,7 +134,7 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
           item.variant_id,
           item.design_id ?? null,
           item.quantity,
-          0,
+          deducted,
           item.unit_price_mxn,
           item.product_name,
           item.variant_label,
@@ -579,4 +581,43 @@ export async function countOrderItemsByVariantIds(
     counts[row.variant_id] = (counts[row.variant_id] ?? 0) + 1;
   }
   return counts;
+}
+
+/**
+ * Libera el stock reservado por órdenes en estado pendiente_pago cuyo TTL expiró.
+ * Idempotente — SKIP LOCKED evita conflictos con transacciones concurrentes.
+ * @returns número de items cuyo stock fue liberado.
+ */
+export async function releaseExpiredOrderReservations(ttlMinutes = 20): Promise<number> {
+  return withTransaction(async (client) => {
+    const expiredItems = await client.query<{
+      id: string;
+      variant_id: string;
+      inventory_reserved_qty: number;
+    }>(
+      `SELECT oi.id, oi.variant_id, oi.inventory_reserved_qty
+       FROM mrpaps_order_items oi
+       JOIN mrpaps_orders o ON o.id = oi.order_id
+       WHERE o.status = 'pendiente_pago'
+         AND (o.payment_status IS NULL OR o.payment_status <> 'paid')
+         AND o.ordered_at < NOW() - ($1::int * interval '1 minute')
+         AND oi.inventory_reserved_qty > 0
+       FOR UPDATE OF oi SKIP LOCKED`,
+      [ttlMinutes],
+    );
+
+    if (expiredItems.rows.length === 0) return 0;
+
+    for (const item of expiredItems.rows) {
+      await productsRepo.releaseVariantStockTx(client, item.variant_id, item.inventory_reserved_qty);
+    }
+
+    await client.query(
+      `UPDATE mrpaps_order_items SET inventory_reserved_qty = 0
+       WHERE id = ANY($1::uuid[])`,
+      [expiredItems.rows.map((r) => r.id)],
+    );
+
+    return expiredItems.rows.length;
+  });
 }

@@ -154,6 +154,9 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
     }),
   );
 
+  // Lazy cleanup: releases stock held by abandoned orders before checking availability.
+  ordersRepo.releaseExpiredOrderReservations().catch(() => undefined);
+
   const order = await ordersRepo.createOrder({
     public_id: publicId,
     order_number: orderNumber,
