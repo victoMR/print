@@ -25,18 +25,17 @@ const footerColumns = [
     title: "COLECCIONES",
     links: [
       { name: "ACTUAL", href: "/shop" },
-      { name: "ARCHIVO", href: "/" },
-      { name: "PRÓXIMAMENTE", href: "/" },
+      { name: "ARCHIVO", href: "/", disabled: true },
+      { name: "PRÓXIMAMENTE", href: "/", disabled: true },
     ],
   },
   {
     title: "INFORMACIÓN",
     links: [
       { name: "NOSOTROS", href: "/nosotros" },
-      { name: "ENVÍOS Y DEVOLUCIONES", href: "/" },
+      { name: "ENVÍOS Y DEVOLUCIONES", href: "/envios-y-devoluciones" },
       { name: "TÉRMINOS Y CONDICIONES", href: "/terminos" },
       { name: "PRIVACIDAD", href: "/privacidad" },
-      { name: "FAQ", href: "/" },
     ],
   },
   {
@@ -150,7 +149,7 @@ function FooterColumn({
   links,
 }: {
   title: string;
-  links: { name: string; href: string; external?: boolean }[];
+  links: { name: string; href: string; external?: boolean; disabled?: boolean }[];
 }) {
   return (
     <div>
@@ -160,7 +159,11 @@ function FooterColumn({
       <ul className="space-y-2.5">
         {links.map((link) => (
           <li key={link.name}>
-            {link.external ? (
+            {link.disabled ? (
+              <span className="text-[10px] tracking-[0.15em] uppercase text-[#f8f9fa]/25 cursor-default">
+                {link.name}
+              </span>
+            ) : link.external ? (
               <FooterExternalLink
                 href={link.href}
                 className="text-[10px] tracking-[0.15em] uppercase text-[#f8f9fa]/60 hover:text-[#f8f9fa] boty-transition"

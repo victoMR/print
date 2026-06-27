@@ -30,11 +30,11 @@ export const checkoutRateLimit = rateLimit({
   message: { error: 'Demasiadas solicitudes. Intenta de nuevo en un momento.' },
 });
 
-/** 60 req / min — renovación de sesión (cookie sliding-window). */
+/** 10 req / min — renovación de sesión (cookie sliding-window). */
 export const sessionRefreshRateLimit = rateLimit({
   ...defaultOptions,
   windowMs: 60 * 1000,
-  max: 60,
+  max: 10,
   message: { error: 'Demasiadas renovaciones de sesión. Intenta de nuevo en un momento.' },
   skipSuccessfulRequests: false,
 });

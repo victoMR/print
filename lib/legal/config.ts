@@ -17,11 +17,11 @@ export const SITE_WHATSAPP_URL = `https://wa.me/14025471685?text=${encodeURIComp
 /** Completar con datos fiscales definitivos antes de publicación formal. */
 export const LEGAL_ENTITY = {
   tradeName: "Mr. Paps",
-  legalName: "[RAZÓN SOCIAL COMPLETA DEL TITULAR]",
-  rfc: "[RFC DEL RESPONSABLE]",
-  address: "[CALLE, NÚMERO, COLONIA, CIUDAD, ESTADO, C.P., MÉXICO]",
-  representative: "[NOMBRE DEL REPRESENTANTE LEGAL]",
+  legalName: "Alondra berenice lira Hernández",
+  rfc: "LIHA031226757",
+  address: "Calzada de Belén y Preescolar Niños de Belén, Av. Belén 533, Lomas de San Pedrito, 76148 Santiago de Querétaro, Qro.",
+  representative: "Alondra berenice lira Hernández",
   phone: SITE_WHATSAPP_PHONE_DISPLAY,
-  jurisdictionState: "[ESTADO — por definir según domicilio del responsable]",
+  jurisdictionState: "Querétaro",
   siteUrl: "https://mrpapshop.com",
 } as const;

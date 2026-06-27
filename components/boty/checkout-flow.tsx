@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createDraftOrder, fetchEstimate, finalizeOrderPayment } from "@/lib/api";
 import type { CheckoutRecipient } from "@/lib/api-types";
 import { useCart } from "@/lib/cart-context";
@@ -67,6 +67,8 @@ export function BotyCheckoutFlow() {
   const [busy, setBusy] = useState(false);
   const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [paymentOutcome, setPaymentOutcome] = useState<"success" | "error" | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const submittingRef = useRef(false);
 
   const paymentReturnUrl =
     typeof window !== "undefined" && publicOrderId
@@ -179,6 +181,34 @@ export function BotyCheckoutFlow() {
   // ── Step handlers ─────────────────────────────────────────────────────────
   async function handleAddressSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Client-side field validation
+    const isFillingForm = !user || selectedAddressId === "new" || savedAddresses.length === 0;
+    if (isFillingForm) {
+      const errs: Record<string, string> = {};
+      if (!recipient.name.trim()) errs.name = "El nombre es requerido";
+      if (!recipient.email.trim()) {
+        errs.email = "El correo es requerido";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.email)) {
+        errs.email = "Ingresa un correo válido";
+      }
+      if (!recipient.phone.trim()) {
+        errs.phone = "El teléfono es requerido";
+      } else if (!/^\d{10}$/.test(recipient.phone)) {
+        errs.phone = "El teléfono debe tener exactamente 10 dígitos";
+      }
+      if (!recipient.address1.trim()) errs.address1 = "La dirección es requerida";
+      if (Object.keys(errs).length > 0) {
+        setFieldErrors(errs);
+        const firstKey = Object.keys(errs)[0];
+        document.getElementById(`field-${firstKey}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+      setFieldErrors({});
+    }
+
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -211,6 +241,7 @@ export function BotyCheckoutFlow() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo calcular el envío. Verifica la dirección e intenta de nuevo.");
     } finally {
+      submittingRef.current = false;
       setBusy(false);
     }
   }
@@ -220,6 +251,8 @@ export function BotyCheckoutFlow() {
       setError("Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para continuar.");
       return;
     }
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -239,6 +272,7 @@ export function BotyCheckoutFlow() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear el pedido");
     } finally {
+      submittingRef.current = false;
       setBusy(false);
     }
   }
@@ -504,37 +538,45 @@ export function BotyCheckoutFlow() {
                       <Field
                         label="Nombre completo"
                         value={recipient.name}
-                        onChange={(v) => setRecipient({ ...recipient, name: v })}
+                        onChange={(v) => { setRecipient({ ...recipient, name: v }); setFieldErrors((p) => ({ ...p, name: "" })); }}
                         required
                         autoComplete="name"
+                        error={fieldErrors.name}
+                        fieldKey="name"
                       />
                     </div>
                     <Field
                       label="Correo electrónico"
                       type="email"
                       value={recipient.email}
-                      onChange={(v) => setRecipient({ ...recipient, email: v })}
+                      onChange={(v) => { setRecipient({ ...recipient, email: v }); setFieldErrors((p) => ({ ...p, email: "" })); }}
                       required
                       autoComplete="email"
                       disabled={!!user}
+                      error={fieldErrors.email}
+                      fieldKey="email"
                     />
                     <Field
                       label="Teléfono"
                       type="tel"
                       value={recipient.phone}
-                      onChange={(v) => setRecipient({ ...recipient, phone: v })}
+                      onChange={(v) => { setRecipient({ ...recipient, phone: v }); setFieldErrors((p) => ({ ...p, phone: "" })); }}
                       required
                       autoComplete="tel"
                       placeholder="10 dígitos"
+                      error={fieldErrors.phone}
+                      fieldKey="phone"
                     />
                     <div className="sm:col-span-2">
                       <Field
                         label="Calle y número"
                         value={recipient.address1}
-                        onChange={(v) => setRecipient({ ...recipient, address1: v })}
+                        onChange={(v) => { setRecipient({ ...recipient, address1: v }); setFieldErrors((p) => ({ ...p, address1: "" })); }}
                         required
                         autoComplete="address-line1"
                         placeholder="Av. Revolución 123"
+                        error={fieldErrors.address1}
+                        fieldKey="address1"
                       />
                     </div>
                     <div className="sm:col-span-2">
@@ -934,6 +976,8 @@ function Field({
   autoComplete,
   placeholder,
   disabled,
+  error,
+  fieldKey,
 }: {
   label: string;
   value: string;
@@ -944,9 +988,11 @@ function Field({
   autoComplete?: string;
   placeholder?: string;
   disabled?: boolean;
+  error?: string;
+  fieldKey?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
+    <label id={fieldKey ? `field-${fieldKey}` : undefined} className="flex flex-col gap-1 text-sm">
       <span className="font-medium">{label}</span>
       <input
         type={type}
@@ -957,12 +1003,16 @@ function Field({
         autoComplete={autoComplete}
         placeholder={placeholder}
         disabled={disabled}
+        aria-invalid={error ? "true" : undefined}
         className={cn(
-          "rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none boty-transition",
-          "focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
+          "rounded-xl border bg-background px-3 py-2.5 text-sm outline-none boty-transition",
+          error
+            ? "border-red-400 focus:ring-2 focus:ring-red-300/30"
+            : "border-border focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
           disabled && "opacity-60 cursor-not-allowed bg-muted",
         )}
       />
+      {error && <span className="text-xs text-red-500">{error}</span>}
     </label>
   );
 }

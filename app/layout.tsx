@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { CartProvider } from "@/lib/cart-context";
 import { CustomerProvider } from "@/lib/customer-context";
+import { CookieConsentProvider } from "@/lib/cookie-consent-context";
+import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
+import { ConditionalAnalytics } from "@/components/legal/conditional-analytics";
 import { JsonLd } from "@/components/seo/json-ld";
 import {
   DEFAULT_DESCRIPTION,
@@ -23,7 +26,14 @@ export const metadata: Metadata = {
   },
   description: DEFAULT_DESCRIPTION,
   keywords: ["print", "printful", "México", "POD", "tienda", "ropa personalizada"],
-  alternates: { canonical: "/" },
+  alternates: {
+    canonical: getSiteUrl(),
+    languages: {
+      "es-MX": getSiteUrl(),
+      "es": getSiteUrl(),
+      "x-default": getSiteUrl(),
+    },
+  },
   openGraph: {
     ...defaultMeta.openGraph,
     url: getSiteUrl(),
@@ -49,10 +59,13 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <JsonLd data={organizationJsonLd()} />
-        <CustomerProvider>
-          <CartProvider>{children}</CartProvider>
-        </CustomerProvider>
-        {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" ? <Analytics /> : null}
+        <CookieConsentProvider>
+          <CustomerProvider>
+            <CartProvider>{children}</CartProvider>
+          </CustomerProvider>
+          <CookieConsentBanner />
+          {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" ? <ConditionalAnalytics /> : null}
+        </CookieConsentProvider>
       </body>
     </html>
   );

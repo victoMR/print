@@ -323,7 +323,8 @@ export function ProductDetail({ product }: ProductDetailProps) {
 
             {/* Color selector */}
             {colors.length > 0 && (
-              <div className="mb-7">
+              <fieldset className="mb-7 border-0 p-0 m-0">
+                <legend className="sr-only">Color</legend>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-[11px] tracking-[0.2em] uppercase font-sans text-[#2A2726]">
                     COLOR:
@@ -366,12 +367,13 @@ export function ProductDetail({ product }: ProductDetailProps) {
                     );
                   })}
                 </div>
-              </div>
+              </fieldset>
             )}
 
             {/* Size selector */}
             {allSizes.length > 0 && (
-              <div className="mb-7">
+              <fieldset className="mb-7 border-0 p-0 m-0">
+                <legend className="sr-only">Talla</legend>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[11px] tracking-[0.2em] uppercase font-sans text-[#2A2726]">
                     TALLA: {selected?.size}
@@ -416,7 +418,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
                     );
                   })}
                 </div>
-              </div>
+              </fieldset>
             )}
 
             {/* Quantity */}

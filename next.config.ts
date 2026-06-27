@@ -28,6 +28,8 @@ const nextConfig: NextConfig = {
       { source: "/catalogo", destination: "/shop", permanent: true },
       { source: "/producto/:slug", destination: "/product/:slug", permanent: true },
       { source: "/aviso-de-privacidad", destination: "/privacidad", permanent: true },
+      { source: "/devoluciones", destination: "/envios-y-devoluciones", permanent: true },
+      { source: "/envios", destination: "/envios-y-devoluciones", permanent: true },
     ];
   },
   async rewrites() {

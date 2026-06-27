@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Loader2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,7 @@ export function PaymentOutcomeOverlay({
 }: PaymentOutcomeOverlayProps) {
   const [mounted, setMounted] = useState(false);
   const isSuccess = variant === "success";
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -38,10 +39,39 @@ export function PaymentOutcomeOverlay({
     };
   }, []);
 
+  useEffect(() => {
+    if (!mounted) return;
+    const el = dialogRef.current;
+    if (!el) return;
+    const focusable = el.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    focusable[0]?.focus();
+
+    function trapFocus(e: KeyboardEvent) {
+      if (e.key !== "Tab" || !el) return;
+      const els = Array.from(
+        el.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((n) => !n.hasAttribute("disabled"));
+      if (els.length === 0) return;
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      }
+    }
+    document.addEventListener("keydown", trapFocus);
+    return () => document.removeEventListener("keydown", trapFocus);
+  }, [mounted]);
+
   if (!mounted) return null;
 
   return createPortal(
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 animate-payment-backdrop-in"
       role="alertdialog"
       aria-modal="true"

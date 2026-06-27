@@ -140,7 +140,7 @@ v1MrpapsAdminRouter.get('/analytics/export', async (req, res, next) => {
   try {
     const query = adminAnalyticsExportSchema.parse(req.query);
     const data = await getAdminDashboard(query);
-    const stamp = `${data.period.from}_${data.period.to}`;
+    const stamp = `${data.period.from}_${data.period.to}`.replace(/[^\w-]/g, '');
 
     if (query.format === 'csv') {
       const csv = buildAnalyticsCsv(data);
@@ -394,7 +394,7 @@ v1MrpapsAdminRouter.patch('/orders/:publicId/status', async (req, res, next) => 
         carrier: body.carrier ?? null,
         internal_notes: body.internalNotes ?? null,
       },
-      { note: body.note, createdBy: 'admin' },
+      { note: body.note, createdBy: req.adminUser!.email },
     );
     res.json({
       data: {

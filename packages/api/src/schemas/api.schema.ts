@@ -26,7 +26,7 @@ export const shippingRatesBodySchema = z.object({
   address: addressSchema,
   recipient: z.object({
     name: z.string().min(1),
-    phone: z.string().min(10),
+    phone: z.string().regex(/^\d{10}$/, 'El teléfono debe tener 10 dígitos sin espacios ni guiones'),
     email: z.string().email(),
   }).optional(),
 });
@@ -52,7 +52,7 @@ export const createOrderBodySchema = z.object({
   shippingMethod: z.string().min(1).max(80).optional(),
   recipient: addressSchema.extend({
     name: z.string().min(1),
-    phone: z.string().min(10),
+    phone: z.string().regex(/^\d{10}$/, 'El teléfono debe tener 10 dígitos sin espacios ni guiones'),
     email: z.string().email(),
     taxNumber: z.string().optional(),
   }),
