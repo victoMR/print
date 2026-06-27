@@ -534,11 +534,17 @@ export async function updateOrderStatus(
     const orderRow = orderResult.rows[0];
     if (!orderRow) throw new Error('Pedido no encontrado');
 
-    // Al cancelar, devolver al inventario cualquier unidad descontada (pago confirmado).
-    // Idempotente: ponemos inventory_reserved_qty en 0 para evitar doble devolución.
+    // Al cancelar, devolver al inventario cualquier unidad descontada.
+    // Leemos los items DENTRO de la transacción con FOR UPDATE para evitar
+    // doble liberación si el cron de expiración corrió entre getOrderByPublicId
+    // y esta transacción (TOCTOU race con releaseExpiredOrderReservations).
     if (toStatus === 'cancelado') {
+      const freshItems = await client.query<MrpapsOrderItemRow>(
+        `SELECT * FROM mrpaps_order_items WHERE order_id = $1 FOR UPDATE`,
+        [existing.id],
+      );
       let releasedAny = false;
-      for (const item of existing.items) {
+      for (const item of freshItems.rows) {
         const reserved = item.inventory_reserved_qty ?? 0;
         if (reserved > 0) {
           await productsRepo.releaseVariantStockTx(client, item.variant_id, reserved);

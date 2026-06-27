@@ -54,9 +54,7 @@ export async function estimateCosts(input: EstimateInput) {
   const subtotal = lines.reduce((sum, l) => sum + l.unitPriceMxn * l.quantity, 0);
 
   const auto = await resolveAutoShippingMxn({ items: input.items, address: input.address });
-  // Envío desactivado temporalmente — no sumar al total cobrado
-  // const totals = computeRetailTotals(subtotal, auto.priceMxn);
-  const totals = computeRetailTotals(subtotal, 0);
+  const totals = computeRetailTotals(subtotal, auto.priceMxn);
 
   return {
     currency: 'MXN' as const,
@@ -92,9 +90,7 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
 
   // Tarifa más barata automática; ignore client-supplied shippingMethod
   const auto = await resolveAutoShippingMxn(shippingInput);
-  // Envío desactivado temporalmente — no sumar al total cobrado
-  // const expected = computeRetailTotals(subtotal, auto.priceMxn);
-  const expected = computeRetailTotals(subtotal, 0);
+  const expected = computeRetailTotals(subtotal, auto.priceMxn);
 
   if (
     body.retailCosts.subtotal !== expected.subtotal ||
