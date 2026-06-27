@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
 import { ProductDetail } from "@/components/boty/product-detail";
@@ -27,6 +28,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   const res = await fetchCatalogProduct(slug);
 
   if (!res?.data) notFound();
@@ -43,7 +45,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <main className="min-h-screen">
-      <JsonLd data={[productJsonLd(product), productBreadcrumbJsonLd(product)]} />
+      <JsonLd data={[productJsonLd(product), productBreadcrumbJsonLd(product)]} nonce={nonce} />
       <Header alwaysVisible />
       <ProductDetail product={product} />
       <Footer />

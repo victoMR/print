@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
 import { CartProvider } from "@/lib/cart-context";
 import { CustomerProvider } from "@/lib/customer-context";
@@ -47,18 +48,19 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html lang="es">
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/txn2dvr.css" />
       </head>
       <body className="font-sans antialiased">
-        <JsonLd data={organizationJsonLd()} />
+        <JsonLd data={organizationJsonLd()} nonce={nonce} />
         <CookieConsentProvider>
           <CustomerProvider>
             <CartProvider>{children}</CartProvider>

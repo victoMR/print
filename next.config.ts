@@ -1,26 +1,10 @@
 import type { NextConfig } from "next";
 import { NEXT_IMAGE_REMOTE_PATTERNS } from "./lib/next-image-hosts";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000";
-const apiOrigin = apiUrl.replace(/\/$/, "");
+// CSP is set dynamically per-request in middleware.ts (nonce-based).
+// Only non-CSP security headers are set here.
 
-const csp = [
-  "default-src 'self'",
-  // 'unsafe-inline' required for JSON-LD script tags and Next.js inline chunks.
-  // TODO: migrate to nonce-based CSP via Next.js middleware for full XSS protection.
-  // 'unsafe-eval' removed — it was never needed in production and disables eval()-based attacks.
-  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://va.vercel-scripts.com https://*.vercel-scripts.com",
-  "style-src 'self' 'unsafe-inline' https://use.typekit.net",
-  "img-src 'self' data: blob: https:",
-  "media-src 'self' blob:",
-  "font-src 'self' data: https://use.typekit.net https://p.typekit.net",
-  `connect-src 'self' ${apiOrigin} https://api.stripe.com https://vitals.vercel-insights.com https://*.vercel-insights.com`,
-  "frame-src https://js.stripe.com https://hooks.stripe.com",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self' mailto:",
-  "navigate-to 'self' https: http: mailto: tel:",
-].join("; ");
+const apiOrigin = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000").replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   async redirects() {
@@ -57,7 +41,6 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
-          { key: "Content-Security-Policy", value: csp },
         ],
       },
     ];

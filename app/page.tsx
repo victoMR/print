@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { Header } from "@/components/boty/header";
 import { Hero } from "@/components/boty/hero";
 import { HomeEditorialGrid } from "@/components/boty/home-editorial-grid";
@@ -19,9 +20,10 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <main>
-      <JsonLd data={websiteJsonLd()} />
+      <JsonLd data={websiteJsonLd()} nonce={nonce} />
       <Header alwaysVisible />
       <Hero />
       <HomeEditorialGrid />
