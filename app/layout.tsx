@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { Analytics } from "@vercel/analytics/next";
 import { CartProvider } from "@/lib/cart-context";
 import { CustomerProvider } from "@/lib/customer-context";
 import { CookieConsentProvider } from "@/lib/cookie-consent-context";
