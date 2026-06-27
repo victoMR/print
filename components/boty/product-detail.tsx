@@ -197,18 +197,12 @@ export function ProductDetail({ product }: ProductDetailProps) {
 
   const selectedColorImageUrl = useMemo(() => {
     if (!selected?.color) return null;
-    console.log('[DBG] colorImages recibidos:', product.colorImages);
-    console.log('[DBG] buscando color:', selected.color);
     for (const ci of product.colorImages ?? []) {
       if (colorsMatch(ci.color, selected.color)) {
-        const url = normalizeAssetUrl(ci.imageUrl) || null;
-        console.log('[DBG] match encontrado → url:', url);
-        return url;
+        return normalizeAssetUrl(ci.imageUrl) || null;
       }
     }
-    const fallback = colorImageByKey.get(normalizeColorKey(selected.color)) ?? null;
-    console.log('[DBG] sin match, fallback:', fallback);
-    return fallback;
+    return colorImageByKey.get(normalizeColorKey(selected.color)) ?? null;
   }, [selected?.color, product.colorImages, colorImageByKey]);
 
   const displayImages = useMemo(() => {
