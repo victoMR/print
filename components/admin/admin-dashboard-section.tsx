@@ -79,7 +79,7 @@ function KpiCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] uppercase tracking-[0.18em] font-sans text-[#7A756E]">{title}</p>
-          <p className="font-serif text-2xl sm:text-3xl mt-1 leading-tight text-[#2A2726]">{value}</p>
+          <p className="font-sans tabular-nums text-2xl sm:text-3xl mt-1 leading-tight text-[#2A2726]">{value}</p>
           <p className="text-xs text-[#7A756E] mt-2 leading-relaxed font-sans">{description}</p>
         </div>
       </div>
@@ -352,7 +352,7 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
                 <p className="text-xs text-[#f8f9fa]/40 mt-1">
                   Del {formatFriendlyDate(data.period.from)} al {formatFriendlyDate(data.period.to)}
                 </p>
-                <p className="font-serif text-3xl sm:text-4xl mt-3 text-[#f8f9fa]">
+                <p className="font-sans tabular-nums text-3xl sm:text-4xl mt-3 text-[#f8f9fa]">
                   {formatMxn(data.summary.revenueMxn)}
                 </p>
                 <p className="text-sm text-[#f8f9fa]/55 mt-2">
@@ -372,7 +372,7 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
               {hasSales && (
                 <div className="border border-[#f8f9fa]/15 px-4 py-3 text-sm">
                   <p className="text-[#f8f9fa]/45 text-[10px] uppercase tracking-[0.18em] font-sans">Promedio por pedido</p>
-                  <p className="font-serif text-xl mt-1 text-[#f8f9fa]">{formatMxn(data.summary.avgOrderMxn)}</p>
+                  <p className="font-sans tabular-nums text-xl mt-1 text-[#f8f9fa]">{formatMxn(data.summary.avgOrderMxn)}</p>
                 </div>
               )}
             </div>
@@ -492,7 +492,7 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="font-serif text-base text-[#2A2726]">{formatMxn(row.revenueMxn)}</p>
+                      <p className="font-sans tabular-nums text-base text-[#2A2726]">{formatMxn(row.revenueMxn)}</p>
                       <p className="text-[10px] text-[#7A756E] font-mono">{row.sku}</p>
                     </div>
                   </div>

@@ -18,7 +18,8 @@ const csp = [
   "frame-src https://js.stripe.com https://hooks.stripe.com",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  "form-action 'self' mailto:",
+  "navigate-to 'self' https: http: mailto: tel:",
 ].join("; ");
 
 const nextConfig: NextConfig = {

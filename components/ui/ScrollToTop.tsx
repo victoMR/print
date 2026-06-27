@@ -25,7 +25,7 @@ export function ScrollToTop() {
         "fixed z-50 flex h-12 w-12 items-center justify-center rounded-full",
         "bg-primary text-primary-foreground shadow-lg boty-shadow",
         "boty-transition hover:scale-105 hover:bg-primary/90",
-        "bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1.25rem,env(safe-area-inset-right))]",
+        "bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-[max(1.25rem,env(safe-area-inset-left))]",
         visible
           ? "translate-y-0 opacity-100 pointer-events-auto"
           : "translate-y-4 opacity-0 pointer-events-none",

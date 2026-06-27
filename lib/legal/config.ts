@@ -4,7 +4,9 @@ export const LEGAL_UPDATED_LABEL = "Junio de 2026";
 
 export const LEGAL_CONTACT_EMAIL = "contacto@mrpapshop.com";
 export const SITE_INSTAGRAM_URL = "https://www.instagram.com/mr._paps_";
-export const LEGAL_CONTACT_MAILTO = `mailto:${LEGAL_CONTACT_EMAIL}`;
+export const LEGAL_CONTACT_MAILTO = `mailto:${LEGAL_CONTACT_EMAIL}?subject=${encodeURIComponent(
+  "Consulta Mr. Paps",
+)}`;
 
 export const SITE_WHATSAPP_PHONE_E164 = "+14025471685";
 export const SITE_WHATSAPP_PHONE_DISPLAY = "+1 (402) 547 1685";

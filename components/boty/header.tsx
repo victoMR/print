@@ -11,10 +11,8 @@ import { Logo } from "@/components/ui/Logo";
 import { SITE_WHATSAPP_URL } from "@/lib/legal/config";
 
 const navLinks = [
-  { label: "SHOP", href: "/shop" },
   { label: "COLECCIONES", href: "/shop" },
-  { label: "ABOUT", href: "/nosotros" },
-  { label: "JOURNAL", href: "/" },
+  { label: "NOSOTROS", href: "/nosotros" },
   { label: "CONTACTO", href: SITE_WHATSAPP_URL, external: true },
 ] as const;
 

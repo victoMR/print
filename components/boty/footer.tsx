@@ -91,21 +91,15 @@ export function Footer({ variant = "full" }: FooterProps) {
               </div>
 
               {/* Right: social divider */}
-              <div className="flex flex-row lg:flex-col lg:pl-10 lg:border-l lg:border-[#f8f9fa]/20 gap-4 lg:gap-3">
+              <div className="relative z-[51] flex flex-row lg:flex-col lg:pl-10 lg:border-l lg:border-[#f8f9fa]/20 gap-4 lg:gap-3">
                 {socialLinks.map((link) => (
-                  <a
+                  <FooterExternalLink
                     key={link.name}
                     href={link.href}
-                    {...(link.external
-                      ? {
-                          target: link.href.startsWith("mailto:") ? undefined : "_blank",
-                          rel: link.href.startsWith("mailto:") ? undefined : "noopener noreferrer",
-                        }
-                      : {})}
                     className="text-[10px] tracking-[0.18em] uppercase text-[#f8f9fa]/70 hover:text-[#f8f9fa] boty-transition"
                   >
                     {link.name}
-                  </a>
+                  </FooterExternalLink>
                 ))}
               </div>
             </div>
@@ -125,6 +119,32 @@ export function Footer({ variant = "full" }: FooterProps) {
   );
 }
 
+function FooterExternalLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const isMailto = href.startsWith("mailto:");
+
+  if (isMailto) {
+    return (
+      <a href={href} className={className}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+      {children}
+    </a>
+  );
+}
+
 function FooterColumn({
   title,
   links,
@@ -141,15 +161,12 @@ function FooterColumn({
         {links.map((link) => (
           <li key={link.name}>
             {link.external ? (
-              <a
+              <FooterExternalLink
                 href={link.href}
-                {...(link.href.startsWith("mailto:")
-                  ? {}
-                  : { target: "_blank", rel: "noopener noreferrer" })}
                 className="text-[10px] tracking-[0.15em] uppercase text-[#f8f9fa]/60 hover:text-[#f8f9fa] boty-transition"
               >
                 {link.name}
-              </a>
+              </FooterExternalLink>
             ) : (
               <Link
                 href={link.href}

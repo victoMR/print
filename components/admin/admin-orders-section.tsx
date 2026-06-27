@@ -442,7 +442,7 @@ function OrderGridCard({
         <div className="flex items-start gap-3">
           <OrderThumb items={order.items} size="sm" />
           <div className="flex-1 min-w-0">
-            <p className="font-serif text-base leading-snug truncate">{order.orderNumber}</p>
+            <p className="font-sans tabular-nums text-base leading-snug truncate">{order.orderNumber}</p>
             <p className="text-sm font-medium truncate">{order.customerName}</p>
             <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
           </div>
@@ -489,7 +489,7 @@ function OrderListRow({
       <OrderThumb items={order.items} size="sm" />
       <div className="flex-1 min-w-0 md:contents">
         <div className="min-w-0">
-          <p className="font-serif text-base truncate">{order.orderNumber}</p>
+          <p className="font-sans tabular-nums text-base truncate">{order.orderNumber}</p>
           <p className="text-sm truncate">{order.customerName}</p>
           <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
         </div>
@@ -583,7 +583,7 @@ function AdminOrderDetail({
         <div className="flex flex-wrap justify-between gap-4">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Pedido admin</p>
-            <h2 className="font-serif text-3xl mt-1">#{order.orderNumber}</h2>
+            <h2 className="font-sans tabular-nums text-3xl mt-1">#{order.orderNumber}</h2>
             <p className="text-sm mt-2">
               <a href={`mailto:${order.customer.email}`} className="text-primary hover:underline">
                 {order.customer.email}
@@ -599,7 +599,7 @@ function AdminOrderDetail({
                 {PAYMENT_LABELS[order.paymentStatus] ?? order.paymentStatus}
               </BotyBadge>
             )}
-            <p className="font-serif text-2xl text-primary tabular-nums">{formatMxn(order.totals.totalMxn)}</p>
+            <p className="font-sans tabular-nums text-2xl text-primary">{formatMxn(order.totals.totalMxn)}</p>
           </div>
         </div>
 
