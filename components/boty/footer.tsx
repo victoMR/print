@@ -63,7 +63,7 @@ export function Footer({ variant = "full" }: FooterProps) {
   return (
     <footer
       className={cn(
-        "w-full bg-[#1E5A43] text-[#f8f9fa]",
+        "w-full bg-[#5C1A24] text-[#f8f9fa]",
         isFull ? "pt-16 md:pt-20 pb-10 md:pb-12" : "pt-10 pb-8",
       )}
     >

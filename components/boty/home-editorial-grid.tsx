@@ -10,7 +10,7 @@ const blocks = [
     href: "/shop",
     bgColor: "#1E3A2A",
     textColor: "#f8f9fa",
-    image: "/images/posters/feature-why.jpg",
+    image: "/images/home/Photo1.webp",
     imageAlt: "Colecciones Mr. Paps",
   },
   {
@@ -27,7 +27,7 @@ const blocks = [
     href: "/shop",
     bgColor: "#2A2726",
     textColor: "#f8f9fa",
-    image: "/images/posters/feature-production.jpg",
+    image: "/images/home/Photo2.webp",
     imageAlt: "Calidad y detalles Mr. Paps",
   },
   {
@@ -35,7 +35,7 @@ const blocks = [
     href: "/shop",
     bgColor: "#3A0F18",
     textColor: "#f8f9fa",
-    image: "/images/posters/feature-personalizable.jpg",
+    image: "/images/home/Photo3.webp",
     imageAlt: "Piezas exclusivas Mr. Paps",
   },
 ];
