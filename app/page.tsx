@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: DEFAULT_DESCRIPTION,
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Mr. Paps — Lujo Silencioso",
+    title: "Mr. Paps — Presencia que permanece",
     description: DEFAULT_DESCRIPTION,
     url: getSiteUrl(),
   },

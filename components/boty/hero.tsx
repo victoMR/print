@@ -111,7 +111,7 @@ export function Hero() {
         <div className="absolute inset-0 z-0" aria-hidden>
           <Image
             src="/images/hero-photo.png"
-            alt="Mr. Paps — Lujo Silencioso"
+            alt="Mr. Paps — Presencia que permanece"
             fill
             priority
             className="object-cover object-center"
@@ -130,7 +130,7 @@ export function Hero() {
               style={{ animationDelay: "0.3s", animationFillMode: "forwards" }}
             >
               <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl tracking-[0.08em] mb-2">
-                LUJO SILENCIOSO.
+                DISEÑO, PODER & ESTILO.
               </span>
               <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl tracking-[0.08em] whitespace-nowrap">
                 PRESENCIA QUE PERMANECE.

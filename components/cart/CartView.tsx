@@ -177,7 +177,7 @@ export function CartView() {
           <div className="flex items-center gap-3">
             <Truck className="w-4 h-4 text-[#7A756E] shrink-0" />
             <span className="text-[10px] tracking-[0.1em] uppercase text-[#7A756E]">
-              ENVÍOS A TODO MÉXICO Y ESTADOS UNIDOS
+              ENVÍOS A TODO MÉXICO
             </span>
           </div>
           <div className="flex items-center gap-3">

@@ -56,7 +56,7 @@ export default function NosotrosPage() {
             MANIFIESTO
           </p>
           <blockquote className="font-serif text-3xl md:text-4xl lg:text-5xl tracking-[0.04em] text-[#F5F0E6] leading-snug">
-            "Lujo silencioso.<br className="hidden md:block" />
+            "Diseño, poder & estilo.<br className="hidden md:block" />
             Presencia que permanece."
           </blockquote>
           <p className="mt-10 text-[12px] tracking-[0.12em] font-sans text-[#D4CFC5]/70 max-w-xl mx-auto leading-relaxed">
@@ -120,7 +120,7 @@ export default function NosotrosPage() {
                 <div className="border border-[#D4CFC5] p-8">
                   <p className="font-serif text-4xl text-[#5C1A24] mb-2">MX</p>
                   <p className="text-[11px] tracking-[0.18em] uppercase font-sans text-[#7A756E]">
-                    Hecho para México y el mundo
+                    Hecho en México para México
                   </p>
                 </div>
               </div>

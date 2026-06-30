@@ -42,7 +42,7 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
       {/* Announcement bar */}
       <div className="bg-[#5C1A24] text-[#f8f9fa] text-center py-2.5">
         <p className="text-[10px] tracking-[0.22em] uppercase font-sans">
-          ENVÍOS A TODO MÉXICO Y ESTADOS UNIDOS.
+          ENVÍOS A TODO MÉXICO.
         </p>
       </div>
 
