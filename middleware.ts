@@ -5,6 +5,7 @@ import {
   GEO_COUNTRY_HEADER,
   LOCALE_COOKIE,
   LOCALE_HEADER,
+  LOCALE_MANUAL_COOKIE,
   resolveLocale,
 } from "./lib/i18n/locale";
 
@@ -46,6 +47,7 @@ export function middleware(request: NextRequest) {
   // final response below, mirroring how the CSP nonce is applied only there too.
   const { locale, source } = resolveLocale({
     cookieValue: request.cookies.get(LOCALE_COOKIE)?.value,
+    isManual: request.cookies.get(LOCALE_MANUAL_COOKIE)?.value === "1",
     country: request.headers.get(GEO_COUNTRY_HEADER),
     acceptLanguage: request.headers.get("accept-language"),
   });
@@ -93,8 +95,10 @@ export function middleware(request: NextRequest) {
   response.headers.set("Content-Security-Policy", buildCsp(nonce));
   response.headers.set("Content-Language", locale);
 
-  // Only persist the cookie when it wasn't already an explicit choice — never
-  // clobber a manual override (set via the language switcher) with geo-detection.
+  // Only persist the cookie when it wasn't a manual choice — an auto-detected
+  // locale is re-derived and re-written on every request (so a returning
+  // visitor from a different country gets re-detected), while a manual
+  // choice (source === "cookie", gated on LOCALE_MANUAL_COOKIE) stays put.
   // Written as a Set-Cookie response header (not document.cookie) so it isn't
   // subject to Safari ITP's 7-day cap on client-script-set cookies.
   if (source !== "cookie") {

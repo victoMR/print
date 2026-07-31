@@ -4,6 +4,13 @@ export const LOCALES: Locale[] = ["es", "en"];
 export const DEFAULT_LOCALE: Locale = "es";
 export const LOCALE_COOKIE = "NEXT_LOCALE";
 
+// Marks that NEXT_LOCALE was set by the user via the language switcher (not by
+// geo-detection). Without this, an auto-detected cookie from a first visit
+// would look identical to a deliberate choice and would never be re-evaluated
+// on later visits — e.g. someone browsing over a US VPN after previously
+// visiting from Mexico would stay stuck on the earlier auto-detected locale.
+export const LOCALE_MANUAL_COOKIE = "NEXT_LOCALE_MANUAL";
+
 // Vercel injects this header at the edge based on the request's source IP —
 // no external geo-IP service/library needed.
 export const GEO_COUNTRY_HEADER = "x-vercel-ip-country";
@@ -32,15 +39,20 @@ export function localeFromAcceptLanguage(header: string | null | undefined): Loc
 }
 
 /**
- * Resolves the locale for a request: explicit cookie (manual override) wins,
- * then geo-detected country, then Accept-Language, then the site default.
+ * Resolves the locale for a request: a manually-chosen cookie (set via the
+ * language switcher) wins and is never re-evaluated. Otherwise the locale is
+ * re-derived from geo-detected country / Accept-Language / default on every
+ * request — an old auto-detected cookie is not treated as sticky, so a
+ * returning visitor from a different country (e.g. over a VPN) gets
+ * re-detected instead of being stuck on whatever was detected last time.
  */
 export function resolveLocale(input: {
   cookieValue?: string | null;
+  isManual?: boolean;
   country?: string | null;
   acceptLanguage?: string | null;
 }): { locale: Locale; source: "cookie" | "geo" | "header" | "default" } {
-  if (isLocale(input.cookieValue)) {
+  if (input.isManual && isLocale(input.cookieValue)) {
     return { locale: input.cookieValue, source: "cookie" };
   }
 
