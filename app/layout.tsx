@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { CartProvider } from "@/lib/cart-context";
 import { CustomerProvider } from "@/lib/customer-context";
 import { CookieConsentProvider } from "@/lib/cookie-consent-context";
@@ -26,13 +28,12 @@ export const metadata: Metadata = {
   },
   description: DEFAULT_DESCRIPTION,
   keywords: ["print", "printful", "México", "POD", "tienda", "ropa personalizada"],
+  // Same-URL locale switching (cookie/geo-based, no /en/ prefix) means hreflang
+  // alternates would be misleading — Googlebot doesn't reliably vary by cookie/geo
+  // across crawls, so we only claim the one canonical URL rather than a fake
+  // per-language mapping that all pointed at this same address.
   alternates: {
     canonical: getSiteUrl(),
-    languages: {
-      "es-MX": getSiteUrl(),
-      "es": getSiteUrl(),
-      "x-default": getSiteUrl(),
-    },
   },
   openGraph: {
     ...defaultMeta.openGraph,
@@ -53,20 +54,24 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const locale = await getLocale();
+  const messages = await getMessages();
   return (
-    <html lang="es">
+    <html lang={locale}>
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/txn2dvr.css" />
       </head>
       <body className="font-sans antialiased">
-        <JsonLd data={organizationJsonLd()} nonce={nonce} />
-        <CookieConsentProvider>
-          <CustomerProvider>
-            <CartProvider>{children}</CartProvider>
-          </CustomerProvider>
-          <CookieConsentBanner />
-          {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" ? <ConditionalAnalytics /> : null}
-        </CookieConsentProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <JsonLd data={organizationJsonLd()} nonce={nonce} />
+          <CookieConsentProvider>
+            <CustomerProvider>
+              <CartProvider>{children}</CartProvider>
+            </CustomerProvider>
+            <CookieConsentBanner />
+            {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" ? <ConditionalAnalytics /> : null}
+          </CookieConsentProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import {
   LEGAL_CONTACT_EMAIL,
   LEGAL_CONTACT_MAILTO,
@@ -10,55 +12,56 @@ import {
   SITE_WHATSAPP_URL,
 } from "@/lib/legal/config";
 
-const footerColumns = [
-  {
-    title: "TIENDA",
-    links: [
-      { name: "TODOS LOS PRODUCTOS", href: "/shop" },
-      { name: "PLAYERAS", href: "/shop" },
-      { name: "SUDADERAS", href: "/shop" },
-      { name: "PANTALONES", href: "/shop" },
-      { name: "ACCESORIOS", href: "/shop" },
-    ],
-  },
-  {
-    title: "COLECCIONES",
-    links: [
-      { name: "ACTUAL", href: "/shop" },
-      { name: "ARCHIVO", href: "/", disabled: true },
-      { name: "PRÓXIMAMENTE", href: "/", disabled: true },
-    ],
-  },
-  {
-    title: "INFORMACIÓN",
-    links: [
-      { name: "NOSOTROS", href: "/nosotros" },
-      { name: "ENVÍOS Y DEVOLUCIONES", href: "/envios-y-devoluciones" },
-      { name: "TÉRMINOS Y CONDICIONES", href: "/terminos" },
-      { name: "PRIVACIDAD", href: "/privacidad" },
-    ],
-  },
-  {
-    title: "CONTACTO",
-    links: [
-      { name: "WHATSAPP", href: SITE_WHATSAPP_URL, external: true },
-      { name: LEGAL_CONTACT_EMAIL, href: LEGAL_CONTACT_MAILTO, external: true },
-    ],
-  },
-];
-
-const socialLinks = [
-  { name: "INSTAGRAM", href: SITE_INSTAGRAM_URL, external: true },
-  { name: "WHATSAPP", href: SITE_WHATSAPP_URL, external: true },
-  { name: "EMAIL", href: LEGAL_CONTACT_MAILTO, external: true },
-];
-
 type FooterProps = {
   variant?: "full" | "compact";
 };
 
 export function Footer({ variant = "full" }: FooterProps) {
+  const t = useTranslations("layout.footer");
   const isFull = variant === "full";
+
+  const footerColumns = [
+    {
+      title: t("shop.title"),
+      links: [
+        { name: t("shop.all"), href: "/shop" },
+        { name: t("shop.tshirts"), href: "/shop" },
+        { name: t("shop.hoodies"), href: "/shop" },
+        { name: t("shop.pants"), href: "/shop" },
+        { name: t("shop.accessories"), href: "/shop" },
+      ],
+    },
+    {
+      title: t("collections.title"),
+      links: [
+        { name: t("collections.current"), href: "/shop" },
+        { name: t("collections.archive"), href: "/", disabled: true },
+        { name: t("collections.comingSoon"), href: "/", disabled: true },
+      ],
+    },
+    {
+      title: t("info.title"),
+      links: [
+        { name: t("info.about"), href: "/nosotros" },
+        { name: t("info.shippingReturns"), href: "/envios-y-devoluciones" },
+        { name: t("info.terms"), href: "/terminos" },
+        { name: t("info.privacy"), href: "/privacidad" },
+      ],
+    },
+    {
+      title: t("contact.title"),
+      links: [
+        { name: "WhatsApp", href: SITE_WHATSAPP_URL, external: true },
+        { name: LEGAL_CONTACT_EMAIL, href: LEGAL_CONTACT_MAILTO, external: true },
+      ],
+    },
+  ];
+
+  const socialLinks = [
+    { name: "Instagram", href: SITE_INSTAGRAM_URL, external: true },
+    { name: "WhatsApp", href: SITE_WHATSAPP_URL, external: true },
+    { name: t("email"), href: LEGAL_CONTACT_MAILTO, external: true },
+  ];
 
   return (
     <footer
@@ -79,7 +82,7 @@ export function Footer({ variant = "full" }: FooterProps) {
                     <Logo color="#f8f9fa" className="w-32" />
                   </Link>
                   <p className="text-[10px] tracking-[0.1em] text-[#f8f9fa]/50 uppercase">
-                    © MR. PAPS 2024.<br />TODOS LOS DERECHOS RESERVADOS.
+                    © Mr. Paps 2024.<br />{t("allRightsReserved")}
                   </p>
                 </div>
 
@@ -100,6 +103,7 @@ export function Footer({ variant = "full" }: FooterProps) {
                     {link.name}
                   </FooterExternalLink>
                 ))}
+                <LanguageSwitcher className="text-[#f8f9fa]/70" />
               </div>
             </div>
           </>
@@ -109,8 +113,9 @@ export function Footer({ variant = "full" }: FooterProps) {
               <Logo color="#f8f9fa" className="w-24" />
             </Link>
             <p className="text-[10px] tracking-[0.1em] text-[#f8f9fa]/50 uppercase">
-              © MR. PAPS 2024. TODOS LOS DERECHOS RESERVADOS.
+              © Mr. Paps 2024. {t("allRightsReserved")}
             </p>
+            <LanguageSwitcher className="text-[#f8f9fa]/70" />
           </div>
         )}
       </div>

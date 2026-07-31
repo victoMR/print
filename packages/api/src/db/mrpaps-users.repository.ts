@@ -127,7 +127,9 @@ export async function listOrdersByUser(
     public_id: string;
     order_number: string;
     status: string;
-    total_mxn: string;
+    currency: 'MXN' | 'USD';
+    total_mxn: string | null;
+    total_usd: string | null;
     ordered_at: string;
     item_count: number;
   }[]
@@ -141,10 +143,12 @@ export async function listOrdersByUser(
     public_id: string;
     order_number: string;
     status: string;
-    total_mxn: string;
+    currency: 'MXN' | 'USD';
+    total_mxn: string | null;
+    total_usd: string | null;
     ordered_at: string;
   }>(
-    `SELECT id, public_id, order_number, status, total_mxn::text, ordered_at
+    `SELECT id, public_id, order_number, status, currency, total_mxn::text, total_usd::text, ordered_at
      FROM mrpaps_orders
      WHERE user_id = $1
        AND payment_status IN ('paid', 'refunded')

@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useLocale } from "next-intl";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { resolveProductImageSrc } from "@/lib/asset-url";
 import type { CatalogProductSummary } from "@/lib/api-types";
-import { formatMxn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
+import { localizedProductName } from "@/lib/i18n/product-content";
+import { currencyForLocale } from "@/lib/i18n/currency";
+import type { Locale } from "@/lib/i18n/locale";
 
 type CatalogProductCardProps = {
   product: CatalogProductSummary;
@@ -23,6 +27,10 @@ export function CatalogProductCard({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = resolveProductImageSrc(product.thumbnail);
+  const locale = useLocale() as Locale;
+  const name = localizedProductName(product, locale);
+  const currency = currencyForLocale(locale);
+  const price = currency === "USD" ? product.priceFromUsd : product.priceFromMxn;
 
   return (
     <Link
@@ -41,7 +49,7 @@ export function CatalogProductCard({
         />
         <RemoteImage
           src={imageFailed ? "/placeholder.svg" : imageSrc}
-          alt={product.name}
+          alt={name}
           fill
           className={`object-cover boty-transition group-hover:scale-[1.04] transition-opacity duration-500 ${
             imageLoaded || imageFailed ? "opacity-100" : "opacity-0"
@@ -58,10 +66,10 @@ export function CatalogProductCard({
       {/* Info */}
       <div className="pt-4 pb-2">
         <h3 className="text-[13px] tracking-[0.12em] uppercase text-[#2A2726] font-sans mb-1 line-clamp-1">
-          {product.name}
+          {name}
         </h3>
         <p className="text-[12px] text-[#7A756E] tracking-[0.08em]">
-          {formatMxn(product.priceFromMxn)}
+          {price !== null ? formatCurrency(price, currency) : null}
         </p>
       </div>
     </Link>

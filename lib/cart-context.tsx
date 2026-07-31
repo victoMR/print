@@ -3,6 +3,9 @@
 import type { CartItem } from "@/lib/api-types";
 import { syncCartWithCatalog } from "@/lib/api";
 import { clampCartLineQuantity, MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
+import { currencyForLocale, priceForCurrency, type OrderCurrency } from "@/lib/i18n/currency";
+import type { Locale } from "@/lib/i18n/locale";
+import { useLocale } from "next-intl";
 import {
   createContext,
   useCallback,
@@ -23,6 +26,10 @@ type CartContextValue = {
   outOfStockItems: CartItem[];
   count: number;
   itemCount: number;
+  /** Moneda vigente, derivada del idioma actual (en -> USD, es -> MXN). */
+  currency: OrderCurrency;
+  /** Precio de un item en la moneda vigente; null si no está disponible en esa moneda. */
+  itemPrice: (item: Pick<CartItem, "retailPriceMxn" | "retailPriceUsd">) => string | null;
   subtotal: number;
   hydrated: boolean;
   isOpen: boolean;
@@ -68,6 +75,7 @@ function sanitizeStoredItem(raw: unknown): CartItem | null {
     productName: item.productName,
     variantLabel: item.variantLabel,
     retailPriceMxn: item.retailPriceMxn,
+    retailPriceUsd: typeof item.retailPriceUsd === "string" ? item.retailPriceUsd : null,
     thumbnail: item.thumbnail,
     maxQuantity,
     quantity: clampCartLineQuantity(item.quantity ?? 1, maxQuantity),
@@ -92,6 +100,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const locale = useLocale() as Locale;
+  const currency = currencyForLocale(locale);
+  const itemPrice = useCallback(
+    (item: Pick<CartItem, "retailPriceMxn" | "retailPriceUsd">) => priceForCurrency(item, currency),
+    [currency],
+  );
 
   const runSync = useCallback(async (stored: CartItem[]): Promise<CartItem[]> => {
     const synced = await syncCartWithCatalog(
@@ -202,11 +216,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const subtotal = useMemo(
     () =>
-      inStockItems.reduce(
-        (sum, item) => sum + Number.parseFloat(item.retailPriceMxn) * item.quantity,
-        0,
-      ),
-    [inStockItems],
+      inStockItems.reduce((sum, item) => {
+        const price = itemPrice(item);
+        return price ? sum + Number.parseFloat(price) * item.quantity : sum;
+      }, 0),
+    [inStockItems, itemPrice],
   );
 
   const value = useMemo(
@@ -216,6 +230,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       outOfStockItems,
       count,
       itemCount: count,
+      currency,
+      itemPrice,
       subtotal,
       hydrated,
       isOpen,
@@ -231,6 +247,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       inStockItems,
       outOfStockItems,
       count,
+      currency,
+      itemPrice,
       subtotal,
       hydrated,
       isOpen,

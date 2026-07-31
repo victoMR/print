@@ -35,8 +35,10 @@ v1PaymentRouter.post('/payment-intent', checkoutRateLimit, optionalCustomerAuth,
       return;
     }
 
+    const amount = order.currency === 'USD' ? Number(order.total_usd) : Number(order.total_mxn);
     const { clientSecret, paymentIntentId } = await createPaymentIntent({
-      amountMxn: Number(order.total_mxn),
+      amount,
+      currency: order.currency === 'USD' ? 'usd' : 'mxn',
       orderId: order.id,
       publicOrderId: order.public_id,
       customerEmail: order.customer_email,

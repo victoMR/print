@@ -12,7 +12,11 @@ import {
   BotySurface,
 } from "@/components/boty/ui-patterns";
 import { listMyOrders, type AccountOrder } from "@/lib/customer-api";
-import { formatMxn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
+
+function orderAmount(order: AccountOrder): string {
+  return formatCurrency((order.currency === "USD" ? order.totalUsd : order.totalMxn) ?? "0", order.currency);
+}
 
 const STATUS_STYLE: Record<string, string> = {
   pedido: "bg-blue-500/15 text-blue-800",
@@ -89,7 +93,7 @@ export default function OrdersPage() {
                     <BotyBadge className={STATUS_STYLE[order.status] ?? "bg-muted text-muted-foreground"}>
                       {order.statusLabel}
                     </BotyBadge>
-                    <span className="font-serif text-xl tabular-nums">{formatMxn(order.totalMxn)}</span>
+                    <span className="font-serif text-xl tabular-nums">{orderAmount(order)}</span>
                     <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 boty-transition" />
                   </div>
                 </div>

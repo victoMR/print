@@ -13,7 +13,7 @@ import {
 import type { OrderDetail } from "@/lib/api-types";
 import { ORDER_STATUS_LABELS, type MrpapsOrderStatus } from "@/lib/api-types";
 import { mxStateLabel } from "@/lib/mx-state-label";
-import { cn, formatMxn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { BotyBadge, BotySurface } from "@/components/boty/ui-patterns";
 
@@ -49,6 +49,11 @@ export function OrderDetailView({
   backHref,
   backLabel = "Volver",
 }: OrderDetailViewProps) {
+  const currency = order.currency;
+  // La orden ya se cobró en una moneda fija — se muestra esa, no la del navegador actual.
+  const amount = (mxn: string | null, usd: string | null): string =>
+    formatCurrency((currency === "USD" ? usd : mxn) ?? "0", currency);
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {showThankYou && (
@@ -112,7 +117,7 @@ export function OrderDetailView({
               </span>
             )}
             <p className="font-serif text-2xl text-primary tabular-nums">
-              {formatMxn(order.totals.totalMxn)}
+              {amount(order.totals.totalMxn, order.totals.totalUsd)}
             </p>
           </div>
         </div>
@@ -150,9 +155,9 @@ export function OrderDetailView({
                   <p className="text-xs text-muted-foreground mt-0.5">SKU: {item.sku}</p>
                   <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
                     <span className="text-sm text-muted-foreground">
-                      {item.quantity} × {formatMxn(item.unitPriceMxn)}
+                      {item.quantity} × {amount(item.unitPriceMxn, item.unitPriceUsd)}
                     </span>
-                    <span className="font-semibold tabular-nums">{formatMxn(item.lineTotalMxn)}</span>
+                    <span className="font-semibold tabular-nums">{amount(item.lineTotalMxn, item.lineTotalUsd)}</span>
                   </div>
                 </div>
               </li>
@@ -201,12 +206,12 @@ export function OrderDetailView({
           <BotySurface className="p-6">
             <h3 className="font-medium mb-4">Resumen de pago</h3>
             <dl className="space-y-2 text-sm">
-              <Row label="Subtotal" value={formatMxn(order.totals.subtotalMxn)} />
-              <Row label="Envío" value={formatMxn(order.totals.shippingMxn)} />
-              <Row label="IVA (16%)" value={formatMxn(order.totals.taxMxn)} />
+              <Row label="Subtotal" value={amount(order.totals.subtotalMxn, order.totals.subtotalUsd)} />
+              <Row label="Envío" value={amount(order.totals.shippingMxn, order.totals.shippingUsd)} />
+              <Row label="IVA" value={amount(order.totals.taxMxn, order.totals.taxUsd)} />
               <div className="border-t border-border/60 pt-3 flex justify-between font-semibold text-base">
                 <dt>Total</dt>
-                <dd className="text-primary tabular-nums">{formatMxn(order.totals.totalMxn)}</dd>
+                <dd className="text-primary tabular-nums">{amount(order.totals.totalMxn, order.totals.totalUsd)}</dd>
               </div>
             </dl>
           </BotySurface>

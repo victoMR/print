@@ -11,6 +11,7 @@ export type AdminVariantDto = {
   size: string;
   color: string;
   retailPriceMxn: string;
+  retailPriceUsd: string | null;
   stockQuantity: number;
   status: string;
   designId: string | null;
@@ -26,6 +27,7 @@ function toVariantDto(v: MrpapsProductVariantRow, orderItemCount: number): Admin
     size: v.size_label,
     color: v.color_label,
     retailPriceMxn: Number(v.retail_price_mxn).toFixed(2),
+    retailPriceUsd: v.retail_price_usd !== null ? Number(v.retail_price_usd).toFixed(2) : null,
     stockQuantity: v.stock_quantity,
     status: v.status,
     designId: v.design_id,
@@ -81,6 +83,10 @@ export async function getAdminProductWithVariants(productId: string) {
     slug: product.slug,
     name: product.name,
     description: product.description,
+    nameEn: product.name_en,
+    descriptionEn: product.description_en,
+    nameEnIsManual: product.name_en_is_manual,
+    descriptionEnIsManual: product.description_en_is_manual,
     thumbnailUrl: product.thumbnail_url,
     galleryUrls: resolveProductImages(product),
     status: product.status,
@@ -101,6 +107,7 @@ export type CreateVariantAdminInput = {
   sizeLabel: string;
   colorLabel: string;
   retailPriceMxn: number;
+  retailPriceUsd?: number;
   designId?: string | null;
   garmentColorHex?: string;
 };
@@ -131,6 +138,7 @@ export async function createVariantAdmin(
     const row = await productsRepo.updateVariantAdmin(existing.id, {
       status: 'active',
       retail_price_mxn: input.retailPriceMxn,
+      retail_price_usd: input.retailPriceUsd ?? null,
       sku: input.sku,
       design_id: input.designId ?? existing.design_id,
       garment_color_hex:
@@ -148,6 +156,7 @@ export async function createVariantAdmin(
     size_label: sizeLabel,
     color_label: colorLabel,
     retail_price_mxn: input.retailPriceMxn,
+    retail_price_usd: input.retailPriceUsd ?? null,
     stock_quantity: 0,
     design_id: input.designId ?? null,
     garment_color_hex: input.garmentColorHex ?? product.default_garment_color ?? '#FFFFFF',
@@ -162,6 +171,7 @@ export type UpdateVariantAdminInput = {
   sizeLabel?: string;
   colorLabel?: string;
   retailPriceMxn?: number;
+  retailPriceUsd?: number | null;
   stockQuantity?: number;
   designId?: string | null;
   garmentColorHex?: string;
@@ -200,6 +210,7 @@ export async function updateVariantAdmin(
   if (input.sizeLabel !== undefined) patch.size_label = nextSize;
   if (input.colorLabel !== undefined) patch.color_label = nextColor;
   if (input.retailPriceMxn !== undefined) patch.retail_price_mxn = input.retailPriceMxn;
+  if (input.retailPriceUsd !== undefined) patch.retail_price_usd = input.retailPriceUsd;
   if (input.designId !== undefined) patch.design_id = input.designId;
   if (input.garmentColorHex !== undefined) patch.garment_color_hex = input.garmentColorHex;
   if (input.status !== undefined) patch.status = input.status;

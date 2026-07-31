@@ -16,14 +16,24 @@ function mapShippingItems(
 }
 
 function mapPricedItems(
-  items: Array<{ variantId?: string; quantity: number; retailPriceMxn: string }>,
-): Array<{ variantId: string; quantity: number; retailPriceMxn: string }> {
+  items: Array<{
+    variantId?: string;
+    quantity: number;
+    retailPriceMxn?: string;
+    retailPriceUsd?: string;
+  }>,
+): Array<{ variantId: string; quantity: number; retailPriceMxn?: string; retailPriceUsd?: string }> {
   return items.map((item) => {
     const variantId = item.variantId?.trim();
     if (!variantId || !/^[0-9a-f-]{36}$/i.test(variantId)) {
       throw new Error('variantId inválido. Vacía el carrito y vuelve a agregar productos desde /shop.');
     }
-    return { variantId, quantity: item.quantity, retailPriceMxn: item.retailPriceMxn };
+    return {
+      variantId,
+      quantity: item.quantity,
+      retailPriceMxn: item.retailPriceMxn,
+      retailPriceUsd: item.retailPriceUsd,
+    };
   });
 }
 
@@ -38,6 +48,7 @@ export async function estimateCostsMxn(input: EstimateBody) {
   return mrpapsCheckout.estimateCosts({
     items: mapPricedItems(input.items),
     address: input.address,
+    currency: input.currency,
   });
 }
 

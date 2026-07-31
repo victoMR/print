@@ -26,10 +26,15 @@ export type CreateOrderInput = {
   ship_zip: string;
   shipping_method: string;
   shipping_label?: string | null;
-  subtotal_mxn: number;
-  shipping_mxn: number;
-  tax_mxn: number;
-  total_mxn: number;
+  currency: 'MXN' | 'USD';
+  subtotal_mxn?: number | null;
+  shipping_mxn?: number | null;
+  tax_mxn?: number | null;
+  total_mxn?: number | null;
+  subtotal_usd?: number | null;
+  shipping_usd?: number | null;
+  tax_usd?: number | null;
+  total_usd?: number | null;
   terms_accepted_at?: string | null;
   legal_accepted_version?: string | null;
   items: Array<{
@@ -38,6 +43,7 @@ export type CreateOrderInput = {
     quantity: number;
     inventory_reserved_qty?: number;
     unit_price_mxn: number;
+    unit_price_usd?: number | null;
     product_name: string;
     variant_label: string;
     sku: string;
@@ -74,11 +80,12 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
          public_id, order_number, user_id, customer_name, customer_email, customer_phone,
          customer_tax_number, ship_address1, ship_address2, ship_city, ship_state_code,
          ship_country_code, ship_zip, shipping_method, shipping_label,
-         subtotal_mxn, shipping_mxn, tax_mxn, total_mxn, status,
+         currency, subtotal_mxn, shipping_mxn, tax_mxn, total_mxn,
+         subtotal_usd, shipping_usd, tax_usd, total_usd, status,
          terms_accepted_at, legal_accepted_version
        ) VALUES (
-         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'pendiente_pago',
-         $20, $21
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19,
+         $20, $21, $22, $23, 'pendiente_pago', $24, $25
        ) RETURNING *`,
       [
         order.public_id,
@@ -96,10 +103,15 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
         order.ship_zip,
         order.shipping_method,
         order.shipping_label ?? null,
-        order.subtotal_mxn,
-        order.shipping_mxn,
-        order.tax_mxn,
-        order.total_mxn,
+        order.currency,
+        order.subtotal_mxn ?? null,
+        order.shipping_mxn ?? null,
+        order.tax_mxn ?? null,
+        order.total_mxn ?? null,
+        order.subtotal_usd ?? null,
+        order.shipping_usd ?? null,
+        order.tax_usd ?? null,
+        order.total_usd ?? null,
         order.terms_accepted_at ?? null,
         order.legal_accepted_version ?? null,
       ],
@@ -126,8 +138,8 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
       const itemResult = await client.query<MrpapsOrderItemRow>(
         `INSERT INTO mrpaps_order_items (
            order_id, variant_id, design_id, quantity, inventory_reserved_qty, unit_price_mxn,
-           product_name, variant_label, sku, thumbnail_url, print_file_url
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           unit_price_usd, product_name, variant_label, sku, thumbnail_url, print_file_url
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          RETURNING *`,
         [
           orderRow.id,
@@ -136,6 +148,7 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
           item.quantity,
           deducted,
           item.unit_price_mxn,
+          item.unit_price_usd ?? null,
           item.product_name,
           item.variant_label,
           item.sku,
@@ -257,7 +270,9 @@ export async function getOrderForCustomer(
 export async function getOrderForPayment(rawPublicId: string): Promise<{
   id: string;
   public_id: string;
-  total_mxn: string;
+  currency: 'MXN' | 'USD';
+  total_mxn: string | null;
+  total_usd: string | null;
   customer_email: string;
   user_id: string | null;
   payment_status: string | null;
@@ -266,7 +281,7 @@ export async function getOrderForPayment(rawPublicId: string): Promise<{
   if (!publicId) return null;
 
   return queryOne(
-    `SELECT id, public_id, total_mxn::text, customer_email, user_id, payment_status
+    `SELECT id, public_id, currency, total_mxn::text, total_usd::text, customer_email, user_id, payment_status
      FROM mrpaps_orders WHERE public_id = $1`,
     [publicId],
   );
@@ -291,6 +306,10 @@ export async function updateOrderPaymentByPublicId(
   patch: {
     stripe_payment_intent_id?: string;
     payment_status: string;
+    // Monto real liquidado en MXN y tipo de cambio de Stripe (balance transaction),
+    // no una estimación propia — ver mrpaps-payment.service.ts.
+    stripe_settlement_amount_mxn?: number;
+    stripe_fx_rate?: number;
   },
 ): Promise<void> {
   const publicId = normalizeTrackingCode(rawPublicId);
@@ -299,6 +318,8 @@ export async function updateOrderPaymentByPublicId(
   const { clause, values } = buildUpdateSet({
     stripe_payment_intent_id: patch.stripe_payment_intent_id,
     payment_status: patch.payment_status,
+    stripe_settlement_amount_mxn: patch.stripe_settlement_amount_mxn,
+    stripe_fx_rate: patch.stripe_fx_rate,
     updated_at: new Date().toISOString(),
   });
   await query(`UPDATE mrpaps_orders SET ${clause} WHERE public_id = $1`, [publicId, ...values]);
@@ -308,7 +329,9 @@ export async function getOrderForPaymentFinalize(rawPublicId: string): Promise<{
   id: string;
   public_id: string;
   status: MrpapsOrderStatus;
-  total_mxn: string;
+  currency: 'MXN' | 'USD';
+  total_mxn: string | null;
+  total_usd: string | null;
   customer_email: string;
   payment_status: string | null;
   stripe_payment_intent_id: string | null;
@@ -318,7 +341,7 @@ export async function getOrderForPaymentFinalize(rawPublicId: string): Promise<{
   if (!publicId) return null;
 
   return queryOne(
-    `SELECT id, public_id, status, total_mxn::text, customer_email, payment_status,
+    `SELECT id, public_id, status, currency, total_mxn::text, total_usd::text, customer_email, payment_status,
             stripe_payment_intent_id, confirmation_email_sent_at
      FROM mrpaps_orders WHERE public_id = $1`,
     [publicId],

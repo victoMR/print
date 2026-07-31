@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { useCart } from "@/lib/cart-context";
 import { MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
-import { formatMxn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import {
   Drawer,
   DrawerContent,
@@ -17,7 +18,8 @@ import {
 } from "@/components/ui/drawer";
 
 export function CartDrawer() {
-  const { items, inStockItems, outOfStockItems, removeItem, updateQuantity, isOpen, setIsOpen, itemCount, subtotal } = useCart();
+  const t = useTranslations("cart");
+  const { items, inStockItems, outOfStockItems, removeItem, updateQuantity, isOpen, setIsOpen, itemCount, subtotal, currency, itemPrice } = useCart();
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen} direction="right">
@@ -26,17 +28,17 @@ export function CartDrawer() {
         <DrawerHeader className="flex items-center justify-between border-b border-[#D4CFC5] px-6 py-5 shrink-0">
           <div>
             <DrawerTitle className="font-serif text-2xl tracking-[0.1em] uppercase text-[#2A2726]">
-              CARRITO
+              {t("title")}
             </DrawerTitle>
             <DrawerDescription className="text-[11px] tracking-[0.15em] uppercase text-[#7A756E] mt-1">
-              {itemCount === 0 ? "VACÍO" : `${itemCount} ${itemCount === 1 ? "ARTÍCULO" : "ARTÍCULOS"}`}
+              {itemCount === 0 ? t("drawer.empty") : t("drawer.itemCount", { count: itemCount })}
             </DrawerDescription>
           </div>
           <DrawerClose asChild>
             <button
               type="button"
               className="p-2 text-[#7A756E] hover:text-[#2A2726] boty-transition"
-              aria-label="Cerrar carrito"
+              aria-label={t("drawer.closeCart")}
             >
               <X className="w-5 h-5" />
             </button>
@@ -50,16 +52,16 @@ export function CartDrawer() {
               <ShoppingBag className="w-10 h-10 text-[#D4CFC5]" />
               <div>
                 <p className="text-[12px] tracking-[0.15em] uppercase font-sans text-[#2A2726]">
-                  Tu carrito está vacío
+                  {t("empty.title")}
                 </p>
-                <p className="text-[11px] text-[#7A756E] mt-1">Agrega productos para comenzar</p>
+                <p className="text-[11px] text-[#7A756E] mt-1">{t("drawer.emptySubtitle")}</p>
               </div>
               <DrawerClose asChild>
                 <Link
                   href="/shop"
                   className="mt-2 bg-[#5C1A24] text-[#f8f9fa] px-8 py-3 text-[11px] tracking-[0.22em] uppercase hover:bg-[#4A1520] boty-transition"
                 >
-                  VER COLECCIÓN
+                  {t("viewCollection")}
                 </Link>
               </DrawerClose>
             </div>
@@ -97,7 +99,7 @@ export function CartDrawer() {
                           type="button"
                           onClick={() => removeItem(item.variantId)}
                           className="shrink-0 text-[#D4CFC5] hover:text-[#5C1A24] boty-transition"
-                          aria-label="Quitar"
+                          aria-label={t("drawer.removeItem")}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -108,7 +110,7 @@ export function CartDrawer() {
                             type="button"
                             onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
                             className="w-7 h-7 flex items-center justify-center text-[#7A756E] hover:text-[#2A2726] border-r border-[#D4CFC5] boty-transition"
-                            aria-label="Menos"
+                            aria-label={t("drawer.less")}
                           >
                             <Minus className="w-3 h-3" />
                           </button>
@@ -120,13 +122,16 @@ export function CartDrawer() {
                             onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
                             disabled={item.quantity >= (item.maxQuantity ?? MAX_CART_LINE_QUANTITY)}
                             className="w-7 h-7 flex items-center justify-center text-[#7A756E] hover:text-[#2A2726] border-l border-[#D4CFC5] boty-transition disabled:opacity-40"
-                            aria-label="Más"
+                            aria-label={t("drawer.more")}
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
                         <span className="text-[12px] font-sans text-[#2A2726]">
-                          {formatMxn(Number.parseFloat(item.retailPriceMxn) * item.quantity)}
+                          {(() => {
+                            const price = itemPrice(item);
+                            return price ? formatCurrency(Number.parseFloat(price) * item.quantity, currency) : "—";
+                          })()}
                         </span>
                       </div>
                     </div>
@@ -138,7 +143,7 @@ export function CartDrawer() {
               {outOfStockItems.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-[#5C1A24]/20">
                   <p className="text-[10px] tracking-[0.2em] uppercase text-[#5C1A24] mb-3">
-                    SIN EXISTENCIAS — no se incluirán en tu pedido
+                    {t("drawer.outOfStockNotice")}
                   </p>
                   {outOfStockItems.map((item) => (
                     <div key={item.variantId} className="py-3 flex gap-3 opacity-50">
@@ -157,14 +162,14 @@ export function CartDrawer() {
                         </p>
                         <p className="text-[10px] text-[#7A756E]">{item.variantLabel}</p>
                         <span className="text-[10px] tracking-[0.15em] uppercase text-[#5C1A24]">
-                          AGOTADO
+                          {t("drawer.outOfStock")}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => removeItem(item.variantId)}
                         className="shrink-0 text-[#D4CFC5] hover:text-[#5C1A24] boty-transition"
-                        aria-label="Quitar"
+                        aria-label={t("drawer.removeItem")}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -182,13 +187,13 @@ export function CartDrawer() {
             <div className="space-y-2 text-[12px] mb-2">
               <div className="flex justify-between text-[#7A756E]">
                 <span className="tracking-[0.12em] uppercase">
-                  Subtotal ({itemCount} {itemCount === 1 ? "artículo" : "artículos"})
+                  {t("drawer.subtotalWithCount", { count: itemCount })}
                 </span>
-                <span>{formatMxn(subtotal)}</span>
+                <span>{formatCurrency(subtotal, currency)}</span>
               </div>
               <div className="flex justify-between pt-3 border-t border-[#D4CFC5] text-[#2A2726]">
-                <span className="tracking-[0.12em] uppercase font-sans">Total estimado</span>
-                <span className="tracking-[0.06em]">{formatMxn(subtotal)}</span>
+                <span className="tracking-[0.12em] uppercase font-sans">{t("drawer.estimatedTotal")}</span>
+                <span className="tracking-[0.06em]">{formatCurrency(subtotal, currency)}</span>
               </div>
             </div>
 
@@ -197,14 +202,14 @@ export function CartDrawer() {
               onClick={() => setIsOpen(false)}
               className="w-full block text-center bg-[#5C1A24] text-[#f8f9fa] py-4 text-[11px] tracking-[0.22em] uppercase hover:bg-[#4A1520] boty-transition"
             >
-              FINALIZAR COMPRA
+              {t("checkoutButton")}
             </Link>
             <DrawerClose asChild>
               <button
                 type="button"
                 className="w-full border border-[#D4CFC5] text-[#2A2726] py-3 text-[11px] tracking-[0.18em] uppercase hover:bg-[#EBE7DB] boty-transition"
               >
-                SEGUIR COMPRANDO
+                {t("drawer.keepShopping")}
               </button>
             </DrawerClose>
           </DrawerFooter>

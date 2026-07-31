@@ -12,6 +12,7 @@
     "dev": "tsx watch src/index.ts",
     "migrate": "tsx src/scripts/migrate.ts",
     "seed:admin": "tsx src/scripts/seed-admin.ts",
+    "backfill:translations": "tsx src/scripts/backfill-product-translations.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },

@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { ADMIN_LOGIN_PATH } from "./lib/safe-redirect";
+import {
+  GEO_COUNTRY_HEADER,
+  LOCALE_COOKIE,
+  LOCALE_HEADER,
+  resolveLocale,
+} from "./lib/i18n/locale";
 
 const apiOrigin = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000").replace(/\/$/, "");
 
@@ -35,6 +41,14 @@ const CUSTOMER_PROTECTED = ["/cuenta"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasCustomerSession = Boolean(request.cookies.get("customer_token"));
+
+  // Locale resolution is pure/read-only here — the cookie is only written on the
+  // final response below, mirroring how the CSP nonce is applied only there too.
+  const { locale, source } = resolveLocale({
+    cookieValue: request.cookies.get(LOCALE_COOKIE)?.value,
+    country: request.headers.get(GEO_COUNTRY_HEADER),
+    acceptLanguage: request.headers.get("accept-language"),
+  });
 
   // Admin redirect — antes de generar nonce para no hacer trabajo innecesario.
   if (pathname.startsWith("/admin")) {
@@ -73,9 +87,24 @@ export function middleware(request: NextRequest) {
   // generated inline hydration scripts and so layout.tsx can read it.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set(LOCALE_HEADER, locale);
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", buildCsp(nonce));
+  response.headers.set("Content-Language", locale);
+
+  // Only persist the cookie when it wasn't already an explicit choice — never
+  // clobber a manual override (set via the language switcher) with geo-detection.
+  // Written as a Set-Cookie response header (not document.cookie) so it isn't
+  // subject to Safari ITP's 7-day cap on client-script-set cookies.
+  if (source !== "cookie") {
+    response.cookies.set(LOCALE_COOKIE, locale, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+  }
+
   return response;
 }
 

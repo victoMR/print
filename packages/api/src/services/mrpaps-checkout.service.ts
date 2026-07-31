@@ -1,5 +1,6 @@
 import type {
   MrpapsCreateOrderBody,
+  MrpapsEstimateBody,
   MrpapsShippingRatesBody,
 } from '../schemas/mrpaps.schema.js';
 import * as catalog from './mrpaps-catalog.service.js';
@@ -10,9 +11,12 @@ import {
   getShippingRates as fetchShippingRates,
   resolveAutoShippingMxn,
 } from './mrpaps-shipping.service.js';
+import { resolveUsdShipping } from './shipping/usd-shipping-rates.js';
 import { BadRequestError } from '../types/errors.js';
 import { getGuestOrderByCodeAndEmail } from './mrpaps-order-tracking.service.js';
 import { LEGAL_VERSION } from './email-verification.service.js';
+
+type OrderCurrency = 'MXN' | 'USD';
 
 function addressFromRecipient(recipient: MrpapsCreateOrderBody['recipient']) {
   return {
@@ -25,14 +29,31 @@ function addressFromRecipient(recipient: MrpapsCreateOrderBody['recipient']) {
   };
 }
 
-const IVA_RATE = 0.16;
+const IVA_RATE_MXN = 0.16;
 
-function computeRetailTotals(subtotal: number, shipping: number) {
+/**
+ * Tasa de IVA para órdenes en USD — configurable (no hardcodeada) porque el
+ * trato fiscal correcto (¿16% normal o 0% por exportación?) depende de una
+ * decisión de negocio/contable pendiente. Por defecto igual a MXN hasta que
+ * se defina lo contrario.
+ */
+function getIvaRateUsd(): number {
+  const raw = process.env.IVA_RATE_USD;
+  if (!raw) return IVA_RATE_MXN;
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : IVA_RATE_MXN;
+}
+
+function ivaRateFor(currency: OrderCurrency): number {
+  return currency === 'USD' ? getIvaRateUsd() : IVA_RATE_MXN;
+}
+
+function computeRetailTotals(subtotal: number, shipping: number, ivaRate: number) {
   // Round each intermediate value to 2 decimal places using integer (cent) arithmetic
   // to prevent float drift that would cause valid orders to be rejected with "totals don't match".
   const subtotalCents = Math.round(subtotal * 100);
   const shippingCents = Math.round(shipping * 100);
-  const taxCents = Math.round((subtotalCents + shippingCents) * IVA_RATE);
+  const taxCents = Math.round((subtotalCents + shippingCents) * ivaRate);
   const totalCents = subtotalCents + shippingCents + taxCents;
   return {
     subtotal: (subtotalCents / 100).toFixed(2),
@@ -47,20 +68,36 @@ export async function getShippingRates(input: MrpapsShippingRatesBody) {
   return fetchShippingRates(input);
 }
 
-type EstimateInput = { items: MrpapsShippingRatesBody['items']; address: MrpapsShippingRatesBody['address'] };
+type EstimateInput = {
+  items: MrpapsEstimateBody['items'];
+  address: MrpapsShippingRatesBody['address'];
+  currency?: OrderCurrency;
+};
 
 export async function estimateCosts(input: EstimateInput) {
-  const lines = await catalog.resolveLineItems(input.items);
-  const subtotal = lines.reduce((sum, l) => sum + l.unitPriceMxn * l.quantity, 0);
+  const currency: OrderCurrency = input.currency ?? 'MXN';
+  const lines = await catalog.resolveLineItems(input.items, currency);
+  const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
+
+  let shippingPrice: number;
+  let shippingMethod: string;
+
+  if (currency === 'USD') {
+    const flat = resolveUsdShipping(itemCount);
+    shippingPrice = flat.priceUsd;
+    shippingMethod = flat.method;
+    const subtotal = lines.reduce((sum, l) => sum + (l.unitPriceUsd ?? 0) * l.quantity, 0);
+    const totals = computeRetailTotals(subtotal, shippingPrice, ivaRateFor(currency));
+    return { currency, ...totals, shippingMethod };
+  }
 
   const auto = await resolveAutoShippingMxn({ items: input.items, address: input.address });
-  const totals = computeRetailTotals(subtotal, auto.priceMxn);
+  shippingPrice = auto.priceMxn;
+  shippingMethod = auto.method;
+  const subtotal = lines.reduce((sum, l) => sum + l.unitPriceMxn * l.quantity, 0);
+  const totals = computeRetailTotals(subtotal, shippingPrice, ivaRateFor(currency));
 
-  return {
-    currency: 'MXN' as const,
-    ...totals,
-    shippingMethod: auto.method,
-  };
+  return { currency, ...totals, shippingMethod };
 }
 
 export async function createOrder(body: MrpapsCreateOrderBody) {
@@ -81,16 +118,37 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
     throw new BadRequestError('Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para continuar.');
   }
 
-  const lines = await catalog.resolveLineItems(body.items);
-  const subtotal = lines.reduce((sum, l) => sum + l.unitPriceMxn * l.quantity, 0);
-  const shippingInput = {
-    items: body.items,
-    address: addressFromRecipient(body.recipient),
-  };
+  const currency: OrderCurrency = body.retailCosts.currency;
+  const lines = await catalog.resolveLineItems(body.items, currency);
+  const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
 
-  // Tarifa más barata automática; ignore client-supplied shippingMethod
-  const auto = await resolveAutoShippingMxn(shippingInput);
-  const expected = computeRetailTotals(subtotal, auto.priceMxn);
+  let shippingPriceMxn = 0;
+  let shippingPriceUsd = 0;
+  let shippingMethod: string;
+  let shippingLabel: string | undefined;
+  let subtotal: number;
+
+  if (currency === 'USD') {
+    const flat = resolveUsdShipping(itemCount);
+    shippingPriceUsd = flat.priceUsd;
+    shippingMethod = flat.method;
+    shippingLabel = flat.label;
+    subtotal = lines.reduce((sum, l) => sum + (l.unitPriceUsd ?? 0) * l.quantity, 0);
+  } else {
+    const shippingInput = { items: body.items, address: addressFromRecipient(body.recipient) };
+    // Tarifa más barata automática; ignore client-supplied shippingMethod
+    const auto = await resolveAutoShippingMxn(shippingInput);
+    shippingPriceMxn = auto.priceMxn;
+    shippingMethod = auto.method;
+    shippingLabel = auto.label;
+    subtotal = lines.reduce((sum, l) => sum + l.unitPriceMxn * l.quantity, 0);
+  }
+
+  const expected = computeRetailTotals(
+    subtotal,
+    currency === 'USD' ? shippingPriceUsd : shippingPriceMxn,
+    ivaRateFor(currency),
+  );
 
   if (
     body.retailCosts.subtotal !== expected.subtotal ||
@@ -145,6 +203,7 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
         design_id: line.variant.design_id,
         quantity: line.quantity,
         unit_price_mxn: line.unitPriceMxn,
+        unit_price_usd: line.unitPriceUsd,
         product_name: line.variant.product.name,
         variant_label: `${line.variant.color_label} / ${line.variant.size_label}`,
         sku: line.variant.sku,
@@ -173,12 +232,20 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
     ship_state_code: body.recipient.stateCode,
     ship_country_code: body.recipient.countryCode,
     ship_zip: body.recipient.zip,
-    shipping_method: auto.method,
-    shipping_label: auto.label,
-    subtotal_mxn: Number(expected.subtotal),
-    shipping_mxn: Number(expected.shipping),
-    tax_mxn: Number(expected.tax),
-    total_mxn: Number(expected.total),
+    shipping_method: shippingMethod,
+    shipping_label: shippingLabel,
+    currency,
+    // Solo se guarda el lado de la moneda cobrada; el equivalente MXN real
+    // para una orden en USD se llena después vía webhook con el dato de
+    // liquidación de Stripe (stripe_settlement_amount_mxn), no estimado aquí.
+    subtotal_mxn: currency === 'MXN' ? Number(expected.subtotal) : null,
+    shipping_mxn: currency === 'MXN' ? Number(expected.shipping) : null,
+    tax_mxn: currency === 'MXN' ? Number(expected.tax) : null,
+    total_mxn: currency === 'MXN' ? Number(expected.total) : null,
+    subtotal_usd: currency === 'USD' ? Number(expected.subtotal) : null,
+    shipping_usd: currency === 'USD' ? Number(expected.shipping) : null,
+    tax_usd: currency === 'USD' ? Number(expected.tax) : null,
+    total_usd: currency === 'USD' ? Number(expected.total) : null,
     items: orderItems,
   });
 

@@ -371,10 +371,12 @@ export async function fetchShippingRates(body: {
 }
 
 export async function fetchEstimate(body: {
+  currency?: "MXN" | "USD";
   items: Array<{
     variantId: string;
     quantity: number;
-    retailPriceMxn: string;
+    retailPriceMxn?: string;
+    retailPriceUsd?: string;
   }>;
   address: {
     address1: string;
@@ -405,11 +407,12 @@ export async function createDraftOrder(body: {
   items: Array<{
     variantId: string;
     quantity: number;
-    retailPriceMxn: string;
+    retailPriceMxn?: string;
+    retailPriceUsd?: string;
   }>;
   recipient: CheckoutRecipient;
   retailCosts: {
-    currency: "MXN";
+    currency: "MXN" | "USD";
     subtotal: string;
     shipping: string;
     tax: string;
@@ -623,6 +626,7 @@ export async function adminCreateProduct(body: {
   thumbnailUrl?: string;
   galleryUrls?: string[];
   retailPriceMxn?: number;
+  retailPriceUsd?: number;
   status?: "active" | "inactive";
   templateId?: string;
   composition?: ProductComposition;
@@ -667,6 +671,7 @@ export async function adminCreateProductVariant(
     sizeLabel: string;
     colorLabel: string;
     retailPriceMxn: number;
+    retailPriceUsd?: number;
     designId?: string | null;
     garmentColorHex?: string;
   },
@@ -686,6 +691,7 @@ export async function adminUpdateProductVariant(
     sizeLabel?: string;
     colorLabel?: string;
     retailPriceMxn?: number;
+    retailPriceUsd?: number | null;
     stockQuantity?: number;
     designId?: string | null;
     garmentColorHex?: string;

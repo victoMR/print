@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { BotyRadixSelect } from "@/components/boty/boty-radix-select";
 import { BotyAlert, BotyInput, BotyLabel } from "@/components/boty/ui-patterns";
@@ -30,6 +31,7 @@ export function MxAddressGeoFields({
   onChange,
   requireColony = false,
 }: MxAddressGeoFieldsProps) {
+  const t = useTranslations("checkout.addressGeo");
   const [states, setStates] = useState<GeoState[]>([]);
   const [municipalities, setMunicipalities] = useState<GeoMunicipality[]>([]);
   const [colonies, setColonies] = useState<Array<{ name: string; type: string }>>([]);
@@ -46,7 +48,7 @@ export function MxAddressGeoFields({
   useEffect(() => {
     void fetchGeoStates()
       .then(setStates)
-      .catch(() => setGeoError("No se pudieron cargar los estados (INEGI)."))
+      .catch(() => setGeoError(t("statesLoadError")))
       .finally(() => setLoadingStates(false));
   }, []);
 
@@ -90,8 +92,8 @@ export function MxAddressGeoFields({
           setColonies(result.colonies);
           setGeoHint(
             result.colonies.length > 0
-              ? "Colonia y municipio según SEPOMEX (datos postales oficiales)."
-              : "C.P. válido; confirma municipio y colonia.",
+              ? t("colonyHint")
+              : t("zipValidHint"),
           );
 
           const munRows = await loadMunicipalities(result.stateCode);
@@ -114,7 +116,7 @@ export function MxAddressGeoFields({
           lastLookedUpZip.current = "";
           setColonies([]);
           setGeoError(
-            err instanceof Error ? err.message : "Código postal no encontrado",
+            err instanceof Error ? err.message : t("zipNotFound"),
           );
         })
         .finally(() => setLoadingPostal(false));
@@ -163,7 +165,7 @@ export function MxAddressGeoFields({
   return (
     <div className="space-y-3">
       <label className="flex flex-col gap-2">
-        <BotyLabel>Código postal *</BotyLabel>
+        <BotyLabel>{t("zipLabel")}</BotyLabel>
         <div className="relative">
           <BotyInput
             value={value.zip}
@@ -173,7 +175,7 @@ export function MxAddressGeoFields({
             }}
             inputMode="numeric"
             autoComplete="postal-code"
-            placeholder="5 dígitos"
+            placeholder={t("zipPlaceholder")}
             required
             pattern="\d{5}"
             maxLength={5}
@@ -190,26 +192,26 @@ export function MxAddressGeoFields({
       )}
 
       <BotyRadixSelect
-        label="Estado"
+        label={t("stateLabel")}
         value={value.stateCode}
         onValueChange={handleStateChange}
         options={stateOptions}
-        placeholder={loadingStates ? "Cargando estados…" : "Selecciona estado"}
+        placeholder={loadingStates ? t("loadingStates") : t("selectState")}
         disabled={loadingStates}
         required
       />
 
       <BotyRadixSelect
-        label="Municipio / alcaldía"
+        label={t("municipalityLabel")}
         value={selectedMunicipality}
         onValueChange={handleMunicipalityChange}
         options={municipalityOptions}
         placeholder={
           loadingMunicipalities
-            ? "Cargando municipios…"
+            ? t("loadingMunicipalities")
             : value.stateCode
-              ? "Selecciona municipio"
-              : "Primero elige estado"
+              ? t("selectMunicipality")
+              : t("selectStateFirst")
         }
         disabled={!value.stateCode || loadingMunicipalities}
         required
@@ -217,34 +219,34 @@ export function MxAddressGeoFields({
 
       {colonyOptions.length > 0 ? (
         <BotyRadixSelect
-          label="Colonia"
+          label={t("colonyLabel")}
           value={value.address2 ?? ""}
           onValueChange={(colony) => onChange({ address2: colony })}
           options={colonyOptions}
-          placeholder="Selecciona colonia"
+          placeholder={t("selectColony")}
           required={requireColony}
         />
       ) : (
         <label className="flex flex-col gap-2">
-          <BotyLabel>Colonia {requireColony ? "*" : "(opcional)"}</BotyLabel>
+          <BotyLabel>{t("colonyLabel")} {requireColony ? "*" : t("optional")}</BotyLabel>
           <BotyInput
             value={value.address2 ?? ""}
             onChange={(e) => onChange({ address2: e.target.value })}
             autoComplete="address-line2"
-            placeholder="Ej. Centro, Del Valle…"
+            placeholder={t("colonyPlaceholder")}
             required={requireColony}
           />
         </label>
       )}
 
       <label className="flex flex-col gap-2">
-        <BotyLabel>Ciudad *</BotyLabel>
+        <BotyLabel>{t("cityLabel")}</BotyLabel>
         <BotyInput
           value={value.city}
           onChange={(e) => onChange({ city: e.target.value })}
           autoComplete="address-level2"
           required
-          placeholder="Se completa con municipio o C.P."
+          placeholder={t("cityPlaceholder")}
         />
       </label>
     </div>

@@ -5,12 +5,12 @@ import { isMailConfigured, sendMail, storefrontUrl } from '../lib/mail.js';
 import { logger } from '../lib/logger.js';
 import { sanitizeMailHeaderValue } from '../lib/sanitize-mail.js';
 
-function formatMxn(amount: number | string): string {
+function formatAmount(amount: number | string | null, currency: 'MXN' | 'USD'): string {
   const value = typeof amount === 'string' ? Number.parseFloat(amount) : amount;
-  if (!Number.isFinite(value)) return '$0.00 MXN';
-  return new Intl.NumberFormat('es-MX', {
+  if (value === null || !Number.isFinite(value)) return currency === 'USD' ? '$0.00 USD' : '$0.00 MXN';
+  return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'es-MX', {
     style: 'currency',
-    currency: 'MXN',
+    currency,
   }).format(value);
 }
 
@@ -33,16 +33,21 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
   const trackingUrl = `${storeUrl}/seguimiento`;
   const orderUrl = `${storeUrl}/pedido/${encodeURIComponent(order.public_id)}`;
 
+  const unitPriceFor = (item: MrpapsOrderWithItems['items'][number]): number =>
+    order.currency === 'USD' && item.unit_price_usd !== null
+      ? Number(item.unit_price_usd)
+      : Number(item.unit_price_mxn);
+
   const itemRows = order.items
     .map((item) => {
-      const lineTotal = Number(item.unit_price_mxn) * item.quantity;
+      const lineTotal = unitPriceFor(item) * item.quantity;
       return `<tr>
         <td style="padding:12px 0;border-bottom:1px solid #eee;">
           <strong>${escapeHtml(item.product_name)}</strong><br>
           <span style="color:#666;font-size:13px;">${escapeHtml(item.variant_label)} · SKU ${escapeHtml(item.sku)}</span>
         </td>
         <td style="padding:12px 0;border-bottom:1px solid #eee;text-align:center;">${item.quantity}</td>
-        <td style="padding:12px 0;border-bottom:1px solid #eee;text-align:right;">${formatMxn(lineTotal)}</td>
+        <td style="padding:12px 0;border-bottom:1px solid #eee;text-align:right;">${formatAmount(lineTotal, order.currency)}</td>
       </tr>`;
     })
     .join('');
@@ -50,7 +55,7 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
   const itemLinesText = order.items
     .map(
       (item) =>
-        `- ${item.product_name} (${item.variant_label}) x${item.quantity}: ${formatMxn(Number(item.unit_price_mxn) * item.quantity)}`,
+        `- ${item.product_name} (${item.variant_label}) x${item.quantity}: ${formatAmount(unitPriceFor(item) * item.quantity, order.currency)}`,
     )
     .join('\n');
 
@@ -59,6 +64,10 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
     : order.shipping_method;
 
   const subject = `Gracias por tu compra — ${trackingCode}`;
+  const subtotalAmount = order.currency === 'USD' ? order.subtotal_usd : order.subtotal_mxn;
+  const shippingAmount = order.currency === 'USD' ? order.shipping_usd : order.shipping_mxn;
+  const taxAmount = order.currency === 'USD' ? order.tax_usd : order.tax_mxn;
+  const totalAmount = order.currency === 'USD' ? order.total_usd : order.total_mxn;
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -102,10 +111,10 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
         </td></tr>
         <tr><td style="padding:16px 32px 24px;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;">
-            <tr><td style="padding:4px 0;color:#52525b;">Subtotal</td><td align="right">${formatMxn(order.subtotal_mxn)}</td></tr>
-            <tr><td style="padding:4px 0;color:#52525b;">Envío</td><td align="right">${formatMxn(order.shipping_mxn)}</td></tr>
-            <tr><td style="padding:4px 0;color:#52525b;">IVA (16%)</td><td align="right">${formatMxn(order.tax_mxn)}</td></tr>
-            <tr><td style="padding:10px 0 0;font-size:16px;font-weight:700;">Total pagado</td><td align="right" style="padding:10px 0 0;font-size:16px;font-weight:700;">${formatMxn(order.total_mxn)}</td></tr>
+            <tr><td style="padding:4px 0;color:#52525b;">Subtotal</td><td align="right">${formatAmount(subtotalAmount, order.currency)}</td></tr>
+            <tr><td style="padding:4px 0;color:#52525b;">Envío</td><td align="right">${formatAmount(shippingAmount, order.currency)}</td></tr>
+            <tr><td style="padding:4px 0;color:#52525b;">IVA</td><td align="right">${formatAmount(taxAmount, order.currency)}</td></tr>
+            <tr><td style="padding:10px 0 0;font-size:16px;font-weight:700;">Total pagado</td><td align="right" style="padding:10px 0 0;font-size:16px;font-weight:700;">${formatAmount(totalAmount, order.currency)}</td></tr>
           </table>
         </td></tr>
         <tr><td style="padding:0 32px 32px;">
@@ -133,10 +142,10 @@ Pedido interno: ${order.order_number}
 Productos:
 ${itemLinesText}
 
-Subtotal: ${formatMxn(order.subtotal_mxn)}
-Envío (${shippingLine}): ${formatMxn(order.shipping_mxn)}
-IVA: ${formatMxn(order.tax_mxn)}
-Total pagado: ${formatMxn(order.total_mxn)}
+Subtotal: ${formatAmount(subtotalAmount, order.currency)}
+Envío (${shippingLine}): ${formatAmount(shippingAmount, order.currency)}
+IVA: ${formatAmount(taxAmount, order.currency)}
+Total pagado: ${formatAmount(totalAmount, order.currency)}
 
 Consulta tu pedido en: ${trackingUrl}
 (Usa el código de seguimiento y este correo: ${order.customer_email})

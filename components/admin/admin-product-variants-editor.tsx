@@ -49,6 +49,8 @@ type RowDraft = {
   size: string;
   color: string;
   retailPriceMxn: string;
+  /** Vacío = sin precio en USD todavía (no se cobra en USD para esta variante). */
+  retailPriceUsd: string;
   stockQuantity: string;
 };
 
@@ -121,6 +123,7 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
           size: v.size,
           color: v.color,
           retailPriceMxn: v.retailPriceMxn,
+          retailPriceUsd: v.retailPriceUsd ?? "",
           stockQuantity: String(v.stockQuantity ?? 0),
         };
       }
@@ -161,6 +164,14 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
             onError(`Precio inválido para ${v.color} / ${v.size}.`);
             return;
           }
+          let priceUsd: number | null = null;
+          if (d.retailPriceUsd.trim()) {
+            priceUsd = Number.parseFloat(d.retailPriceUsd);
+            if (!Number.isFinite(priceUsd) || priceUsd <= 0) {
+              onError(`Precio en USD inválido para ${v.color} / ${v.size}.`);
+              return;
+            }
+          }
           const stock = Number.parseInt(d.stockQuantity, 10);
           if (!Number.isFinite(stock) || stock < 0) {
             onError(`Inventario inválido para ${v.color} / ${v.size}.`);
@@ -170,6 +181,7 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
             sizeLabel: d.size.trim(),
             colorLabel: d.color.trim(),
             retailPriceMxn: price,
+            retailPriceUsd: priceUsd,
             stockQuantity: stock,
           });
         }
@@ -311,6 +323,7 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
                       <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground border-b border-border/30">
                         <th className="px-4 py-2">Color</th>
                         <th className="px-4 py-2">Precio MXN</th>
+                        <th className="px-4 py-2">Precio USD</th>
                         <th className="px-4 py-2 text-center">Inventario</th>
                         <th className="px-4 py-2">Estado</th>
                         <th className="px-4 py-2 text-center">Pedidos</th>
@@ -348,6 +361,21 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
                                   step="0.01"
                                   value={d.retailPriceMxn}
                                   onChange={(e) => patchDraft(v.id, { retailPriceMxn: e.target.value })}
+                                  className="w-24"
+                                  disabled={busy}
+                                />
+                              </div>
+                            </td>
+                            <td className="px-4 py-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground text-xs">$</span>
+                                <BotyInput
+                                  type="number"
+                                  min="0.01"
+                                  step="0.01"
+                                  placeholder="—"
+                                  value={d.retailPriceUsd}
+                                  onChange={(e) => patchDraft(v.id, { retailPriceUsd: e.target.value })}
                                   className="w-24"
                                   disabled={busy}
                                 />

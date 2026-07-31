@@ -3,14 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, Minus, Plus, Check, ChevronDown } from "lucide-react";
 import type { CatalogProductDetail } from "@/lib/api-types";
 import { ProductMockupPreview } from "@/components/boty/product-mockup-preview";
 import { ProductGallery } from "@/components/boty/product-gallery";
 import { useCart } from "@/lib/cart-context";
 import { clampCartLineQuantity, MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
-import { formatMxn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { normalizeAssetUrl } from "@/lib/asset-url";
+import { localizedProductDescription, localizedProductName } from "@/lib/i18n/product-content";
+import { currencyForLocale, priceForCurrency } from "@/lib/i18n/currency";
+import type { Locale } from "@/lib/i18n/locale";
 
 type ProductDetailProps = {
   product: CatalogProductDetail;
@@ -55,21 +59,6 @@ type AccordionSection = {
   content: string;
 };
 
-const accordionSections: AccordionSection[] = [
-  {
-    title: "DETALLES",
-    content: "Prenda confeccionada con materiales de alta calidad. Impresión bajo demanda con tecnología DTG de alta resolución.",
-  },
-  {
-    title: "ENVÍOS Y DEVOLUCIONES",
-    content: "Envío estimado 5–14 días. Devoluciones aceptadas hasta 15 días después de recibido el pedido. Consulta nuestros términos para más detalles.",
-  },
-  {
-    title: "COMPOSICIÓN Y CUIDADOS",
-    content: "Lavar a máquina en frío. No usar blanqueador. Planchar a temperatura baja si es necesario. Ver etiqueta interior para instrucciones completas.",
-  },
-];
-
 function AccordionItem({ title, content }: AccordionSection) {
   const [open, setOpen] = useState(false);
   return (
@@ -101,6 +90,17 @@ export function ProductDetail({ product }: ProductDetailProps) {
   const router = useRouter();
   const { addItem } = useCart();
   const [isAdded, setIsAdded] = useState(false);
+  const locale = useLocale() as Locale;
+  const t = useTranslations("shop.productDetail");
+  const name = localizedProductName(product, locale);
+  const description = localizedProductDescription(product, locale);
+  const currency = currencyForLocale(locale);
+
+  const accordionSections: AccordionSection[] = [
+    { title: t("detailsTitle"), content: t("detailsContent") },
+    { title: t("shippingTitle"), content: t("shippingContent") },
+    { title: t("careTitle"), content: t("careContent") },
+  ];
 
   const colorImageByKey = useMemo(() => {
     const map = new Map<string, string>();
@@ -220,15 +220,18 @@ export function ProductDetail({ product }: ProductDetailProps) {
     return [...colorImageByKey.values()];
   }, [selectedColorImageUrl, product.images, product.thumbnail, colorImageByKey]);
 
+  const selectedPrice = selected ? priceForCurrency(selected, currency) : null;
+
   function addSelectedToCart(openDrawer = true) {
-    if (!selected) return false;
+    if (!selected || selectedPrice === null) return false;
     addItem(
       {
         variantId: selected.variantId,
         productSlug: product.slug,
-        productName: product.name,
+        productName: name,
         variantLabel: `${selected.size} / ${selected.color}`,
         retailPriceMxn: selected.retailPriceMxn,
+        retailPriceUsd: selected.retailPriceUsd,
         thumbnail: selectedColorImageUrl ?? product.thumbnail,
         maxQuantity,
       },
@@ -249,7 +252,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
     router.push("/checkout");
   }
 
-  const canBuy = !!selected && selected.inStock;
+  const canBuy = !!selected && selected.inStock && selectedPrice !== null;
 
   return (
     <div className="pt-[100px] pb-20 bg-[#F5F0E6]">
@@ -261,7 +264,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
             className="inline-flex items-center gap-2 text-[11px] tracking-[0.15em] uppercase text-[#7A756E] hover:text-[#2A2726] boty-transition"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
-            VOLVER A LA TIENDA
+            {t("backToShop")}
           </Link>
         </div>
 
@@ -273,7 +276,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 <ProductMockupPreview
                   preview={product.preview}
                   fallbackThumbnail={product.thumbnail || "/placeholder.svg"}
-                  alt={product.name}
+                  alt={name}
                   garmentColorOverride={selected?.garmentColorHex}
                   className="absolute inset-0 w-full h-full object-contain"
                 />
@@ -282,7 +285,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
               <ProductGallery
                 key={`color:${selected?.color ?? "default"}`}
                 images={displayImages}
-                alt={product.name}
+                alt={name}
                 priority
               />
             )}
@@ -292,42 +295,48 @@ export function ProductDetail({ product }: ProductDetailProps) {
           <div className="flex flex-col">
             {/* Collection label */}
             <span className="text-[10px] tracking-[0.3em] uppercase text-[#7A756E] mb-3 font-sans block">
-              COLECCIÓN
+              {t("collection")}
             </span>
 
             {/* Product name */}
             <h1 className="font-serif text-4xl md:text-5xl tracking-[0.06em] uppercase text-[#2A2726] mb-4 leading-tight">
-              {product.name}
+              {name}
             </h1>
 
             {/* Price */}
             {selected && (
               <div className="flex items-center gap-4 mb-6">
-                <span className="text-2xl font-sans tracking-[0.06em] text-[#2A2726]">
-                  {formatMxn(selected.retailPriceMxn)}
-                </span>
+                {selectedPrice !== null ? (
+                  <span className="text-2xl font-sans tracking-[0.06em] text-[#2A2726]">
+                    {formatCurrency(selectedPrice, currency)}
+                  </span>
+                ) : (
+                  <span className="text-[11px] tracking-[0.15em] uppercase text-destructive">
+                    {t("notAvailableInCurrency")}
+                  </span>
+                )}
                 {!selected.inStock && (
                   <span className="text-[11px] tracking-[0.15em] uppercase text-destructive">
-                    AGOTADO
+                    {t("outOfStock")}
                   </span>
                 )}
               </div>
             )}
 
             {/* Description */}
-            {product.description && (
+            {description && (
               <p className="text-[13px] leading-relaxed text-[#7A756E] mb-8 tracking-[0.04em]">
-                {product.description}
+                {description}
               </p>
             )}
 
             {/* Color selector */}
             {colors.length > 0 && (
               <fieldset className="mb-7 border-0 p-0 m-0">
-                <legend className="sr-only">Color</legend>
+                <legend className="sr-only">{t("colorLabel")}</legend>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-[11px] tracking-[0.2em] uppercase font-sans text-[#2A2726]">
-                    COLOR:
+                    {t("colorLabel")}
                   </span>
                   {selected?.color && (
                     <span className="text-[11px] tracking-[0.2em] uppercase font-sans text-[#7A756E]">
@@ -350,7 +359,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
                         type="button"
                         onClick={() => available ? pickColor(color) : undefined}
                         disabled={!available}
-                        title={!available ? "Sin stock en este color" : color}
+                        title={!available ? t("colorNotAvailable") : color}
                         className={`relative w-8 h-8 boty-transition border-2 ${
                           isSelected
                             ? "border-[#2A2726]"
@@ -373,16 +382,16 @@ export function ProductDetail({ product }: ProductDetailProps) {
             {/* Size selector */}
             {allSizes.length > 0 && (
               <fieldset className="mb-7 border-0 p-0 m-0">
-                <legend className="sr-only">Talla</legend>
+                <legend className="sr-only">{t("size")}</legend>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[11px] tracking-[0.2em] uppercase font-sans text-[#2A2726]">
-                    TALLA: {selected?.size}
+                    {t("sizeLabel", { size: selected?.size ?? "" })}
                   </span>
                   <button
                     type="button"
                     className="text-[11px] tracking-[0.15em] uppercase text-[#7A756E] underline underline-offset-2 hover:text-[#2A2726] boty-transition"
                   >
-                    GUÍA DE TALLAS
+                    {t("sizeGuide")}
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -424,14 +433,14 @@ export function ProductDetail({ product }: ProductDetailProps) {
             {/* Quantity */}
             <div className="mb-8">
               <span className="text-[11px] tracking-[0.2em] uppercase font-sans text-[#2A2726] mb-3 block">
-                CANTIDAD
+                {t("quantity")}
               </span>
               <div className="inline-flex items-center border border-[#D4CFC5]">
                 <button
                   type="button"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="w-10 h-10 flex items-center justify-center text-[#7A756E] hover:text-[#2A2726] boty-transition border-r border-[#D4CFC5]"
-                  aria-label="Disminuir cantidad"
+                  aria-label={t("decreaseQuantity")}
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -443,7 +452,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
                   onClick={() => setQuantity(clampCartLineQuantity(quantity + 1, maxQuantity))}
                   disabled={quantity >= maxQuantity}
                   className="w-10 h-10 flex items-center justify-center text-[#7A756E] hover:text-[#2A2726] boty-transition border-l border-[#D4CFC5] disabled:opacity-40"
-                  aria-label="Aumentar cantidad"
+                  aria-label={t("increaseQuantity")}
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -465,10 +474,10 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 {isAdded ? (
                   <span className="flex items-center justify-center gap-2">
                     <Check className="w-4 h-4" />
-                    AGREGADO AL CARRITO
+                    {t("addedToCart")}
                   </span>
                 ) : (
-                  "AGREGAR AL CARRITO"
+                  t("addToCart")
                 )}
               </button>
               <button
@@ -477,12 +486,12 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 disabled={!canBuy}
                 className="w-full py-4 text-[11px] tracking-[0.25em] uppercase font-sans border border-[#2A2726] text-[#2A2726] hover:bg-[#2A2726] hover:text-[#f8f9fa] boty-transition disabled:opacity-50"
               >
-                COMPRAR AHORA
+                {t("buyNow")}
               </button>
             </div>
 
             <p className="text-[11px] tracking-[0.08em] text-[#7A756E] mb-10">
-              Envío estimado 5–14 días · IVA incluido para México
+              {t("shippingNote")}
             </p>
 
             {/* Accordion */}

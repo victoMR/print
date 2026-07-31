@@ -3,6 +3,8 @@ packages:
 
 # Scripts de postinstall necesarios (sharp para next/image, esbuild para tooling)
 allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
   esbuild: true
   msgpackr-extract: true
   sharp: true

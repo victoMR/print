@@ -171,7 +171,9 @@ export type AccountOrder = {
   orderNumber: string;
   status: string;
   statusLabel: string;
-  totalMxn: string;
+  currency: "MXN" | "USD";
+  totalMxn: string | null;
+  totalUsd: string | null;
   orderedAt: string;
   itemCount: number;
 };

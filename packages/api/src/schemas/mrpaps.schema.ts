@@ -23,7 +23,10 @@ export const checkoutItemSchema = z.object({
   variantId: z.string().uuid(),
   quantity: cartQuantitySchema,
   retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/).optional(),
+  retailPriceUsd: z.string().regex(/^\d+\.\d{2}$/).optional(),
 });
+
+export const orderCurrencySchema = z.enum(['MXN', 'USD']);
 
 export const cartSyncBodySchema = z.object({
   items: z
@@ -53,10 +56,12 @@ export const shippingRatesBodySchema = z.object({
 });
 
 export const estimateBodySchema = z.object({
+  currency: orderCurrencySchema.default('MXN'),
   items: z.array(z.object({
     variantId: z.string().uuid(),
     quantity: cartQuantitySchema,
-    retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/),
+    retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/).optional(),
+    retailPriceUsd: z.string().regex(/^\d+\.\d{2}$/).optional(),
   })).min(1),
   shippingMethod: shippingMethodSchema.optional(),
   address: shippingRatesBodySchema.shape.address,
@@ -66,7 +71,8 @@ export const createOrderBodySchema = z.object({
   items: z.array(z.object({
     variantId: z.string().uuid(),
     quantity: cartQuantitySchema,
-    retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/),
+    retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/).optional(),
+    retailPriceUsd: z.string().regex(/^\d+\.\d{2}$/).optional(),
   })).min(1),
   shippingMethod: shippingMethodSchema.optional(),
   recipient: z.object({
@@ -82,7 +88,7 @@ export const createOrderBodySchema = z.object({
     zip: z.string().regex(/^\d{5}$/),
   }),
   retailCosts: z.object({
-    currency: z.literal('MXN'),
+    currency: orderCurrencySchema,
     subtotal: z.string().regex(/^\d+\.\d{2}$/),
     shipping: z.string().regex(/^\d+\.\d{2}$/),
     tax: z.string().regex(/^\d+\.\d{2}$/),
@@ -140,6 +146,8 @@ export const updateVariantAdminSchema = z.object({
   sizeLabel: z.string().min(1).max(50).optional(),
   colorLabel: z.string().min(1).max(50).optional(),
   retailPriceMxn: z.number().positive().optional(),
+  // Nullable para permitir borrar el precio en USD (vuelve a "no disponible en USD").
+  retailPriceUsd: z.number().positive().nullable().optional(),
   stockQuantity: z.number().int().min(0).optional(),
   designId: z.string().uuid().nullable().optional(),
   garmentColorHex: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
@@ -170,6 +178,7 @@ export const createProductSchema = z.object({
   galleryUrls: productGalleryUrlsSchema.optional(),
   /** Crea variante única «Única / Estándar» para la tienda. */
   retailPriceMxn: z.number().positive().optional(),
+  retailPriceUsd: z.number().positive().optional(),
   status: z.enum(['active', 'inactive']).optional(),
   templateId: z.string().uuid().optional(),
   composition: productCompositionSchema.optional(),
@@ -188,6 +197,12 @@ export const updateProductSchema = z.object({
   composition: productCompositionSchema.optional(),
   defaultGarmentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   category: productCategorySchema.optional(),
+  // Corrección manual de la traducción automática al inglés — al fijar el
+  // override también se marca *IsManual para que no se sobreescriba después.
+  nameEnOverride: z.string().max(255).nullable().optional(),
+  descriptionEnOverride: z.string().max(5000).nullable().optional(),
+  nameEnIsManual: z.boolean().optional(),
+  descriptionEnIsManual: z.boolean().optional(),
 });
 
 export const createVariantSchema = z.object({
@@ -195,6 +210,7 @@ export const createVariantSchema = z.object({
   sizeLabel: z.string().min(1).max(50),
   colorLabel: z.string().min(1).max(50),
   retailPriceMxn: z.number().positive(),
+  retailPriceUsd: z.number().positive().optional(),
   designId: z.string().uuid().nullable().optional(),
   garmentColorHex: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
 });

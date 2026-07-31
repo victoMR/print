@@ -43,6 +43,7 @@ import { quoteShipping } from '../../services/shipping/shipping-quote.service.js
 import * as variantsAdmin from '../../services/mrpaps-variants-admin.service.js';
 import { invalidateCatalogCache } from '../../services/cache-invalidation.service.js';
 import * as mailTest from '../../services/mail-test.service.js';
+import { translateProductContent } from '../../lib/translate.js';
 import { BadRequestError } from '../../types/errors.js';
 import {
   adminAnalyticsExportSchema,
@@ -347,7 +348,9 @@ v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
         customerName: o.customer_name,
         customerEmail: o.customer_email,
         customerPhone: o.customer_phone,
-        totalMxn: Number(o.total_mxn).toFixed(2),
+        currency: o.currency,
+        totalMxn: o.total_mxn !== null ? Number(o.total_mxn).toFixed(2) : null,
+        totalUsd: o.total_usd !== null ? Number(o.total_usd).toFixed(2) : null,
         shippingLabel: o.shipping_label,
         trackingNumber: o.tracking_number,
         trackingUrl: o.tracking_url,
@@ -417,6 +420,7 @@ v1MrpapsAdminRouter.patch('/variants/:variantId', async (req, res, next) => {
       sizeLabel: body.sizeLabel,
       colorLabel: body.colorLabel,
       retailPriceMxn: body.retailPriceMxn,
+      retailPriceUsd: body.retailPriceUsd,
       stockQuantity: body.stockQuantity,
       designId: body.designId,
       garmentColorHex: body.garmentColorHex,
@@ -595,10 +599,18 @@ v1MrpapsAdminRouter.post('/products', async (req, res, next) => {
     const thumbnailUrl = images.thumbnail_url ?? placeholder;
     const galleryUrls = images.gallery_urls.length > 0 ? images.gallery_urls : [thumbnailUrl];
 
+    // Best-effort auto-translation to English — never blocks the save if the
+    // translation API is down or unconfigured (see lib/translate.ts).
+    const description = body.description ?? '';
+    const translation = await translateProductContent({ name: body.name, description });
+
     const row = await productsRepo.upsertProduct({
       slug,
       name: body.name,
-      description: body.description ?? '',
+      description,
+      name_en: translation.name_en,
+      description_en: translation.description_en,
+      translated_at: translation.name_en || translation.description_en ? new Date().toISOString() : null,
       thumbnail_url: thumbnailUrl,
       gallery_urls: galleryUrls,
       status: body.status ?? 'active',
@@ -615,6 +627,7 @@ v1MrpapsAdminRouter.post('/products', async (req, res, next) => {
         size_label: 'Única',
         color_label: 'Estándar',
         retail_price_mxn: body.retailPriceMxn,
+        retail_price_usd: body.retailPriceUsd ?? null,
         stock_quantity: 0,
         design_id: null,
         garment_color_hex: body.defaultGarmentColor ?? '#FFFFFF',
@@ -651,6 +664,8 @@ v1MrpapsAdminRouter.patch('/products/:productId', async (req, res, next) => {
       category: body.category,
     };
 
+    let existing: Awaited<ReturnType<typeof productsRepo.getProductById>> = null;
+
     if (body.galleryUrls !== undefined) {
       const images = normalizeProductImages({
         galleryUrls: body.galleryUrls,
@@ -659,10 +674,48 @@ v1MrpapsAdminRouter.patch('/products/:productId', async (req, res, next) => {
       patch.gallery_urls = images.gallery_urls;
       if (images.thumbnail_url) patch.thumbnail_url = images.thumbnail_url;
     } else if (body.thumbnailUrl !== undefined) {
-      const existing = await productsRepo.getProductById(req.params.productId);
+      existing = await productsRepo.getProductById(req.params.productId);
       const currentGallery = existing ? resolveProductImages(existing) : [];
       patch.gallery_urls = replacePrimaryImage(currentGallery, body.thumbnailUrl);
       patch.thumbnail_url = body.thumbnailUrl;
+    }
+
+    // Manual English overrides — an explicit admin correction always wins and
+    // locks the field so future auto-translations don't clobber it.
+    if (body.nameEnOverride !== undefined) {
+      patch.name_en = body.nameEnOverride;
+      patch.name_en_is_manual = true;
+    } else if (body.nameEnIsManual !== undefined) {
+      patch.name_en_is_manual = body.nameEnIsManual;
+    }
+
+    if (body.descriptionEnOverride !== undefined) {
+      patch.description_en = body.descriptionEnOverride;
+      patch.description_en_is_manual = true;
+    } else if (body.descriptionEnIsManual !== undefined) {
+      patch.description_en_is_manual = body.descriptionEnIsManual;
+    }
+
+    // Re-translate automatically when name/description changed and the field
+    // isn't locked by a manual override. Best-effort — see lib/translate.ts.
+    if (body.name !== undefined || body.description !== undefined) {
+      existing = existing ?? (await productsRepo.getProductById(req.params.productId));
+      const nameLocked = patch.name_en_is_manual ?? existing?.name_en_is_manual ?? false;
+      const descriptionLocked = patch.description_en_is_manual ?? existing?.description_en_is_manual ?? false;
+
+      if ((!nameLocked && body.name !== undefined) || (!descriptionLocked && body.description !== undefined)) {
+        const translation = await translateProductContent({
+          name: body.name ?? existing?.name ?? '',
+          description: body.description ?? existing?.description ?? '',
+        });
+        if (!nameLocked && translation.name_en !== null) patch.name_en = translation.name_en;
+        if (!descriptionLocked && translation.description_en !== null) {
+          patch.description_en = translation.description_en;
+        }
+        if (translation.name_en || translation.description_en) {
+          patch.translated_at = new Date().toISOString();
+        }
+      }
     }
 
     const row = await productsRepo.updateProductAdmin(req.params.productId, patch);
@@ -688,6 +741,7 @@ v1MrpapsAdminRouter.post('/products/:productId/variants', async (req, res, next)
       sizeLabel: body.sizeLabel,
       colorLabel: body.colorLabel,
       retailPriceMxn: body.retailPriceMxn,
+      retailPriceUsd: body.retailPriceUsd,
       designId: body.designId,
       garmentColorHex: body.garmentColorHex,
     });

@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Search, X } from "lucide-react";
 import type { CatalogProductSummary } from "@/lib/api-types";
 import { fetchCatalogProducts } from "@/lib/api";
+import { currencyForLocale } from "@/lib/i18n/currency";
+import type { Locale } from "@/lib/i18n/locale";
 import { CatalogProductCard } from "./catalog-product-card";
 
 type ShopPageContentProps = {
@@ -14,6 +17,7 @@ const CATALOG_LIMIT = 48;
 const SEARCH_DEBOUNCE_MS = 300;
 
 export function ShopPageContent({ products: initialProducts }: ShopPageContentProps) {
+  const t = useTranslations("shop.page");
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState(initialProducts);
@@ -71,7 +75,15 @@ export function ShopPageContent({ products: initialProducts }: ShopPageContentPr
     void loadProducts();
   }, [loadProducts]);
 
-  const filteredProducts = useMemo(() => products, [products]);
+  const locale = useLocale() as Locale;
+  const currency = currencyForLocale(locale);
+
+  // En USD solo se listan productos con precio en USD ya definido — evita
+  // mostrar precio $0 o bloquear el carrito por un producto no disponible.
+  const filteredProducts = useMemo(
+    () => (currency === "USD" ? products.filter((p) => p.priceFromUsd !== null) : products),
+    [products, currency],
+  );
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -88,8 +100,8 @@ export function ShopPageContent({ products: initialProducts }: ShopPageContentPr
   }, []);
 
   const emptyMessage = searchQuery
-    ? `No encontramos productos para «${searchQuery}».`
-    : "No hay productos disponibles en este momento.";
+    ? t("noResultsFor", { query: searchQuery })
+    : t("noProducts");
 
   return (
     <div className="pt-[100px]">
@@ -97,7 +109,7 @@ export function ShopPageContent({ products: initialProducts }: ShopPageContentPr
       <div className="border-b border-[#D4CFC5] bg-[#F5F0E6]">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
           <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl tracking-[0.08em] uppercase text-[#2A2726]">
-            COLECCIÓN
+            {t("title")}
           </h1>
         </div>
       </div>
@@ -107,7 +119,7 @@ export function ShopPageContent({ products: initialProducts }: ShopPageContentPr
         <div className="flex items-center justify-between py-5 border-b border-[#D4CFC5]">
           <div className="flex items-center gap-3">
             <label htmlFor="shop-search" className="text-[11px] tracking-[0.18em] uppercase text-[#7A756E]">
-              FILTRAR
+              {t("filter")}
             </label>
           </div>
 
@@ -123,7 +135,7 @@ export function ShopPageContent({ products: initialProducts }: ShopPageContentPr
                 type="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Buscar…"
+                placeholder={t("searchPlaceholder")}
                 autoComplete="off"
                 className="pl-9 pr-8 py-2 text-[11px] tracking-[0.1em] bg-transparent border border-[#D4CFC5] text-[#2A2726] placeholder:text-[#7A756E] outline-none focus:border-[#2A2726] boty-transition w-48"
               />
@@ -132,7 +144,7 @@ export function ShopPageContent({ products: initialProducts }: ShopPageContentPr
                   type="button"
                   onClick={() => setSearchInput("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-[#7A756E] hover:text-[#2A2726]"
-                  aria-label="Limpiar búsqueda"
+                  aria-label={t("clearSearch")}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -140,7 +152,7 @@ export function ShopPageContent({ products: initialProducts }: ShopPageContentPr
             </div>
 
             <span className="text-[11px] tracking-[0.18em] uppercase text-[#7A756E]">
-              ORDENAR POR
+              {t("sortBy")}
             </span>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import type Stripe from 'stripe';
-import { getStripe, isStripeConfigured } from '../lib/stripe.js';
+import { getStripe, getStripeSettlementInfo, isStripeConfigured } from '../lib/stripe.js';
 import { logger } from '../lib/logger.js';
 import { normalizeTrackingCode } from '../lib/order-tracking-code.js';
 import {
@@ -98,7 +98,8 @@ export async function finalizeOrderPayment(
     };
   }
 
-  const expectedCents = Math.round(Number(order.total_mxn) * 100);
+  const expectedAmount = order.currency === 'USD' ? order.total_usd : order.total_mxn;
+  const expectedCents = Math.round(Number(expectedAmount) * 100);
   if (intent.amount !== expectedCents) {
     logger.error(
       { publicOrderId: publicId, intentAmount: intent.amount, expectedCents },
@@ -128,6 +129,21 @@ export async function finalizeOrderPayment(
   }
 
   logger.info({ publicOrderId: publicId }, 'Finalizar pago: marcado como paid');
+
+  // Best-effort: registra el monto real liquidado en MXN (dato de Stripe, no
+  // estimado) para contabilidad/CFDI. Nunca bloquea el flujo de pago.
+  try {
+    const settlement = await getStripeSettlementInfo(intent);
+    if (settlement) {
+      await updateOrderPaymentByPublicId(publicId, {
+        payment_status: 'paid',
+        stripe_settlement_amount_mxn: settlement.amountMxn,
+        stripe_fx_rate: settlement.fxRate,
+      });
+    }
+  } catch (settlementErr) {
+    logger.warn({ publicOrderId: publicId, settlementErr }, 'No se pudo registrar liquidación de Stripe');
+  }
 
   const inventory = await commitOrderInventoryOnPaid(publicId);
   if (!inventory.ok) {

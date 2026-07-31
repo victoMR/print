@@ -3,20 +3,22 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import { CartDrawer } from "./cart-drawer";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { SITE_WHATSAPP_URL } from "@/lib/legal/config";
 
-const navLinks = [
-  { label: "COLECCIONES", href: "/shop" },
-  { label: "NOSOTROS", href: "/nosotros" },
-  { label: "CONTACTO", href: SITE_WHATSAPP_URL, external: true },
-] as const;
-
 export function Header({ className, alwaysVisible = false }: { className?: string; alwaysVisible?: boolean }) {
+  const t = useTranslations("layout.header");
+  const navLinks = [
+    { label: t("nav.collections"), href: "/shop" },
+    { label: t("nav.about"), href: "/nosotros" },
+    { label: t("nav.contact"), href: SITE_WHATSAPP_URL, external: true },
+  ] as const;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { setIsOpen, itemCount } = useCart();
@@ -42,7 +44,7 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
       {/* Announcement bar */}
       <div className="bg-[#5C1A24] text-[#f8f9fa] text-center py-2.5">
         <p className="text-[10px] tracking-[0.22em] uppercase font-sans">
-          ENVÍOS A TODO MÉXICO.
+          {t("announcement")}
         </p>
       </div>
 
@@ -85,19 +87,17 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
 
           {/* Right side */}
           <div className="flex items-center gap-5">
-            <span className="hidden sm:block text-[10px] tracking-[0.18em] text-[#2A2726]/50 uppercase">
-              MEX | EN
-            </span>
+            <LanguageSwitcher className="hidden sm:flex text-[#2A2726]/50" />
 
             <button
               type="button"
               onClick={() => setIsOpen(true)}
               className="relative text-[#2A2726]/70 hover:text-[#2A2726] boty-transition flex items-center gap-1.5"
-              aria-label="Carrito"
+              aria-label={t("cart")}
             >
               <ShoppingBag className="w-5 h-5" />
               <span className="text-[11px] tracking-[0.12em] uppercase hidden sm:block">
-                CART ({itemCount})
+                {t("cartWithCount", { count: itemCount })}
               </span>
               {itemCount > 0 && (
                 <span className="sm:hidden absolute -top-1 -right-1 w-4 h-4 bg-[#5C1A24] text-[#f8f9fa] text-[9px] flex items-center justify-center">
@@ -111,7 +111,7 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
               type="button"
               className="lg:hidden p-1 text-[#2A2726]/70 hover:text-[#2A2726] boty-transition"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label="Toggle menu"
+              aria-label={t("toggleMenu")}
             >
               {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

@@ -4,9 +4,13 @@ export type CatalogProductSummary = {
   id: string;
   slug: string;
   name: string;
+  /** Traducción automática al inglés (puede ser null si aún no se ha traducido). */
+  nameEn: string | null;
   thumbnail: string;
   category: ProductCategory;
   priceFromMxn: string;
+  /** null si ningún variante tiene precio en USD todavía. */
+  priceFromUsd: string | null;
   variantCount: number;
   hasComposition?: boolean;
 };
@@ -28,6 +32,9 @@ export type CatalogProductDetail = {
   slug: string;
   name: string;
   description: string;
+  /** Traducción automática al inglés (puede ser null si aún no se ha traducido). */
+  nameEn: string | null;
+  descriptionEn: string | null;
   thumbnail: string;
   /** Fotos del producto en orden (la primera es la portada). */
   images?: string[];
@@ -40,6 +47,8 @@ export type CatalogProductDetail = {
     size: string;
     color: string;
     retailPriceMxn: string;
+    /** null si esta variante no tiene precio en USD todavía. */
+    retailPriceUsd: string | null;
     garmentColorHex?: string;
     inStock: boolean;
     maxQuantity?: number;
@@ -85,7 +94,7 @@ export type ShippingRatesResponse = {
 
 export type EstimateResponse = {
   data: {
-    currency: "MXN";
+    currency: "MXN" | "USD";
     subtotal: string;
     shipping: string;
     tax: string;
@@ -112,6 +121,7 @@ export type OrderDetail = {
   orderedAt: string;
   paymentStatus: string | null;
   stripePaymentIntentId?: string | null;
+  currency: "MXN" | "USD";
   customer: {
     name: string;
     email: string;
@@ -129,10 +139,14 @@ export type OrderDetail = {
     countryCode: string;
   };
   totals: {
-    subtotalMxn: string;
-    shippingMxn: string;
-    taxMxn: string;
-    totalMxn: string;
+    subtotalMxn: string | null;
+    shippingMxn: string | null;
+    taxMxn: string | null;
+    totalMxn: string | null;
+    subtotalUsd: string | null;
+    shippingUsd: string | null;
+    taxUsd: string | null;
+    totalUsd: string | null;
   };
   tracking: {
     number: string | null;
@@ -148,6 +162,8 @@ export type OrderDetail = {
     quantity: number;
     unitPriceMxn: string;
     lineTotalMxn: string;
+    unitPriceUsd: string | null;
+    lineTotalUsd: string | null;
     thumbnailUrl: string | null;
     printFileUrl: string | null;
   }>;
@@ -222,6 +238,8 @@ export type CartItem = {
   productName: string;
   variantLabel: string;
   retailPriceMxn: string;
+  /** null si esta variante no tiene precio en USD todavía. */
+  retailPriceUsd?: string | null;
   quantity: number;
   thumbnail: string;
   /** Tope por línea (catálogo); por defecto 100 en cliente. */
@@ -242,7 +260,9 @@ export type AdminOrderSummary = {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  totalMxn: string;
+  currency: "MXN" | "USD";
+  totalMxn: string | null;
+  totalUsd: string | null;
   shippingLabel: string | null;
   trackingNumber: string | null;
   trackingUrl: string | null;
@@ -335,6 +355,8 @@ export type AdminProductVariant = {
   size: string;
   color: string;
   retailPriceMxn: string;
+  /** null si esta variante no tiene precio en USD todavía. */
+  retailPriceUsd: string | null;
   /** Unidades en inventario. 0 = sin límite (print-on-demand). */
   stockQuantity: number;
   status: "active" | "inactive" | "archived";

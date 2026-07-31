@@ -101,6 +101,11 @@ export async function updateProductAdmin(
     slug: string;
     name: string;
     description: string;
+    name_en: string | null;
+    description_en: string | null;
+    name_en_is_manual: boolean;
+    description_en_is_manual: boolean;
+    translated_at: string | null;
     thumbnail_url: string;
     gallery_urls: string[];
     status: MrpapsProductStatus;
@@ -192,6 +197,7 @@ export async function updateVariantAdmin(
     size_label: string;
     color_label: string;
     retail_price_mxn: number;
+    retail_price_usd: number | null;
     stock_quantity: number;
     status: MrpapsProductStatus;
     design_id: string | null;
@@ -210,6 +216,9 @@ export async function upsertProduct(input: {
   slug: string;
   name: string;
   description: string;
+  name_en?: string | null;
+  description_en?: string | null;
+  translated_at?: string | null;
   thumbnail_url: string;
   gallery_urls?: string[];
   status?: MrpapsProductStatus;
@@ -221,12 +230,16 @@ export async function upsertProduct(input: {
   const galleryJson = JSON.stringify(input.gallery_urls ?? []);
   return queryRequired<MrpapsProductRow>(
     `INSERT INTO mrpaps_products (
-       slug, name, description, thumbnail_url, gallery_urls, status, template_id, composition,
+       slug, name, description, name_en, description_en, translated_at,
+       thumbnail_url, gallery_urls, status, template_id, composition,
        default_garment_color, category
-     ) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11, $12, $13)
      ON CONFLICT (slug) DO UPDATE SET
        name = EXCLUDED.name,
        description = EXCLUDED.description,
+       name_en = EXCLUDED.name_en,
+       description_en = EXCLUDED.description_en,
+       translated_at = EXCLUDED.translated_at,
        thumbnail_url = EXCLUDED.thumbnail_url,
        gallery_urls = EXCLUDED.gallery_urls,
        status = EXCLUDED.status,
@@ -240,6 +253,9 @@ export async function upsertProduct(input: {
       input.slug,
       input.name,
       input.description,
+      input.name_en ?? null,
+      input.description_en ?? null,
+      input.translated_at ?? null,
       input.thumbnail_url,
       galleryJson,
       input.status ?? 'active',
@@ -257,20 +273,22 @@ export async function upsertVariant(input: {
   size_label: string;
   color_label: string;
   retail_price_mxn: number;
+  retail_price_usd?: number | null;
   stock_quantity: number;
   design_id?: string | null;
   garment_color_hex?: string;
 }): Promise<MrpapsProductVariantRow> {
   return queryRequired<MrpapsProductVariantRow>(
     `INSERT INTO mrpaps_product_variants (
-       product_id, sku, size_label, color_label, retail_price_mxn, stock_quantity,
+       product_id, sku, size_label, color_label, retail_price_mxn, retail_price_usd, stock_quantity,
        design_id, garment_color_hex, status
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active')
      ON CONFLICT (sku) DO UPDATE SET
        product_id = EXCLUDED.product_id,
        size_label = EXCLUDED.size_label,
        color_label = EXCLUDED.color_label,
        retail_price_mxn = EXCLUDED.retail_price_mxn,
+       retail_price_usd = EXCLUDED.retail_price_usd,
        stock_quantity = EXCLUDED.stock_quantity,
        design_id = EXCLUDED.design_id,
        garment_color_hex = EXCLUDED.garment_color_hex,
@@ -283,6 +301,7 @@ export async function upsertVariant(input: {
       input.size_label,
       input.color_label,
       input.retail_price_mxn,
+      input.retail_price_usd ?? null,
       input.stock_quantity,
       input.design_id ?? null,
       input.garment_color_hex ?? '#FFFFFF',

@@ -1,0 +1,252 @@
+{
+  "common": {
+    "languageSwitcher": {
+      "label": "Language",
+      "es": "Español",
+      "en": "English"
+    }
+  },
+  "layout": {
+    "header": {
+      "announcement": "Shipping across Mexico.",
+      "nav": {
+        "collections": "Collections",
+        "about": "About",
+        "contact": "Contact"
+      },
+      "cart": "Cart",
+      "cartWithCount": "Cart ({count})",
+      "toggleMenu": "Toggle menu"
+    },
+    "footer": {
+      "shop": {
+        "title": "Shop",
+        "all": "All products",
+        "tshirts": "T-shirts",
+        "hoodies": "Hoodies",
+        "pants": "Pants",
+        "accessories": "Accessories"
+      },
+      "collections": {
+        "title": "Collections",
+        "current": "Current",
+        "archive": "Archive",
+        "comingSoon": "Coming soon"
+      },
+      "info": {
+        "title": "Information",
+        "about": "About",
+        "shippingReturns": "Shipping & returns",
+        "terms": "Terms & conditions",
+        "privacy": "Privacy"
+      },
+      "contact": {
+        "title": "Contact"
+      },
+      "email": "Email",
+      "allRightsReserved": "All rights reserved."
+    }
+  },
+  "shop": {
+    "page": {
+      "title": "Collection",
+      "filter": "Filter",
+      "searchPlaceholder": "Search…",
+      "clearSearch": "Clear search",
+      "sortBy": "Sort by",
+      "noResultsFor": "We couldn't find products for \"{query}\".",
+      "noProducts": "No products available right now."
+    },
+    "card": {
+      "from": "From",
+      "variantCount": "{count, plural, one {# variant} other {# variants}}"
+    },
+    "product": {
+      "size": "Size",
+      "color": "Color",
+      "quantity": "Quantity",
+      "added": "Added ✓",
+      "addToCart": "Add to cart",
+      "shippingNote": "Estimated shipping 5–14 days"
+    },
+    "productDetail": {
+      "backToShop": "Back to shop",
+      "collection": "Collection",
+      "outOfStock": "Out of stock",
+      "notAvailableInCurrency": "Not available in this currency",
+      "colorNotAvailable": "Out of stock in this color",
+      "colorLabel": "Color:",
+      "size": "Size",
+      "sizeLabel": "Size: {size}",
+      "sizeGuide": "Size guide",
+      "quantity": "Quantity",
+      "decreaseQuantity": "Decrease quantity",
+      "increaseQuantity": "Increase quantity",
+      "addToCart": "Add to cart",
+      "addedToCart": "Added to cart",
+      "buyNow": "Buy now",
+      "shippingNote": "Estimated shipping 5–14 days",
+      "detailsTitle": "Details",
+      "detailsContent": "Made with high-quality materials. Print-on-demand with high-resolution DTG printing.",
+      "shippingTitle": "Shipping & returns",
+      "shippingContent": "Estimated shipping 5–14 days. Returns accepted up to 15 days after delivery. See our terms for details.",
+      "careTitle": "Materials & care",
+      "careContent": "Machine wash cold. Do not bleach. Iron on low heat if needed. See the inside label for full care instructions."
+    }
+  },
+  "cart": {
+    "title": "Cart",
+    "empty": {
+      "title": "Your cart is empty",
+      "subtitle": "Browse the catalog and add some products."
+    },
+    "viewCollection": "View collection",
+    "table": {
+      "product": "Product",
+      "price": "Price",
+      "quantity": "Quantity",
+      "total": "Total"
+    },
+    "decreaseQuantity": "Decrease",
+    "increaseQuantity": "Increase",
+    "remove": "Remove",
+    "continueShopping": "Continue shopping",
+    "orderSummary": "Order summary",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "total": "Total",
+    "checkoutButton": "Checkout",
+    "shipsNationwide": "Ships all over Mexico",
+    "returnsPolicy": "Exchanges & returns within 15 days",
+    "drawer": {
+      "empty": "Empty",
+      "itemCount": "{count, plural, one {# item} other {# items}}",
+      "closeCart": "Close cart",
+      "emptySubtitle": "Add products to get started",
+      "removeItem": "Remove",
+      "less": "Less",
+      "more": "More",
+      "outOfStockNotice": "Out of stock — these won't be included in your order",
+      "outOfStock": "Out of stock",
+      "subtotalWithCount": "Subtotal ({count, plural, one {# item} other {# items}})",
+      "estimatedTotal": "Estimated total",
+      "keepShopping": "Keep shopping"
+    }
+  },
+  "checkout": {
+    "addressGeo": {
+      "statesLoadError": "Couldn't load the states (INEGI).",
+      "colonyHint": "Neighborhood and municipality based on SEPOMEX (official postal data).",
+      "zipValidHint": "Valid zip code; confirm municipality and neighborhood.",
+      "zipNotFound": "Zip code not found",
+      "zipLabel": "Zip code *",
+      "zipPlaceholder": "5 digits",
+      "stateLabel": "State",
+      "loadingStates": "Loading states…",
+      "selectState": "Select state",
+      "municipalityLabel": "Municipality",
+      "loadingMunicipalities": "Loading municipalities…",
+      "selectMunicipality": "Select municipality",
+      "selectStateFirst": "Select a state first",
+      "colonyLabel": "Neighborhood",
+      "selectColony": "Select neighborhood",
+      "optional": "(optional)",
+      "colonyPlaceholder": "E.g. Centro, Del Valle…",
+      "cityLabel": "City *",
+      "cityPlaceholder": "Auto-filled from municipality or zip code"
+    },
+    "steps": {
+      "address": "Address",
+      "confirm": "Confirm",
+      "payment": "Payment"
+    },
+    "stepsAriaLabel": "Checkout steps",
+    "loadingCart": "Loading cart…",
+    "emptyCart": {
+      "title": "Your cart is empty",
+      "subtitle": "Add products to continue with your purchase",
+      "viewCollection": "View collection"
+    },
+    "outOfStock": {
+      "banner": "{count, plural, one {One product is no longer in stock} other {# products are no longer in stock}}",
+      "notice": "These won't be included in your order. The rest of your items are still available.",
+      "remove": "Remove",
+      "removeAll": "Remove all out-of-stock items"
+    },
+    "addressLabelDefault": "Home",
+    "addressLabelFallback": "My address",
+    "errors": {
+      "nameRequired": "Name is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Enter a valid email",
+      "phoneRequired": "Phone is required",
+      "phoneInvalid": "Phone must be exactly 10 digits",
+      "addressRequired": "Address is required",
+      "legalRequired": "You must accept the Terms and Conditions and Privacy Notice to continue.",
+      "estimateFailed": "Couldn't calculate shipping. Check the address and try again.",
+      "orderCreateFailed": "Error creating order"
+    },
+    "addressStep": {
+      "title": "Shipping address",
+      "alreadyHaveAccount": "Already have an account?",
+      "login": "Sign in",
+      "loginSuffix": "to use your saved addresses and view your order history.",
+      "savedAddresses": "Your saved addresses",
+      "newAddress": "New address",
+      "useDifferentAddress": "Use a different address",
+      "saveAddressCheckbox": "Save this address for future orders"
+    },
+    "fields": {
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "phonePlaceholder": "10 digits",
+      "street": "Street and number",
+      "streetPlaceholder": "123 Main St",
+      "addressLabel": "Address name",
+      "addressLabelPlaceholder": "E.g. Home, Work, Mom's…"
+    },
+    "calculatingShipping": "Calculating shipping…",
+    "next": "Next",
+    "shippingLabel": "Shipping",
+    "tax": "Tax",
+    "total": "Total",
+    "confirmStep": {
+      "title": "Confirm your order",
+      "backToAddress": "Back to address",
+      "shipTo": "Ship to",
+      "calculatedAutomatically": "Calculated automatically",
+      "subtotalProducts": "Products subtotal",
+      "guestTrackingNotice": "Once confirmed, you'll get a unique tracking code. Save it along with your email to check your order status anytime.",
+      "processing": "Processing…",
+      "goToPayment": "Go to payment",
+      "cardChargeNotice": "Your card will be charged in the next step. Secure payment with Stripe."
+    },
+    "paymentStep": {
+      "title": "Secure payment",
+      "trackingCodeLabel": "Your tracking code",
+      "trackingCodeNotice": "Save it: you'll need it along with your email to check your order status.",
+      "cardChargeIntro": "Enter your card details. The charge is"
+    },
+    "orderSummary": {
+      "title": "Your order",
+      "perUnit": "{price} each",
+      "subtotal": "Subtotal",
+      "shippingTaxNotice": "Shipping and tax are calculated once you confirm your address"
+    },
+    "security": {
+      "securePurchase": "100% secure checkout · Stripe",
+      "terms": "Terms",
+      "privacy": "Privacy"
+    },
+    "paymentOutcome": {
+      "successTitle": "Payment received!",
+      "errorTitle": "We couldn't complete the payment",
+      "errorDescription": "Check your card details or try another payment method.",
+      "retryPayment": "Retry payment",
+      "withEmail": "Your order has been placed. We've sent the payment confirmation and order details to {email}. Check your spam folder too.",
+      "noEmail": "Your order has been placed. We've sent the payment confirmation to the email you provided at checkout. Check your spam folder too."
+    },
+    "clearCartAndShop": "Clear cart and go to the shop"
+  }
+}

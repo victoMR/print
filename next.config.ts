@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 import { NEXT_IMAGE_REMOTE_PATTERNS } from "./lib/next-image-hosts";
+
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 // CSP is set dynamically per-request in middleware.ts (nonce-based).
 // Only non-CSP security headers are set here.
@@ -51,4 +54,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

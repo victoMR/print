@@ -1,41 +1,46 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart-context";
 import { MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
-import { formatMxn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, X, Truck, RotateCcw } from "lucide-react";
 
-const SHIPPING_MXN = 150;
+// Estimado previo al checkout (el monto real se calcula en /checkout según
+// dirección/moneda) — coincide con el valor base de la tabla de envío en USD.
+const SHIPPING_ESTIMATE = { MXN: 150, USD: 12 };
 
 export function CartView() {
-  const { items, updateQuantity, removeItem } = useCart();
+  const t = useTranslations("cart");
+  const { items, currency, itemPrice, updateQuantity, removeItem } = useCart();
 
   if (items.length === 0) {
     return (
       <div className="text-center py-20 border border-[#D4CFC5] bg-[#f8f9fa]">
         <p className="text-[13px] tracking-[0.15em] uppercase text-[#7A756E] mb-2">
-          Tu carrito está vacío
+          {t("empty.title")}
         </p>
         <p className="text-[12px] text-[#7A756E]/70 mb-8">
-          Explora el catálogo y agrega productos.
+          {t("empty.subtitle")}
         </p>
         <Link
           href="/shop"
           className="inline-block bg-[#5C1A24] text-[#f8f9fa] px-8 py-3.5 text-[11px] tracking-[0.22em] uppercase font-sans hover:bg-[#4A1520] boty-transition"
         >
-          VER COLECCIÓN
+          {t("viewCollection")}
         </Link>
       </div>
     );
   }
 
-  const subtotal = items.reduce(
-    (sum, item) => sum + Number.parseFloat(item.retailPriceMxn) * item.quantity,
-    0,
-  );
-  const total = subtotal + SHIPPING_MXN;
+  const subtotal = items.reduce((sum, item) => {
+    const price = itemPrice(item);
+    return price ? sum + Number.parseFloat(price) * item.quantity : sum;
+  }, 0);
+  const shippingEstimate = SHIPPING_ESTIMATE[currency];
+  const total = subtotal + shippingEstimate;
 
   return (
     <div className="grid lg:grid-cols-[1fr_360px] gap-10 items-start">
@@ -43,8 +48,8 @@ export function CartView() {
       <div>
         {/* Table header */}
         <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto] gap-6 pb-3 border-b border-[#D4CFC5] mb-2">
-          {["PRODUCTO", "PRECIO", "CANTIDAD", "TOTAL", ""].map((h) => (
-            <span key={h} className="text-[10px] tracking-[0.22em] uppercase text-[#7A756E] font-sans">
+          {[t("table.product"), t("table.price"), t("table.quantity"), t("table.total"), ""].map((h, i) => (
+            <span key={i} className="text-[10px] tracking-[0.22em] uppercase text-[#7A756E] font-sans">
               {h}
             </span>
           ))}
@@ -53,7 +58,8 @@ export function CartView() {
         {/* Items */}
         <ul className="divide-y divide-[#D4CFC5] list-none p-0 m-0">
           {items.map((item) => {
-            const lineTotal = Number.parseFloat(item.retailPriceMxn) * item.quantity;
+            const price = itemPrice(item);
+            const lineTotal = price ? Number.parseFloat(price) * item.quantity : null;
             return (
               <li key={item.variantId} className="py-6">
                 <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_1fr_auto_auto_auto_auto] gap-4 md:gap-6 items-center">
@@ -79,7 +85,7 @@ export function CartView() {
 
                   {/* Unit price */}
                   <span className="hidden md:block text-[12px] tracking-[0.08em] text-[#2A2726]">
-                    {formatMxn(item.retailPriceMxn)}
+                    {price !== null ? formatCurrency(price, currency) : "—"}
                   </span>
 
                   {/* Quantity controls */}
@@ -88,7 +94,7 @@ export function CartView() {
                       type="button"
                       onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
                       className="w-8 h-8 flex items-center justify-center text-[#7A756E] hover:text-[#2A2726] border-r border-[#D4CFC5] boty-transition"
-                      aria-label="Disminuir"
+                      aria-label={t("decreaseQuantity")}
                     >
                       <Minus className="w-3 h-3" />
                     </button>
@@ -100,7 +106,7 @@ export function CartView() {
                       disabled={item.quantity >= (item.maxQuantity ?? MAX_CART_LINE_QUANTITY)}
                       onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
                       className="w-8 h-8 flex items-center justify-center text-[#7A756E] hover:text-[#2A2726] border-l border-[#D4CFC5] boty-transition disabled:opacity-40"
-                      aria-label="Aumentar"
+                      aria-label={t("increaseQuantity")}
                     >
                       <Plus className="w-3 h-3" />
                     </button>
@@ -108,7 +114,7 @@ export function CartView() {
 
                   {/* Line total */}
                   <span className="hidden md:block text-[12px] tracking-[0.08em] text-[#2A2726] font-sans">
-                    {formatMxn(lineTotal.toFixed(2))}
+                    {lineTotal !== null ? formatCurrency(lineTotal.toFixed(2), currency) : "—"}
                   </span>
 
                   {/* Remove */}
@@ -116,7 +122,7 @@ export function CartView() {
                     type="button"
                     onClick={() => removeItem(item.variantId)}
                     className="text-[#D4CFC5] hover:text-[#5C1A24] boty-transition"
-                    aria-label="Eliminar"
+                    aria-label={t("remove")}
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -132,7 +138,7 @@ export function CartView() {
             href="/shop"
             className="inline-flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase text-[#7A756E] hover:text-[#2A2726] boty-transition"
           >
-            ← CONTINUAR COMPRANDO
+            ← {t("continueShopping")}
           </Link>
         </div>
       </div>
@@ -140,28 +146,28 @@ export function CartView() {
       {/* Order summary */}
       <div className="border border-[#D4CFC5] p-6 bg-[#f8f9fa]">
         <h2 className="text-[11px] tracking-[0.25em] uppercase font-sans text-[#2A2726] mb-6 pb-4 border-b border-[#D4CFC5]">
-          RESUMEN DEL PEDIDO
+          {t("orderSummary")}
         </h2>
 
         <div className="space-y-3 mb-5">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] tracking-[0.15em] uppercase text-[#7A756E]">SUBTOTAL</span>
+            <span className="text-[11px] tracking-[0.15em] uppercase text-[#7A756E]">{t("subtotal")}</span>
             <span className="text-[12px] tracking-[0.06em] text-[#2A2726]">
-              {formatMxn(subtotal.toFixed(2))}
+              {formatCurrency(subtotal.toFixed(2), currency)}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] tracking-[0.15em] uppercase text-[#7A756E]">ENVÍO</span>
+            <span className="text-[11px] tracking-[0.15em] uppercase text-[#7A756E]">{t("shipping")}</span>
             <span className="text-[12px] tracking-[0.06em] text-[#2A2726]">
-              {formatMxn(SHIPPING_MXN.toFixed(2))}
+              {formatCurrency(shippingEstimate.toFixed(2), currency)}
             </span>
           </div>
         </div>
 
         <div className="flex items-center justify-between pt-5 border-t border-[#D4CFC5] mb-6">
-          <span className="text-[12px] tracking-[0.2em] uppercase font-sans text-[#2A2726]">TOTAL</span>
+          <span className="text-[12px] tracking-[0.2em] uppercase font-sans text-[#2A2726]">{t("total")}</span>
           <span className="text-xl tracking-[0.08em] font-sans text-[#2A2726]">
-            {formatMxn(total.toFixed(2))} MXN
+            {formatCurrency(total.toFixed(2), currency)}
           </span>
         </div>
 
@@ -169,7 +175,7 @@ export function CartView() {
           href="/checkout"
           className="block w-full text-center bg-[#5C1A24] text-[#f8f9fa] py-4 text-[11px] tracking-[0.25em] uppercase font-sans hover:bg-[#4A1520] boty-transition mb-6"
         >
-          FINALIZAR COMPRA
+          {t("checkoutButton")}
         </Link>
 
         {/* Trust badges */}
@@ -177,13 +183,13 @@ export function CartView() {
           <div className="flex items-center gap-3">
             <Truck className="w-4 h-4 text-[#7A756E] shrink-0" />
             <span className="text-[10px] tracking-[0.1em] uppercase text-[#7A756E]">
-              ENVÍOS A TODO MÉXICO
+              {t("shipsNationwide")}
             </span>
           </div>
           <div className="flex items-center gap-3">
             <RotateCcw className="w-4 h-4 text-[#7A756E] shrink-0" />
             <span className="text-[10px] tracking-[0.1em] uppercase text-[#7A756E]">
-              CAMBIOS Y DEVOLUCIONES HASTA 15 DÍAS
+              {t("returnsPolicy")}
             </span>
           </div>
         </div>

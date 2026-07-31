@@ -77,16 +77,24 @@ async function listPublicProductsUncached(
 
         const prices = variants.map((v) => Number(v.retail_price_mxn)).filter((p) => p > 0);
         const priceFromMxn = prices.length ? Math.min(...prices).toFixed(2) : '0.00';
+        const pricesUsd = variants
+          .map((v) => (v.retail_price_usd !== null ? Number(v.retail_price_usd) : null))
+          .filter((p): p is number => p !== null && p > 0);
+        const priceFromUsd = pricesUsd.length ? Math.min(...pricesUsd).toFixed(2) : null;
         const colorImages = colorImagesMap.get(product.id) ?? [];
 
         return {
           id: product.id,
           slug: product.slug,
           name: product.name,
+          nameEn: product.name_en,
           thumbnail: resolveProductThumbnail(product, colorImages),
           images: resolveProductImages(product),
           category: product.category,
           priceFromMxn,
+          // null si ningún variante tiene precio en USD todavía — el frontend
+          // debe ocultar el producto del catálogo en USD en ese caso.
+          priceFromUsd,
           variantCount: variants.length,
           hasComposition: Boolean(
             product.template_id &&
@@ -141,6 +149,8 @@ async function getPublicProductUncached(idOrSlug: string) {
     slug: product.slug,
     name: product.name,
     description: product.description,
+    nameEn: product.name_en,
+    descriptionEn: product.description_en,
     thumbnail,
     images: images.length > 0 ? images : (thumbnail ? [thumbnail] : []),
     category: product.category,
@@ -154,6 +164,8 @@ async function getPublicProductUncached(idOrSlug: string) {
       size: v.size_label,
       color: v.color_label,
       retailPriceMxn: Number(v.retail_price_mxn).toFixed(2),
+      // null si esta variante no tiene precio en USD todavía.
+      retailPriceUsd: v.retail_price_usd !== null ? Number(v.retail_price_usd).toFixed(2) : null,
       garmentColorHex: v.garment_color_hex ?? product.default_garment_color ?? undefined,
       inStock: !isTrackedStock(v.stock_quantity) || v.stock_quantity > 0,
       maxQuantity: maxPurchasableQuantity(v.stock_quantity),
@@ -219,6 +231,8 @@ export async function syncCartLineItems(
       continue;
     }
 
+    const dbPriceUsd = variant.retail_price_usd !== null ? Number(variant.retail_price_usd).toFixed(2) : null;
+
     if (isTrackedStock(variant.stock_quantity) && variant.stock_quantity < 1) {
       // Mantener en el carrito pero marcado como agotado — el cliente ve el aviso
       const dbPrice = Number(variant.retail_price_mxn).toFixed(2);
@@ -228,6 +242,7 @@ export async function syncCartLineItems(
         productName: variant.product.name,
         variantLabel: variantLabel(variant.size_label, variant.color_label),
         retailPriceMxn: dbPrice,
+        retailPriceUsd: dbPriceUsd,
         thumbnail: variant.product.thumbnail_url,
         quantity: item.quantity,
         maxQuantity: 0,
@@ -245,6 +260,7 @@ export async function syncCartLineItems(
       productName: variant.product.name,
       variantLabel: variantLabel(variant.size_label, variant.color_label),
       retailPriceMxn: dbPrice,
+      retailPriceUsd: dbPriceUsd,
       thumbnail: variant.product.thumbnail_url,
       quantity,
       maxQuantity: maxPurchasableQuantity(variant.stock_quantity),
@@ -256,7 +272,8 @@ export async function syncCartLineItems(
 }
 
 export async function resolveLineItems(
-  items: Array<{ variantId: string; quantity: number; retailPriceMxn?: string }>,
+  items: Array<{ variantId: string; quantity: number; retailPriceMxn?: string; retailPriceUsd?: string }>,
+  currency: 'MXN' | 'USD' = 'MXN',
 ) {
   const resolved = [];
 
@@ -272,15 +289,33 @@ export async function resolveLineItems(
 
     assertPurchasableQuantity(variant, item.quantity);
 
-    const dbPrice = Number(variant.retail_price_mxn).toFixed(2);
-    if (item.retailPriceMxn && item.retailPriceMxn !== dbPrice) {
+    const dbPriceMxn = Number(variant.retail_price_mxn).toFixed(2);
+    if (item.retailPriceMxn && item.retailPriceMxn !== dbPriceMxn) {
       throw new BadRequestError('El precio del carrito no coincide con el catálogo. Actualiza la página.');
+    }
+
+    // El equivalente MXN se conserva siempre para contabilidad/CFDI, aun en
+    // órdenes cobradas en USD — ver mrpaps-checkout.service.ts.
+    let unitPriceUsd: number | null = variant.retail_price_usd !== null ? Number(variant.retail_price_usd) : null;
+
+    if (currency === 'USD') {
+      if (variant.retail_price_usd === null) {
+        throw new BadRequestError(
+          `${variantLabel(variant.size_label, variant.color_label)} no está disponible en USD. Quítalo del carrito.`,
+        );
+      }
+      const dbPriceUsd = Number(variant.retail_price_usd).toFixed(2);
+      if (item.retailPriceUsd && item.retailPriceUsd !== dbPriceUsd) {
+        throw new BadRequestError('El precio del carrito no coincide con el catálogo. Actualiza la página.');
+      }
+      unitPriceUsd = Number(dbPriceUsd);
     }
 
     resolved.push({
       variant,
       quantity: item.quantity,
-      unitPriceMxn: Number(dbPrice),
+      unitPriceMxn: Number(dbPriceMxn),
+      unitPriceUsd,
     });
   }
 

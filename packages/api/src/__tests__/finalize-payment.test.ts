@@ -17,6 +17,7 @@ vi.mock('../services/order-confirmation-email.service.js', () => ({
 vi.mock('../lib/stripe.js', () => ({
   getStripe: vi.fn(),
   isStripeConfigured: vi.fn(),
+  getStripeSettlementInfo: vi.fn().mockResolvedValue(null),
 }));
 vi.mock('../lib/order-tracking-code.js', () => ({
   normalizeTrackingCode: vi.fn((code: string) => code),
@@ -35,7 +36,9 @@ const BASE_ORDER = {
   id: 'internal-id',
   public_id: 'ABC-123',
   status: 'pendiente_pago' as const,
+  currency: 'MXN' as const,
   total_mxn: '500.00',
+  total_usd: null,
   customer_email: 'customer@example.com',
   payment_status: null,
   stripe_payment_intent_id: 'pi_test_123',

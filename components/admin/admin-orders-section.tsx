@@ -8,7 +8,11 @@ import {
 } from "@/lib/api";
 import type { AdminOrderSummary, MrpapsOrderStatus, OrderDetail } from "@/lib/api-types";
 import { ORDER_STATUS_LABELS, ORDER_STATUS_NEXT } from "@/lib/api-types";
-import { cn, formatMxn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+
+function orderAmount(order: { currency: "MXN" | "USD" }, mxn: string | null, usd: string | null): string {
+  return formatCurrency((order.currency === "USD" ? usd : mxn) ?? "0", order.currency);
+}
 import {
   BotyBadge,
   BotyButton,
@@ -447,7 +451,7 @@ function OrderGridCard({
             <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
           </div>
           <p className="font-semibold text-primary tabular-nums text-sm shrink-0">
-            {formatMxn(order.totalMxn)}
+            {orderAmount(order, order.totalMxn, order.totalUsd)}
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -504,7 +508,7 @@ function OrderListRow({
           </span>
         </p>
         <p className="font-semibold text-primary tabular-nums text-sm md:text-base whitespace-nowrap md:text-right mt-1 md:mt-0">
-          {formatMxn(order.totalMxn)}
+          {orderAmount(order, order.totalMxn, order.totalUsd)}
         </p>
       </div>
     </button>
@@ -599,7 +603,7 @@ function AdminOrderDetail({
                 {PAYMENT_LABELS[order.paymentStatus] ?? order.paymentStatus}
               </BotyBadge>
             )}
-            <p className="font-sans tabular-nums text-2xl text-primary">{formatMxn(order.totals.totalMxn)}</p>
+            <p className="font-sans tabular-nums text-2xl text-primary">{orderAmount(order, order.totals.totalMxn, order.totals.totalUsd)}</p>
           </div>
         </div>
 
@@ -684,8 +688,8 @@ function AdminOrderDetail({
                   <p className="text-sm text-muted-foreground">{item.variantLabel}</p>
                   <p className="text-xs text-muted-foreground">SKU {item.sku}</p>
                   <p className="mt-2 text-sm">
-                    {item.quantity} × {formatMxn(item.unitPriceMxn)} ={" "}
-                    <strong>{formatMxn(item.lineTotalMxn)}</strong>
+                    {item.quantity} × {orderAmount(order, item.unitPriceMxn, item.unitPriceUsd)} ={" "}
+                    <strong>{orderAmount(order, item.lineTotalMxn, item.lineTotalUsd)}</strong>
                   </p>
                   {item.printFileUrl && (
                     <a
@@ -733,10 +737,10 @@ function AdminOrderDetail({
 
           <BotySurface className="p-6 text-sm space-y-2">
             <p className="font-medium mb-2">Totales</p>
-            <p>Subtotal: {formatMxn(order.totals.subtotalMxn)}</p>
-            <p>Envío: {formatMxn(order.totals.shippingMxn)}</p>
-            <p>IVA: {formatMxn(order.totals.taxMxn)}</p>
-            <p className="font-semibold text-primary pt-2">Total: {formatMxn(order.totals.totalMxn)}</p>
+            <p>Subtotal: {orderAmount(order, order.totals.subtotalMxn, order.totals.subtotalUsd)}</p>
+            <p>Envío: {orderAmount(order, order.totals.shippingMxn, order.totals.shippingUsd)}</p>
+            <p>IVA: {orderAmount(order, order.totals.taxMxn, order.totals.taxUsd)}</p>
+            <p className="font-semibold text-primary pt-2">Total: {orderAmount(order, order.totals.totalMxn, order.totals.totalUsd)}</p>
           </BotySurface>
 
           {order.internalNotes && (

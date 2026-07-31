@@ -10,11 +10,14 @@ export const addressSchema = z.object({
   zip: z.string().regex(/^\d{5}$/),
 });
 
+export const orderCurrencySchema = z.enum(['MXN', 'USD']);
+
 export const checkoutItemSchema = z.object({
   variantId: z.string().uuid(),
   syncVariantId: z.number().int().positive().optional(),
   quantity: z.number().int().positive(),
   retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/).optional(),
+  retailPriceUsd: z.string().regex(/^\d+\.\d{2}$/).optional(),
 });
 
 export const shippingRatesBodySchema = z.object({
@@ -32,11 +35,13 @@ export const shippingRatesBodySchema = z.object({
 });
 
 export const estimateBodySchema = z.object({
+  currency: orderCurrencySchema.default('MXN'),
   items: z.array(z.object({
     variantId: z.string().uuid(),
     syncVariantId: z.number().int().positive().optional(),
     quantity: z.number().int().positive(),
-    retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/),
+    retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/).optional(),
+    retailPriceUsd: z.string().regex(/^\d+\.\d{2}$/).optional(),
   })).min(1),
   shippingMethod: z.string().min(1).max(80).optional(),
   address: addressSchema,
@@ -47,7 +52,8 @@ export const createOrderBodySchema = z.object({
     variantId: z.string().uuid(),
     syncVariantId: z.number().int().positive().optional(),
     quantity: z.number().int().positive(),
-    retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/),
+    retailPriceMxn: z.string().regex(/^\d+\.\d{2}$/).optional(),
+    retailPriceUsd: z.string().regex(/^\d+\.\d{2}$/).optional(),
   })).min(1),
   shippingMethod: z.string().min(1).max(80).optional(),
   recipient: addressSchema.extend({
@@ -57,7 +63,7 @@ export const createOrderBodySchema = z.object({
     taxNumber: z.string().optional(),
   }),
   retailCosts: z.object({
-    currency: z.literal('MXN'),
+    currency: orderCurrencySchema,
     subtotal: z.string().regex(/^\d+\.\d{2}$/),
     shipping: z.string().regex(/^\d+\.\d{2}$/),
     tax: z.string().regex(/^\d+\.\d{2}$/),

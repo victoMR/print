@@ -34,11 +34,16 @@ export type OrderDetailDto = {
     zip: string;
     countryCode: string;
   };
+  currency: 'MXN' | 'USD';
   totals: {
-    subtotalMxn: string;
-    shippingMxn: string;
-    taxMxn: string;
-    totalMxn: string;
+    subtotalMxn: string | null;
+    shippingMxn: string | null;
+    taxMxn: string | null;
+    totalMxn: string | null;
+    subtotalUsd: string | null;
+    shippingUsd: string | null;
+    taxUsd: string | null;
+    totalUsd: string | null;
   };
   tracking: {
     number: string | null;
@@ -54,6 +59,8 @@ export type OrderDetailDto = {
     quantity: number;
     unitPriceMxn: string;
     lineTotalMxn: string;
+    unitPriceUsd: string | null;
+    lineTotalUsd: string | null;
     thumbnailUrl: string | null;
     printFileUrl: string | null;
   }>;
@@ -165,11 +172,16 @@ function mapOrder(
       zip: order.ship_zip,
       countryCode: order.ship_country_code,
     },
+    currency: order.currency,
     totals: {
-      subtotalMxn: Number(order.subtotal_mxn).toFixed(2),
-      shippingMxn: Number(order.shipping_mxn).toFixed(2),
-      taxMxn: Number(order.tax_mxn).toFixed(2),
-      totalMxn: Number(order.total_mxn).toFixed(2),
+      subtotalMxn: order.subtotal_mxn !== null ? Number(order.subtotal_mxn).toFixed(2) : null,
+      shippingMxn: order.shipping_mxn !== null ? Number(order.shipping_mxn).toFixed(2) : null,
+      taxMxn: order.tax_mxn !== null ? Number(order.tax_mxn).toFixed(2) : null,
+      totalMxn: order.total_mxn !== null ? Number(order.total_mxn).toFixed(2) : null,
+      subtotalUsd: order.subtotal_usd !== null ? Number(order.subtotal_usd).toFixed(2) : null,
+      shippingUsd: order.shipping_usd !== null ? Number(order.shipping_usd).toFixed(2) : null,
+      taxUsd: order.tax_usd !== null ? Number(order.tax_usd).toFixed(2) : null,
+      totalUsd: order.total_usd !== null ? Number(order.total_usd).toFixed(2) : null,
     },
     tracking: {
       number: order.tracking_number,
@@ -179,6 +191,7 @@ function mapOrder(
     },
     items: order.items.map((i) => {
       const unit = Number(i.unit_price_mxn);
+      const unitUsd = i.unit_price_usd !== null ? Number(i.unit_price_usd) : null;
       return {
         id: i.id,
         productName: i.product_name,
@@ -187,6 +200,8 @@ function mapOrder(
         quantity: i.quantity,
         unitPriceMxn: unit.toFixed(2),
         lineTotalMxn: (unit * i.quantity).toFixed(2),
+        unitPriceUsd: unitUsd !== null ? unitUsd.toFixed(2) : null,
+        lineTotalUsd: unitUsd !== null ? (unitUsd * i.quantity).toFixed(2) : null,
         thumbnailUrl: i.thumbnail_url,
         printFileUrl: i.print_file_url,
       };

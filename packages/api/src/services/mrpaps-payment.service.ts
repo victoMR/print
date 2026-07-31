@@ -9,18 +9,19 @@ import type Stripe from 'stripe';
 export { isStripeConfigured };
 
 export async function createPaymentIntent(input: {
-  amountMxn: number;
+  amount: number;
+  currency: 'mxn' | 'usd';
   orderId: string;
   publicOrderId: string;
   customerEmail?: string;
 }): Promise<{ clientSecret: string; paymentIntentId: string }> {
   const stripe = getStripe();
-  const amountCents = Math.round(input.amountMxn * 100);
+  const amountCents = Math.round(input.amount * 100);
 
   const intent = await stripe.paymentIntents.create(
     {
       amount: amountCents,
-      currency: 'mxn',
+      currency: input.currency,
       automatic_payment_methods: { enabled: true },
       metadata: {
         order_id: input.orderId,

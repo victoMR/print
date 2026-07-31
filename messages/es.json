@@ -1,0 +1,252 @@
+{
+  "common": {
+    "languageSwitcher": {
+      "label": "Idioma",
+      "es": "Español",
+      "en": "English"
+    }
+  },
+  "layout": {
+    "header": {
+      "announcement": "Envíos a todo México.",
+      "nav": {
+        "collections": "Colecciones",
+        "about": "Nosotros",
+        "contact": "Contacto"
+      },
+      "cart": "Carrito",
+      "cartWithCount": "Carrito ({count})",
+      "toggleMenu": "Abrir/cerrar menú"
+    },
+    "footer": {
+      "shop": {
+        "title": "Tienda",
+        "all": "Todos los productos",
+        "tshirts": "Playeras",
+        "hoodies": "Sudaderas",
+        "pants": "Pantalones",
+        "accessories": "Accesorios"
+      },
+      "collections": {
+        "title": "Colecciones",
+        "current": "Actual",
+        "archive": "Archivo",
+        "comingSoon": "Próximamente"
+      },
+      "info": {
+        "title": "Información",
+        "about": "Nosotros",
+        "shippingReturns": "Envíos y devoluciones",
+        "terms": "Términos y condiciones",
+        "privacy": "Privacidad"
+      },
+      "contact": {
+        "title": "Contacto"
+      },
+      "email": "Correo",
+      "allRightsReserved": "Todos los derechos reservados."
+    }
+  },
+  "shop": {
+    "page": {
+      "title": "Colección",
+      "filter": "Filtrar",
+      "searchPlaceholder": "Buscar…",
+      "clearSearch": "Limpiar búsqueda",
+      "sortBy": "Ordenar por",
+      "noResultsFor": "No encontramos productos para «{query}».",
+      "noProducts": "No hay productos disponibles en este momento."
+    },
+    "card": {
+      "from": "Desde",
+      "variantCount": "{count, plural, one {# variante} other {# variantes}}"
+    },
+    "product": {
+      "size": "Talla",
+      "color": "Color",
+      "quantity": "Cantidad",
+      "added": "Agregado ✓",
+      "addToCart": "Agregar al carrito",
+      "shippingNote": "Envío estimado 5–14 días · Aduana incluida para México"
+    },
+    "productDetail": {
+      "backToShop": "Volver a la tienda",
+      "collection": "Colección",
+      "outOfStock": "Agotado",
+      "notAvailableInCurrency": "No disponible en esta moneda",
+      "colorNotAvailable": "Sin stock en este color",
+      "colorLabel": "Color:",
+      "size": "Talla",
+      "sizeLabel": "Talla: {size}",
+      "sizeGuide": "Guía de tallas",
+      "quantity": "Cantidad",
+      "decreaseQuantity": "Disminuir cantidad",
+      "increaseQuantity": "Aumentar cantidad",
+      "addToCart": "Agregar al carrito",
+      "addedToCart": "Agregado al carrito",
+      "buyNow": "Comprar ahora",
+      "shippingNote": "Envío estimado 5–14 días · IVA incluido para México",
+      "detailsTitle": "Detalles",
+      "detailsContent": "Prenda confeccionada con materiales de alta calidad. Impresión bajo demanda con tecnología DTG de alta resolución.",
+      "shippingTitle": "Envíos y devoluciones",
+      "shippingContent": "Envío estimado 5–14 días. Devoluciones aceptadas hasta 15 días después de recibido el pedido. Consulta nuestros términos para más detalles.",
+      "careTitle": "Composición y cuidados",
+      "careContent": "Lavar a máquina en frío. No usar blanqueador. Planchar a temperatura baja si es necesario. Ver etiqueta interior para instrucciones completas."
+    }
+  },
+  "cart": {
+    "title": "Carrito",
+    "empty": {
+      "title": "Tu carrito está vacío",
+      "subtitle": "Explora el catálogo y agrega productos."
+    },
+    "viewCollection": "Ver colección",
+    "table": {
+      "product": "Producto",
+      "price": "Precio",
+      "quantity": "Cantidad",
+      "total": "Total"
+    },
+    "decreaseQuantity": "Disminuir",
+    "increaseQuantity": "Aumentar",
+    "remove": "Eliminar",
+    "continueShopping": "Continuar comprando",
+    "orderSummary": "Resumen del pedido",
+    "subtotal": "Subtotal",
+    "shipping": "Envío",
+    "total": "Total",
+    "checkoutButton": "Finalizar compra",
+    "shipsNationwide": "Envíos a todo México",
+    "returnsPolicy": "Cambios y devoluciones hasta 15 días",
+    "drawer": {
+      "empty": "Vacío",
+      "itemCount": "{count, plural, one {# artículo} other {# artículos}}",
+      "closeCart": "Cerrar carrito",
+      "emptySubtitle": "Agrega productos para comenzar",
+      "removeItem": "Quitar",
+      "less": "Menos",
+      "more": "Más",
+      "outOfStockNotice": "Sin existencias — no se incluirán en tu pedido",
+      "outOfStock": "Agotado",
+      "subtotalWithCount": "Subtotal ({count, plural, one {# artículo} other {# artículos}})",
+      "estimatedTotal": "Total estimado",
+      "keepShopping": "Seguir comprando"
+    }
+  },
+  "checkout": {
+    "addressGeo": {
+      "statesLoadError": "No se pudieron cargar los estados (INEGI).",
+      "colonyHint": "Colonia y municipio según SEPOMEX (datos postales oficiales).",
+      "zipValidHint": "C.P. válido; confirma municipio y colonia.",
+      "zipNotFound": "Código postal no encontrado",
+      "zipLabel": "Código postal *",
+      "zipPlaceholder": "5 dígitos",
+      "stateLabel": "Estado",
+      "loadingStates": "Cargando estados…",
+      "selectState": "Selecciona estado",
+      "municipalityLabel": "Municipio / alcaldía",
+      "loadingMunicipalities": "Cargando municipios…",
+      "selectMunicipality": "Selecciona municipio",
+      "selectStateFirst": "Primero elige estado",
+      "colonyLabel": "Colonia",
+      "selectColony": "Selecciona colonia",
+      "optional": "(opcional)",
+      "colonyPlaceholder": "Ej. Centro, Del Valle…",
+      "cityLabel": "Ciudad *",
+      "cityPlaceholder": "Se completa con municipio o C.P."
+    },
+    "steps": {
+      "address": "Dirección",
+      "confirm": "Confirmar",
+      "payment": "Pago"
+    },
+    "stepsAriaLabel": "Pasos del checkout",
+    "loadingCart": "Cargando carrito…",
+    "emptyCart": {
+      "title": "Tu carrito está vacío",
+      "subtitle": "Agrega productos para continuar con tu compra",
+      "viewCollection": "Ver colección"
+    },
+    "outOfStock": {
+      "banner": "{count, plural, one {Un producto ya no tiene existencias} other {# productos ya no tienen existencias}}",
+      "notice": "No se incluirán en tu pedido. Los demás artículos continúan disponibles.",
+      "remove": "Quitar",
+      "removeAll": "Quitar todos los agotados"
+    },
+    "addressLabelDefault": "Casa",
+    "addressLabelFallback": "Mi dirección",
+    "errors": {
+      "nameRequired": "El nombre es requerido",
+      "emailRequired": "El correo es requerido",
+      "emailInvalid": "Ingresa un correo válido",
+      "phoneRequired": "El teléfono es requerido",
+      "phoneInvalid": "El teléfono debe tener exactamente 10 dígitos",
+      "addressRequired": "La dirección es requerida",
+      "legalRequired": "Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para continuar.",
+      "estimateFailed": "No se pudo calcular el envío. Verifica la dirección e intenta de nuevo.",
+      "orderCreateFailed": "Error al crear el pedido"
+    },
+    "addressStep": {
+      "title": "Dirección de envío",
+      "alreadyHaveAccount": "¿Ya tienes cuenta?",
+      "login": "Inicia sesión",
+      "loginSuffix": "para usar tus direcciones guardadas y ver el historial de pedidos.",
+      "savedAddresses": "Tus direcciones guardadas",
+      "newAddress": "Nueva dirección",
+      "useDifferentAddress": "Usar una dirección diferente",
+      "saveAddressCheckbox": "Guardar esta dirección para futuros pedidos"
+    },
+    "fields": {
+      "fullName": "Nombre completo",
+      "email": "Correo electrónico",
+      "phone": "Teléfono",
+      "phonePlaceholder": "10 dígitos",
+      "street": "Calle y número",
+      "streetPlaceholder": "Av. Revolución 123",
+      "addressLabel": "Nombre de la dirección",
+      "addressLabelPlaceholder": "Ej. Casa, Trabajo, Mamá…"
+    },
+    "calculatingShipping": "Calculando envío…",
+    "next": "Siguiente",
+    "shippingLabel": "Envío",
+    "tax": "IVA",
+    "total": "Total",
+    "confirmStep": {
+      "title": "Confirma tu pedido",
+      "backToAddress": "Volver a dirección",
+      "shipTo": "Enviar a",
+      "calculatedAutomatically": "Calculado automáticamente",
+      "subtotalProducts": "Subtotal productos",
+      "guestTrackingNotice": "Al confirmar recibirás un código de seguimiento único. Guárdalo junto con tu correo para consultar el estado en cualquier momento.",
+      "processing": "Procesando…",
+      "goToPayment": "Ir a pagar",
+      "cardChargeNotice": "Tu tarjeta se cobrará en el siguiente paso. Pago seguro con Stripe."
+    },
+    "paymentStep": {
+      "title": "Pago seguro",
+      "trackingCodeLabel": "Tu código de seguimiento",
+      "trackingCodeNotice": "Guárdalo: lo necesitarás con tu correo para ver el estado del pedido.",
+      "cardChargeIntro": "Ingresa los datos de tu tarjeta. El cargo es de"
+    },
+    "orderSummary": {
+      "title": "Tu pedido",
+      "perUnit": "{price} c/u",
+      "subtotal": "Subtotal",
+      "shippingTaxNotice": "Envío e IVA se calculan al confirmar tu dirección"
+    },
+    "security": {
+      "securePurchase": "Compra 100 % segura · Stripe",
+      "terms": "Términos",
+      "privacy": "Privacidad"
+    },
+    "paymentOutcome": {
+      "successTitle": "¡Pago recibido!",
+      "errorTitle": "No se pudo completar el pago",
+      "errorDescription": "Revisa los datos de tu tarjeta o prueba con otro método.",
+      "retryPayment": "Reintentar pago",
+      "withEmail": "Tu pedido quedó registrado. Te enviamos la confirmación de pago y los detalles del pedido a {email}. Revisa también tu bandeja de spam.",
+      "noEmail": "Tu pedido quedó registrado. Te enviamos la confirmación de pago al correo que indicaste en la compra. Revisa también tu bandeja de spam."
+    },
+    "clearCartAndShop": "Vaciar carrito e ir a la tienda"
+  }
+}
