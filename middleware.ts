@@ -15,7 +15,7 @@ function buildCsp(nonce: string): string {
     "default-src 'self'",
     // 'unsafe-inline' removed — nonce covers Next.js hydration scripts + our JsonLd tags.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com https://va.vercel-scripts.com https://*.vercel-scripts.com`,
-    "style-src 'self' 'unsafe-inline' https://use.typekit.net",
+    "style-src 'self' 'unsafe-inline' https://use.typekit.net https://p.typekit.net",
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob:",
     "font-src 'self' data: https://use.typekit.net https://p.typekit.net",
