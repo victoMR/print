@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { ADMIN_LOGIN_PATH } from "./lib/safe-redirect";
+import { extractClientIp } from "./lib/i18n/geo-lookup";
 import {
   GEO_COUNTRY_HEADER,
   LOCALE_COOKIE,
+  LOCALE_COOKIE_MAX_AGE_AUTO,
   LOCALE_HEADER,
-  LOCALE_MANUAL_COOKIE,
   resolveLocale,
 } from "./lib/i18n/locale";
 
@@ -39,18 +40,9 @@ const CUSTOMER_PROTECTED = ["/cuenta"];
  * Genera un nonce criptográfico por request y lo aplica al CSP.
  * También protege rutas de admin y aplica guardas de sesión de cliente.
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasCustomerSession = Boolean(request.cookies.get("customer_token"));
-
-  // Locale resolution is pure/read-only here — the cookie is only written on the
-  // final response below, mirroring how the CSP nonce is applied only there too.
-  const { locale, source } = resolveLocale({
-    cookieValue: request.cookies.get(LOCALE_COOKIE)?.value,
-    isManual: request.cookies.get(LOCALE_MANUAL_COOKIE)?.value === "1",
-    country: request.headers.get(GEO_COUNTRY_HEADER),
-    acceptLanguage: request.headers.get("accept-language"),
-  });
 
   // Admin redirect — antes de generar nonce para no hacer trabajo innecesario.
   if (pathname.startsWith("/admin")) {
@@ -80,6 +72,17 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Resolved after the redirect checks (not before) — it can trigger a real IP
+  // geolocation lookup on a cache miss, so requests that just redirect never
+  // pay for that. Only reused/skipped when a NEXT_LOCALE cookie is already
+  // present (manual or still-fresh auto-detected — see resolveLocale docstring).
+  const { locale, source } = await resolveLocale({
+    cookieValue: request.cookies.get(LOCALE_COOKIE)?.value,
+    country: request.headers.get(GEO_COUNTRY_HEADER),
+    clientIp: extractClientIp(request.headers),
+    acceptLanguage: request.headers.get("accept-language"),
+  });
+
   // Generate a 16-byte random nonce (base64-encoded) per request.
   const array = new Uint8Array(16);
   crypto.getRandomValues(array);
@@ -95,16 +98,16 @@ export function middleware(request: NextRequest) {
   response.headers.set("Content-Security-Policy", buildCsp(nonce));
   response.headers.set("Content-Language", locale);
 
-  // Only persist the cookie when it wasn't a manual choice — an auto-detected
-  // locale is re-derived and re-written on every request (so a returning
-  // visitor from a different country gets re-detected), while a manual
-  // choice (source === "cookie", gated on LOCALE_MANUAL_COOKIE) stays put.
+  // Only persist the cookie when it was freshly derived (source !== "cookie")
+  // — a short max-age so the site re-checks periodically instead of trusting
+  // one detection forever. A manual choice (set by app/actions/set-locale.ts
+  // with the long max-age) is never touched here.
   // Written as a Set-Cookie response header (not document.cookie) so it isn't
   // subject to Safari ITP's 7-day cap on client-script-set cookies.
   if (source !== "cookie") {
     response.cookies.set(LOCALE_COOKIE, locale, {
       path: "/",
-      maxAge: 60 * 60 * 24 * 365,
+      maxAge: LOCALE_COOKIE_MAX_AGE_AUTO,
       sameSite: "lax",
     });
   }

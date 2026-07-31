@@ -1,18 +1,20 @@
+import { extractClientIp, lookupCountryByIp } from "./geo-lookup";
+
 export type Locale = "en" | "es";
 
 export const LOCALES: Locale[] = ["es", "en"];
 export const DEFAULT_LOCALE: Locale = "es";
 export const LOCALE_COOKIE = "NEXT_LOCALE";
 
-// Marks that NEXT_LOCALE was set by the user via the language switcher (not by
-// geo-detection). Without this, an auto-detected cookie from a first visit
-// would look identical to a deliberate choice and would never be re-evaluated
-// on later visits — e.g. someone browsing over a US VPN after previously
-// visiting from Mexico would stay stuck on the earlier auto-detected locale.
-export const LOCALE_MANUAL_COOKIE = "NEXT_LOCALE_MANUAL";
+// Manual choices persist for a year; auto-detected ones expire after a day so
+// the site periodically re-checks (via IP geolocation) without ever calling
+// the lookup on every single request — the short-lived cookie itself is the cache.
+export const LOCALE_COOKIE_MAX_AGE_MANUAL = 60 * 60 * 24 * 365;
+export const LOCALE_COOKIE_MAX_AGE_AUTO = 60 * 60 * 24;
 
-// Vercel injects this header at the edge based on the request's source IP —
-// no external geo-IP service/library needed.
+// Vercel injects this header at the edge based on the request's source IP.
+// Present only when hosted on Vercel — on a self-hosted VPS (no Vercel edge)
+// this is always absent and we fall back to a real IP lookup (see below).
 export const GEO_COUNTRY_HEADER = "x-vercel-ip-country";
 
 // Locale forwarded request-to-request via internal header (same pattern as x-nonce
@@ -39,26 +41,45 @@ export function localeFromAcceptLanguage(header: string | null | undefined): Loc
 }
 
 /**
- * Resolves the locale for a request: a manually-chosen cookie (set via the
- * language switcher) wins and is never re-evaluated. Otherwise the locale is
- * re-derived from geo-detected country / Accept-Language / default on every
- * request — an old auto-detected cookie is not treated as sticky, so a
- * returning visitor from a different country (e.g. over a VPN) gets
- * re-detected instead of being stuck on whatever was detected last time.
+ * Resolves the locale for a request.
+ *
+ * If a NEXT_LOCALE cookie is present at all — manual or auto-detected — it's
+ * used as-is with no extra work. The distinction between "manual" and "auto"
+ * lives entirely in how long the cookie lives (see LOCALE_COOKIE_MAX_AGE_*):
+ * a manual choice gets a year, so it simply outlives casual re-checks; an
+ * auto-detected one gets a day, so it naturally falls through to be
+ * re-derived once it expires — e.g. a returning visitor connecting over a
+ * US VPN after previously browsing from Mexico gets re-detected once their
+ * short-lived MX cookie ages out, without ever clobbering an actual manual choice.
+ *
+ * When there's no cookie to reuse, the locale is derived in this order:
+ * 1. Vercel's edge geo header, when present (only true when hosted on Vercel).
+ * 2. A real IP geolocation lookup (see lib/i18n/geo-lookup.ts) — the path that
+ *    matters for a self-hosted VPS behind nginx, where there is no Vercel edge.
+ * 3. Accept-Language.
+ * 4. The site default.
  */
-export function resolveLocale(input: {
+export async function resolveLocale(input: {
   cookieValue?: string | null;
-  isManual?: boolean;
   country?: string | null;
+  clientIp?: string | null;
   acceptLanguage?: string | null;
-}): { locale: Locale; source: "cookie" | "geo" | "header" | "default" } {
-  if (input.isManual && isLocale(input.cookieValue)) {
+}): Promise<{ locale: Locale; source: "cookie" | "geo" | "header" | "default" }> {
+  if (isLocale(input.cookieValue)) {
     return { locale: input.cookieValue, source: "cookie" };
   }
 
-  const geoLocale = localeFromCountry(input.country);
-  if (geoLocale) {
-    return { locale: geoLocale, source: "geo" };
+  const headerGeoLocale = localeFromCountry(input.country);
+  if (headerGeoLocale) {
+    return { locale: headerGeoLocale, source: "geo" };
+  }
+
+  if (input.clientIp) {
+    const country = await lookupCountryByIp(input.clientIp);
+    const ipGeoLocale = localeFromCountry(country);
+    if (ipGeoLocale) {
+      return { locale: ipGeoLocale, source: "geo" };
+    }
   }
 
   if (input.acceptLanguage) {
@@ -67,3 +88,5 @@ export function resolveLocale(input: {
 
   return { locale: DEFAULT_LOCALE, source: "default" };
 }
+
+export { extractClientIp };
