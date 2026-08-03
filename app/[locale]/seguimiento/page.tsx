@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/i18n/navigation";
 import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
 import { OrderTrackingForm } from "@/components/boty/order-tracking-form";

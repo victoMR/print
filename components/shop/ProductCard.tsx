@@ -5,7 +5,7 @@ import type { CatalogProductSummary } from "@/lib/api-types";
 import { localizedProductName } from "@/lib/i18n/product-content";
 import type { Locale } from "@/lib/i18n/locale";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/lib/i18n/navigation";
 
 type ProductCardProps = {
   product: CatalogProductSummary;

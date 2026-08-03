@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { RemoteImage } from "@/components/ui/remote-image";

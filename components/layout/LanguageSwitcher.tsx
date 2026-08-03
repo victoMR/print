@@ -1,24 +1,23 @@
 "use client";
 
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { setLocale } from "@/app/actions/set-locale";
+import { usePathname, useRouter } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
 import type { Locale } from "@/lib/i18n/locale";
 
 export function LanguageSwitcher({ className }: { className?: string }) {
   const locale = useLocale() as Locale;
   const t = useTranslations("common.languageSwitcher");
+  const pathname = usePathname();
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
 
   function choose(next: Locale) {
-    if (next === locale || isPending) return;
-    startTransition(async () => {
-      await setLocale(next);
-      router.refresh();
-    });
+    if (next === locale) return;
+    // Real navigation between markets (e.g. /mx/shop -> /us/shop), not just a
+    // cookie flip — the switcher moves you to the other market's version of
+    // the same page. Currency/shipping still get verified server-side against
+    // your real location at checkout regardless of which market you're browsing.
+    router.replace(pathname, { locale: next });
   }
 
   return (
@@ -29,9 +28,9 @@ export function LanguageSwitcher({ className }: { className?: string }) {
     >
       <button
         type="button"
-        onClick={() => choose("es")}
-        aria-current={locale === "es"}
-        className={cn("boty-transition", locale === "es" ? "opacity-100" : "opacity-40 hover:opacity-70")}
+        onClick={() => choose("mx")}
+        aria-current={locale === "mx"}
+        className={cn("boty-transition", locale === "mx" ? "opacity-100" : "opacity-40 hover:opacity-70")}
       >
         ES
       </button>
@@ -40,9 +39,9 @@ export function LanguageSwitcher({ className }: { className?: string }) {
       </span>
       <button
         type="button"
-        onClick={() => choose("en")}
-        aria-current={locale === "en"}
-        className={cn("boty-transition", locale === "en" ? "opacity-100" : "opacity-40 hover:opacity-70")}
+        onClick={() => choose("us")}
+        aria-current={locale === "us"}
+        className={cn("boty-transition", locale === "us" ? "opacity-100" : "opacity-40 hover:opacity-70")}
       >
         EN
       </button>

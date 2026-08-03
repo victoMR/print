@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/lib/i18n/navigation";
 import { ArrowRight, Loader2, Package } from "lucide-react";
 import {
   BotyAlert,

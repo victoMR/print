@@ -12,11 +12,30 @@ import {
   resolveAutoShippingMxn,
 } from './mrpaps-shipping.service.js';
 import { resolveUsdShipping } from './shipping/usd-shipping-rates.js';
-import { BadRequestError } from '../types/errors.js';
+import { BadRequestError, MarketMismatchError } from '../types/errors.js';
 import { getGuestOrderByCodeAndEmail } from './mrpaps-order-tracking.service.js';
 import { LEGAL_VERSION } from './email-verification.service.js';
+import { marketForCurrency, type Market } from '../lib/market.js';
 
 type OrderCurrency = 'MXN' | 'USD';
+
+/**
+ * Hard block only on a CONFIRMED mismatch (verifiedMarket is non-null and
+ * disagrees with the order's currency) — never on inconclusive geolocation
+ * (verifiedMarket === null), since a real customer shouldn't be blocked by an
+ * external geo-IP service hiccup. Shipping is Mexico-only for both markets
+ * today, which already narrows the real-world abuse window this closes.
+ */
+function assertMarketMatchesCurrency(currency: OrderCurrency, verifiedMarket?: Market | null): void {
+  if (!verifiedMarket) return;
+  const expectedMarket = marketForCurrency(currency);
+  if (verifiedMarket !== expectedMarket) {
+    throw new MarketMismatchError(
+      'La moneda de tu pedido no coincide con tu ubicación detectada. Cambia a la versión correcta del sitio (/mx o /us) para continuar.',
+      verifiedMarket,
+    );
+  }
+}
 
 function addressFromRecipient(recipient: MrpapsCreateOrderBody['recipient']) {
   return {
@@ -100,7 +119,7 @@ export async function estimateCosts(input: EstimateInput) {
   return { currency, ...totals, shippingMethod };
 }
 
-export async function createOrder(body: MrpapsCreateOrderBody) {
+export async function createOrder(body: MrpapsCreateOrderBody, verifiedMarket?: Market | null) {
   const now = new Date().toISOString();
 
   if (body.customerUserId) {
@@ -119,6 +138,7 @@ export async function createOrder(body: MrpapsCreateOrderBody) {
   }
 
   const currency: OrderCurrency = body.retailCosts.currency;
+  assertMarketMatchesCurrency(currency, verifiedMarket);
   const lines = await catalog.resolveLineItems(body.items, currency);
   const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/lib/i18n/navigation";
 import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
 import { LEGAL_CONTACT_EMAIL, LEGAL_CONTACT_MAILTO, SITE_WHATSAPP_URL } from "@/lib/legal/config";

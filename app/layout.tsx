@@ -1,12 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
-import { CartProvider } from "@/lib/cart-context";
-import { CustomerProvider } from "@/lib/customer-context";
-import { CookieConsentProvider } from "@/lib/cookie-consent-context";
-import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
-import { ConditionalAnalytics } from "@/components/legal/conditional-analytics";
 import { JsonLd } from "@/components/seo/json-ld";
 import {
   DEFAULT_DESCRIPTION,
@@ -16,6 +9,7 @@ import {
   getSiteUrl,
   organizationJsonLd,
 } from "@/lib/seo";
+import { LOCALE_HEADER, languageForLocale, isLocale } from "@/lib/i18n/locale";
 import "./globals.css";
 
 const defaultMeta = buildDefaultMetadata();
@@ -28,10 +22,9 @@ export const metadata: Metadata = {
   },
   description: DEFAULT_DESCRIPTION,
   keywords: ["print", "printful", "México", "POD", "tienda", "ropa personalizada"],
-  // Same-URL locale switching (cookie/geo-based, no /en/ prefix) means hreflang
-  // alternates would be misleading — Googlebot doesn't reliably vary by cookie/geo
-  // across crawls, so we only claim the one canonical URL rather than a fake
-  // per-language mapping that all pointed at this same address.
+  // /mx and /us are distinct markets, not just translations of the same page —
+  // each page under app/[locale]/ should set its own canonical/hreflang via
+  // generateMetadata; this default only covers the bare site root.
   alternates: {
     canonical: getSiteUrl(),
   },
@@ -48,30 +41,38 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+/**
+ * This is the single root layout — it owns <html>/<body> for the whole app,
+ * including /admin (which is not under app/[locale]/ and has no next-intl
+ * context). The <html lang> is derived from the market header middleware
+ * already sets for every request, defaulting to Spanish for /admin and any
+ * other unprefixed route.
+ *
+ * Cart/customer/cookie-consent providers live in app/[locale]/layout.tsx, not
+ * here — they call next-intl's useLocale() internally (e.g. CartProvider
+ * derives the checkout currency from the market), so they must render inside
+ * NextIntlClientProvider, which only exists under app/[locale]/. /admin
+ * doesn't use any of them (confirmed no admin component calls
+ * useCart/useCustomer/useCookieConsent), so it's fine that it renders without them.
+ */
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
-  const locale = await getLocale();
-  const messages = await getMessages();
+  const headerList = await headers();
+  const nonce = headerList.get("x-nonce") ?? undefined;
+  const marketHeader = headerList.get(LOCALE_HEADER);
+  const htmlLang = languageForLocale(isLocale(marketHeader) ? marketHeader : undefined);
+
   return (
-    <html lang={locale}>
+    <html lang={htmlLang}>
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/txn2dvr.css" />
       </head>
       <body className="font-sans antialiased">
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <JsonLd data={organizationJsonLd()} nonce={nonce} />
-          <CookieConsentProvider>
-            <CustomerProvider>
-              <CartProvider>{children}</CartProvider>
-            </CustomerProvider>
-            <CookieConsentBanner />
-            {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" ? <ConditionalAnalytics /> : null}
-          </CookieConsentProvider>
-        </NextIntlClientProvider>
+        <JsonLd data={organizationJsonLd()} nonce={nonce} />
+        {children}
       </body>
     </html>
   );

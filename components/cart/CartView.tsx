@@ -5,7 +5,7 @@ import { useCart } from "@/lib/cart-context";
 import { MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
 import { formatCurrency } from "@/lib/utils";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/lib/i18n/navigation";
 import { Minus, Plus, X, Truck, RotateCcw } from "lucide-react";
 
 // Estimado previo al checkout (el monto real se calcula en /checkout según

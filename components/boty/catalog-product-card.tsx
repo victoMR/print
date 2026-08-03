@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/lib/i18n/navigation";
 import { useLocale } from "next-intl";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { resolveProductImageSrc } from "@/lib/asset-url";

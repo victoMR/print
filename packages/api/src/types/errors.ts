@@ -39,6 +39,22 @@ export class NotFoundError extends Error {
   }
 }
 
+/**
+ * Thrown when the currency of an order/payment clearly contradicts the
+ * customer's real detected location (see app/api/v1/checkout/*.ts on the
+ * Next.js side, which forward a fresh IP-geolocation result as a trusted
+ * header). Never thrown on inconclusive geolocation — only on a confirmed mismatch.
+ */
+export class MarketMismatchError extends Error {
+  constructor(
+    message: string,
+    public readonly detectedCountry?: string,
+  ) {
+    super(message);
+    this.name = 'MarketMismatchError';
+  }
+}
+
 export class PrintfulServerError extends Error {
   constructor(message?: string) {
     super(message ?? 'Printful server error');

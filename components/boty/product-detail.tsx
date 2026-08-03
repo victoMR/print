@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/lib/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, Minus, Plus, Check, ChevronDown } from "lucide-react";
 import type { CatalogProductDetail } from "@/lib/api-types";

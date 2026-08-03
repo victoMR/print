@@ -1,5 +1,6 @@
 import type { CreateOrderBody, EstimateBody, ShippingRatesBody } from '../schemas/api.schema.js';
 import * as mrpapsCheckout from './mrpaps-checkout.service.js';
+import type { Market } from '../lib/market.js';
 
 /** Adaptador v1 checkout → almacenamiento local Mr. Paps (sin Printful). */
 
@@ -52,15 +53,22 @@ export async function estimateCostsMxn(input: EstimateBody) {
   });
 }
 
-export async function createDraftOrderPublic(body: CreateOrderBody, customerUserId?: string) {
-  return mrpapsCheckout.createOrder({
-    items: mapPricedItems(body.items),
-    recipient: body.recipient,
-    retailCosts: body.retailCosts,
-    saveAccount: (body as CreateOrderBody & { saveAccount?: boolean }).saveAccount,
-    acceptedLegal: body.acceptedLegal,
-    customerUserId,
-  });
+export async function createDraftOrderPublic(
+  body: CreateOrderBody,
+  customerUserId?: string,
+  verifiedMarket?: Market | null,
+) {
+  return mrpapsCheckout.createOrder(
+    {
+      items: mapPricedItems(body.items),
+      recipient: body.recipient,
+      retailCosts: body.retailCosts,
+      saveAccount: (body as CreateOrderBody & { saveAccount?: boolean }).saveAccount,
+      acceptedLegal: body.acceptedLegal,
+      customerUserId,
+    },
+    verifiedMarket,
+  );
 }
 
 export async function getPublicOrder(trackingCode: string, email: string) {

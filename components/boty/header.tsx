@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import { CartDrawer } from "./cart-drawer";

@@ -12,11 +12,27 @@ const apiOrigin = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000").r
 const nextConfig: NextConfig = {
   async redirects() {
     return [
-      { source: "/catalogo", destination: "/shop", permanent: true },
-      { source: "/producto/:slug", destination: "/product/:slug", permanent: true },
-      { source: "/aviso-de-privacidad", destination: "/privacidad", permanent: true },
-      { source: "/devoluciones", destination: "/envios-y-devoluciones", permanent: true },
-      { source: "/envios", destination: "/envios-y-devoluciones", permanent: true },
+      { source: "/:locale(mx|us)/catalogo", destination: "/:locale/shop", permanent: true },
+      {
+        source: "/:locale(mx|us)/producto/:slug",
+        destination: "/:locale/product/:slug",
+        permanent: true,
+      },
+      {
+        source: "/:locale(mx|us)/aviso-de-privacidad",
+        destination: "/:locale/privacidad",
+        permanent: true,
+      },
+      {
+        source: "/:locale(mx|us)/devoluciones",
+        destination: "/:locale/envios-y-devoluciones",
+        permanent: true,
+      },
+      {
+        source: "/:locale(mx|us)/envios",
+        destination: "/:locale/envios-y-devoluciones",
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

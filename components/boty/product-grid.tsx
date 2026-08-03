@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/lib/i18n/navigation";
 import { ShoppingBag } from "lucide-react";
 import { fetchCatalogProducts } from "@/lib/api";
 import type { CatalogProductSummary } from "@/lib/api-types";

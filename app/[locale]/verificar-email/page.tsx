@@ -1,8 +1,8 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Link, useRouter } from "@/lib/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { verifyCustomerEmail } from "@/lib/customer-api";
 import { AuthCard, AuthShell } from "@/components/boty/auth-shell";

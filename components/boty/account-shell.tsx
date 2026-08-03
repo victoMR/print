@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { Link, usePathname, useRouter } from "@/lib/i18n/navigation";
 import { User, Package, MapPin, LogOut, ChevronRight, Loader2 } from "lucide-react";
 import { useCustomer } from "@/lib/customer-context";
 import { cn } from "@/lib/utils";

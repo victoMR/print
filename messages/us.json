@@ -8,7 +8,7 @@
   },
   "layout": {
     "header": {
-      "announcement": "Shipping across Mexico.",
+      "announcement": "Currently shipping to Mexico only.",
       "nav": {
         "collections": "Collections",
         "about": "About",
@@ -116,7 +116,7 @@
     "shipping": "Shipping",
     "total": "Total",
     "checkoutButton": "Checkout",
-    "shipsNationwide": "Ships all over Mexico",
+    "shipsNationwide": "Currently ships to Mexico only",
     "returnsPolicy": "Exchanges & returns within 15 days",
     "drawer": {
       "empty": "Empty",

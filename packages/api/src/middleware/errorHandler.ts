@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 import {
   AuthError,
   BadRequestError,
+  MarketMismatchError,
   NotFoundError,
   PrintfulServerError,
   RateLimitError,
@@ -35,6 +36,16 @@ export function errorHandler(
 
   if (err instanceof BadRequestError) {
     res.status(400).json({ ok: false, error: err.message });
+    return;
+  }
+
+  if (err instanceof MarketMismatchError) {
+    res.status(409).json({
+      ok: false,
+      error: err.message,
+      code: 'MARKET_MISMATCH',
+      ...(err.detectedCountry ? { detectedCountry: err.detectedCountry } : {}),
+    });
     return;
   }
 
