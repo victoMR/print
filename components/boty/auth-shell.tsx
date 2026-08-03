@@ -1,5 +1,6 @@
 "use client";
 
+import NextLink from "next/link";
 import { Link } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Footer } from "./footer";
@@ -11,6 +12,12 @@ type AuthShellProps = {
 };
 
 export function AuthShell({ children, variant = "customer" }: AuthShellProps) {
+  // /admin is never under app/[locale]/ (no next-intl context there), so the
+  // admin variant must use plain next/link, not the locale-aware wrapper —
+  // it would otherwise crash with "No intl context found" when this shell is
+  // reused by the admin login page.
+  const HomeLink = variant === "admin" ? NextLink : Link;
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-background">
       <div
@@ -26,12 +33,12 @@ export function AuthShell({ children, variant = "customer" }: AuthShellProps) {
 
       <div className="relative z-10 flex min-h-screen flex-col">
         <header className="px-6 pt-8 pb-4 flex justify-center">
-          <Link
+          <HomeLink
             href={variant === "admin" ? "/admin" : "/"}
             className="font-serif text-3xl tracking-wide text-foreground hover:opacity-80 boty-transition"
           >
             Mr. Paps
-          </Link>
+          </HomeLink>
         </header>
 
         <div className="flex flex-1 items-center justify-center px-4 py-8">

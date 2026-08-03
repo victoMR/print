@@ -51,9 +51,14 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasCustomerSession = Boolean(request.cookies.get("customer_token"));
 
-  // Admin redirect — antes que cualquier lógica de mercado/nonce. /admin nunca
-  // lleva prefijo de mercado y tiene su propia autenticación.
-  if (pathname.startsWith("/admin")) {
+  // Admin redirect — antes que cualquier lógica de mercado. /admin nunca lleva
+  // prefijo de mercado y tiene su propia autenticación. IMPORTANTE: no debe
+  // devolver una respuesta aquí salvo el redirect a login — el resto del
+  // request (incluyendo /admin) debe seguir cayendo hasta el nonce/CSP al
+  // final, igual que siempre. Un early-return distinto ahí dejaba /admin sin
+  // CSP/nonce y rompía la hidratación de React en el panel.
+  const isAdminPath = pathname.startsWith("/admin");
+  if (isAdminPath) {
     if (!(pathname === ADMIN_LOGIN_PATH || pathname.startsWith(`${ADMIN_LOGIN_PATH}/`))) {
       if (!request.cookies.get("admin_token") && !request.cookies.get("admin_refresh")) {
         const loginUrl = request.nextUrl.clone();
@@ -62,16 +67,17 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl);
       }
     }
-    return NextResponse.next();
   }
 
-  // /api tampoco lleva prefijo de mercado (rutas de proxy/webhooks) — se deja
-  // pasar sin redirect de mercado ni guardas de cliente, pero sí recibe CSP/nonce
-  // por consistencia con el resto (no le hace daño, y mantiene el comportamiento previo).
+  // /admin y /api tampoco llevan prefijo de mercado — se dejan pasar sin
+  // redirect de mercado ni guardas de cliente, pero sí reciben CSP/nonce más
+  // abajo por consistencia con el resto (no les hace daño, y mantiene el
+  // comportamiento previo a la Parte C).
   const isApiPath = pathname.startsWith("/api");
-  const localeMatch = isApiPath ? null : pathname.match(LOCALE_PREFIX_RE);
+  const skipMarketLogic = isAdminPath || isApiPath;
+  const localeMatch = skipMarketLogic ? null : pathname.match(LOCALE_PREFIX_RE);
 
-  if (!isApiPath && !localeMatch) {
+  if (!skipMarketLogic && !localeMatch) {
     // "/" o cualquier ruta legacy sin prefijo (bookmarks, links viejos, resultados
     // de búsqueda ya indexados) — se redirige según la ubicación real detectada,
     // no siempre al mercado por default.
@@ -100,7 +106,7 @@ export async function middleware(request: NextRequest) {
   const currentLocale = localeMatch?.[1] ?? DEFAULT_LOCALE;
   const localelessPath = localeMatch ? pathname.slice(localeMatch[0].length) || "/" : pathname;
 
-  if (!isApiPath) {
+  if (!skipMarketLogic) {
     // Rutas guest-only: si ya tiene sesión, redirigir a /cuenta (con el mismo prefijo).
     if (CUSTOMER_GUEST_ONLY.some((p) => localelessPath === p || localelessPath.startsWith(p + "/"))) {
       if (hasCustomerSession) {
