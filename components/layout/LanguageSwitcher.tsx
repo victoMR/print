@@ -1,23 +1,30 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
-import { usePathname, useRouter } from "@/lib/i18n/navigation";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import type { Locale } from "@/lib/i18n/locale";
+import {
+  LANGUAGE_COOKIE,
+  LANGUAGE_COOKIE_MAX_AGE,
+  type Language,
+} from "@/lib/i18n/locale";
+import { useLanguage } from "@/lib/i18n/language-context";
 
+function setLanguageCookie(language: Language) {
+  const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${LANGUAGE_COOKIE}=${language}; Path=/; Max-Age=${LANGUAGE_COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
+}
+
+/** Cambia solo el idioma de la UI — no cambia mercado ni moneda. */
 export function LanguageSwitcher({ className }: { className?: string }) {
-  const locale = useLocale() as Locale;
+  const language = useLanguage();
   const t = useTranslations("common.languageSwitcher");
-  const pathname = usePathname();
   const router = useRouter();
 
-  function choose(next: Locale) {
-    if (next === locale) return;
-    // Real navigation between markets (e.g. /mx/shop -> /us/shop), not just a
-    // cookie flip — the switcher moves you to the other market's version of
-    // the same page. Currency/shipping still get verified server-side against
-    // your real location at checkout regardless of which market you're browsing.
-    router.replace(pathname, { locale: next });
+  function choose(next: Language) {
+    if (next === language) return;
+    setLanguageCookie(next);
+    router.refresh();
   }
 
   return (
@@ -28,9 +35,9 @@ export function LanguageSwitcher({ className }: { className?: string }) {
     >
       <button
         type="button"
-        onClick={() => choose("mx")}
-        aria-current={locale === "mx"}
-        className={cn("boty-transition", locale === "mx" ? "opacity-100" : "opacity-40 hover:opacity-70")}
+        onClick={() => choose("es")}
+        aria-current={language === "es"}
+        className={cn("boty-transition", language === "es" ? "opacity-100" : "opacity-40 hover:opacity-70")}
       >
         ES
       </button>
@@ -39,9 +46,9 @@ export function LanguageSwitcher({ className }: { className?: string }) {
       </span>
       <button
         type="button"
-        onClick={() => choose("us")}
-        aria-current={locale === "us"}
-        className={cn("boty-transition", locale === "us" ? "opacity-100" : "opacity-40 hover:opacity-70")}
+        onClick={() => choose("en")}
+        aria-current={language === "en"}
+        className={cn("boty-transition", language === "en" ? "opacity-100" : "opacity-40 hover:opacity-70")}
       >
         EN
       </button>

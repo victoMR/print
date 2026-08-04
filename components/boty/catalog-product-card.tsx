@@ -8,8 +8,9 @@ import { resolveProductImageSrc } from "@/lib/asset-url";
 import type { CatalogProductSummary } from "@/lib/api-types";
 import { formatCurrency } from "@/lib/utils";
 import { localizedProductName } from "@/lib/i18n/product-content";
-import { currencyForLocale } from "@/lib/i18n/currency";
+import { currencyForMarket } from "@/lib/i18n/currency";
 import type { Locale } from "@/lib/i18n/locale";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type CatalogProductCardProps = {
   product: CatalogProductSummary;
@@ -27,9 +28,10 @@ export function CatalogProductCard({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = resolveProductImageSrc(product.thumbnail);
-  const locale = useLocale() as Locale;
-  const name = localizedProductName(product, locale);
-  const currency = currencyForLocale(locale);
+  const market = useLocale() as Locale;
+  const language = useLanguage();
+  const name = localizedProductName(product, language);
+  const currency = currencyForMarket(market);
   const price = currency === "USD" ? product.priceFromUsd : product.priceFromMxn;
 
   return (

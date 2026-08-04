@@ -8,6 +8,8 @@ import { CookieConsentProvider } from "@/lib/cookie-consent-context";
 import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
 import { ConditionalAnalytics } from "@/components/legal/conditional-analytics";
 import { HtmlLangSync } from "@/components/layout/HtmlLangSync";
+import { LanguageProvider } from "@/lib/i18n/language-context";
+import { getRequestLanguage } from "@/lib/i18n/get-request-language";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -24,24 +26,23 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     notFound();
   }
 
-  // Makes the locale available to Server Components in this request's render
-  // tree (getRequestConfig's `requestLocale`) directly from the URL segment —
-  // no middleware involvement needed for this, since middleware.ts doesn't
-  // delegate to next-intl's own locale-detection (see middleware.ts's docstring).
+  // Market from URL segment (mx|us). Language comes from NEXT_LANGUAGE cookie.
   setRequestLocale(locale);
 
-  const messages = await getMessages();
+  const [messages, language] = await Promise.all([getMessages(), getRequestLanguage()]);
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      <HtmlLangSync />
-      <CookieConsentProvider>
-        <CustomerProvider>
-          <CartProvider>{children}</CartProvider>
-        </CustomerProvider>
-        <CookieConsentBanner />
-        {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" ? <ConditionalAnalytics /> : null}
-      </CookieConsentProvider>
-    </NextIntlClientProvider>
+    <LanguageProvider language={language}>
+      <NextIntlClientProvider locale={locale} messages={messages}>
+        <HtmlLangSync />
+        <CookieConsentProvider>
+          <CustomerProvider>
+            <CartProvider>{children}</CartProvider>
+          </CustomerProvider>
+          <CookieConsentBanner />
+          {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" ? <ConditionalAnalytics /> : null}
+        </CookieConsentProvider>
+      </NextIntlClientProvider>
+    </LanguageProvider>
   );
 }

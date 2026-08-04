@@ -9,7 +9,11 @@ import {
   getSiteUrl,
   organizationJsonLd,
 } from "@/lib/seo";
-import { LOCALE_HEADER, languageForLocale, isLocale } from "@/lib/i18n/locale";
+import {
+  LANGUAGE_HEADER,
+  languageFromAcceptLanguage,
+  resolveLanguage,
+} from "@/lib/i18n/locale";
 import "./globals.css";
 
 const defaultMeta = buildDefaultMetadata();
@@ -44,9 +48,8 @@ export const viewport: Viewport = {
 /**
  * This is the single root layout — it owns <html>/<body> for the whole app,
  * including /admin (which is not under app/[locale]/ and has no next-intl
- * context). The <html lang> is derived from the market header middleware
- * already sets for every request, defaulting to Spanish for /admin and any
- * other unprefixed route.
+ * context). The <html lang> comes from the UI language (x-language / cookie),
+ * not from the market path (/mx|/us).
  *
  * Cart/customer/cookie-consent providers live in app/[locale]/layout.tsx, not
  * here — they call next-intl's useLocale() internally (e.g. CartProvider
@@ -62,8 +65,10 @@ export default async function RootLayout({
 }>) {
   const headerList = await headers();
   const nonce = headerList.get("x-nonce") ?? undefined;
-  const marketHeader = headerList.get(LOCALE_HEADER);
-  const htmlLang = languageForLocale(isLocale(marketHeader) ? marketHeader : undefined);
+  const htmlLang = resolveLanguage(
+    headerList.get(LANGUAGE_HEADER) ??
+      languageFromAcceptLanguage(headerList.get("accept-language")),
+  );
 
   return (
     <html lang={htmlLang}>

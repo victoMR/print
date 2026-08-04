@@ -3,7 +3,7 @@
 import type { CartItem } from "@/lib/api-types";
 import { syncCartWithCatalog } from "@/lib/api";
 import { clampCartLineQuantity, MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
-import { currencyForLocale, priceForCurrency, type OrderCurrency } from "@/lib/i18n/currency";
+import { currencyForMarket, priceForCurrency, type OrderCurrency } from "@/lib/i18n/currency";
 import type { Locale } from "@/lib/i18n/locale";
 import { useLocale } from "next-intl";
 import {
@@ -12,11 +12,17 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
-const STORAGE_KEY = "mrpaps-cart-v3";
+const STORAGE_KEY = "mrpaps-cart-v4";
+
+type StoredCart = {
+  market: Locale;
+  items: CartItem[];
+};
 
 type CartContextValue = {
   items: CartItem[];
@@ -26,8 +32,10 @@ type CartContextValue = {
   outOfStockItems: CartItem[];
   count: number;
   itemCount: number;
-  /** Moneda vigente, derivada del idioma actual (en -> USD, es -> MXN). */
+  /** Moneda vigente, derivada del mercado actual (/mx → MXN, /us → USD). */
   currency: OrderCurrency;
+  /** Mercado del path actual. */
+  market: Locale;
   /** Precio de un item en la moneda vigente; null si no está disponible en esa moneda. */
   itemPrice: (item: Pick<CartItem, "retailPriceMxn" | "retailPriceUsd">) => string | null;
   subtotal: number;
@@ -79,18 +87,33 @@ function sanitizeStoredItem(raw: unknown): CartItem | null {
     thumbnail: item.thumbnail,
     maxQuantity,
     quantity: clampCartLineQuantity(item.quantity ?? 1, maxQuantity),
-    // outOfStock se recalcula en cada sync — no se persiste
   };
 }
 
-function loadStoredItems(): CartItem[] {
+function loadStoredCart(currentMarket: Locale): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      // Migrate v3 (flat array, no market) once.
+      const legacy = localStorage.getItem("mrpaps-cart-v3");
+      if (!legacy) return [];
+      const parsed = JSON.parse(legacy) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(sanitizeStoredItem).filter((i): i is CartItem => i !== null);
+    }
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map(sanitizeStoredItem).filter((i): i is CartItem => i !== null);
+    if (Array.isArray(parsed)) {
+      return parsed.map(sanitizeStoredItem).filter((i): i is CartItem => i !== null);
+    }
+    if (!parsed || typeof parsed !== "object") return [];
+    const stored = parsed as Partial<StoredCart>;
+    const items = Array.isArray(stored.items)
+      ? stored.items.map(sanitizeStoredItem).filter((i): i is CartItem => i !== null)
+      : [];
+    // Same dual-price lines work in both markets; keep items when switching MX↔US.
+    void currentMarket;
+    return items;
   } catch {
     return [];
   }
@@ -100,8 +123,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const locale = useLocale() as Locale;
-  const currency = currencyForLocale(locale);
+  const market = useLocale() as Locale;
+  const currency = currencyForMarket(market);
+  const marketRef = useRef(market);
+  marketRef.current = market;
+
   const itemPrice = useCallback(
     (item: Pick<CartItem, "retailPriceMxn" | "retailPriceUsd">) => priceForCurrency(item, currency),
     [currency],
@@ -115,7 +141,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const stored = loadStoredItems();
+    const stored = loadStoredCart(market);
     if (stored.length === 0) {
       setItems([]);
       setHydrated(true);
@@ -126,16 +152,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
       .then((synced) => setItems(synced))
       .catch(() => setItems(stored))
       .finally(() => setHydrated(true));
+    // Hydrate once on mount — market changes only switch which price field is shown.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only hydrate
   }, [runSync]);
 
-  // Persistir solo items con existencias (los agotados son efímeros)
+  // Persistir items + mercado actual (moneda se deriva del path en runtime).
   useEffect(() => {
     if (!hydrated) return;
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(items.filter((i) => !i.outOfStock)),
-    );
-  }, [items, hydrated]);
+    const payload: StoredCart = {
+      market: marketRef.current,
+      items: items.filter((i) => !i.outOfStock),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }, [items, hydrated, market]);
 
   const syncCart = useCallback(async () => {
     setItems((prev) => {
@@ -231,6 +260,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       count,
       itemCount: count,
       currency,
+      market,
       itemPrice,
       subtotal,
       hydrated,
@@ -248,6 +278,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       outOfStockItems,
       count,
       currency,
+      market,
       itemPrice,
       subtotal,
       hydrated,

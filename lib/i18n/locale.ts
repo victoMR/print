@@ -1,30 +1,35 @@
 import { extractClientIp, lookupCountryByIp } from "./geo-lookup";
 
-// "Locale" here means market (/mx or /us) — it bundles language, default
-// currency, and (for now) shipping-country assumptions, not just translated
-// UI strings. See lib/i18n/product-content.ts for the language-only mapping
-// and lib/i18n/currency.ts for the currency-only mapping derived from this.
+/**
+ * Market (/mx or /us) — currency, shipping assumptions, catalog pricing.
+ * Independent of UI language (see Language below).
+ */
 export type Locale = "mx" | "us";
+/** @deprecated Prefer `Market` alias — same as Locale (path segment). */
+export type Market = Locale;
+
+/** UI language — message catalogs and product-content translations. */
+export type Language = "es" | "en";
 
 export const LOCALES: Locale[] = ["mx", "us"];
 export const DEFAULT_LOCALE: Locale = "mx";
 export const LOCALE_COOKIE = "NEXT_LOCALE";
 
-// Manual choices persist for a year; auto-detected ones expire after a day so
-// the site periodically re-checks (via IP geolocation) without ever calling
-// the lookup on every single request — the short-lived cookie itself is the cache.
+export const LANGUAGES: Language[] = ["es", "en"];
+export const DEFAULT_LANGUAGE: Language = "es";
+export const LANGUAGE_COOKIE = "NEXT_LANGUAGE";
+
+// Manual market choices persist for a year; auto-detected ones expire after a day.
 export const LOCALE_COOKIE_MAX_AGE_MANUAL = 60 * 60 * 24 * 365;
 export const LOCALE_COOKIE_MAX_AGE_AUTO = 60 * 60 * 24;
+export const LANGUAGE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 // Vercel injects this header at the edge based on the request's source IP.
-// Present only when hosted on Vercel — on a self-hosted VPS (no Vercel edge)
-// this is always absent and we fall back to a real IP lookup (see below).
 export const GEO_COUNTRY_HEADER = "x-vercel-ip-country";
 
-// Forwarded request-to-request via internal header (same pattern as x-nonce in
-// middleware.ts) so the root layout can set <html lang> correctly even for
-// routes with no [locale] segment (e.g. /admin).
+// Forwarded request-to-request so root layout / HtmlLangSync can set <html lang>.
 export const LOCALE_HEADER = "x-locale";
+export const LANGUAGE_HEADER = "x-language";
 
 const COUNTRY_LOCALE: Record<string, Locale> = {
   US: "us",
@@ -35,50 +40,45 @@ export function isLocale(value: string | null | undefined): value is Locale {
   return value === "mx" || value === "us";
 }
 
+export function isLanguage(value: string | null | undefined): value is Language {
+  return value === "es" || value === "en";
+}
+
 export function localeFromCountry(country: string | null | undefined): Locale | undefined {
   if (!country) return undefined;
   return COUNTRY_LOCALE[country.toUpperCase()];
 }
 
-export function localeFromAcceptLanguage(header: string | null | undefined): Locale {
-  if (header?.toLowerCase().startsWith("en")) return "us";
-  return DEFAULT_LOCALE;
+/** Default UI language from Accept-Language — never used to pick market/currency. */
+export function languageFromAcceptLanguage(header: string | null | undefined): Language {
+  if (header?.toLowerCase().startsWith("en")) return "en";
+  return DEFAULT_LANGUAGE;
 }
 
-/** UI language for a market — used for message catalogs and product-content fallback. */
-export function languageForLocale(locale: Locale | null | undefined): "es" | "en" {
+export function resolveLanguage(value: string | null | undefined): Language {
+  return isLanguage(value) ? value : DEFAULT_LANGUAGE;
+}
+
+/**
+ * @deprecated Market no longer implies language. Use `resolveLanguage` / `useLanguage`.
+ * Kept only for gradual call-site migration; always returns Spanish for mx, English for us
+ * as a last-resort fallback when no language cookie exists.
+ */
+export function languageForLocale(locale: Locale | null | undefined): Language {
   return locale === "us" ? "en" : "es";
 }
 
 /**
- * Resolves the market for a request.
+ * Resolves the market for a request (URL-less entry: "/" or legacy unprefixed paths).
  *
- * If a NEXT_LOCALE cookie is present at all — manual or auto-detected — it's
- * used as-is with no extra work. The distinction between "manual" and "auto"
- * lives entirely in how long the cookie lives (see LOCALE_COOKIE_MAX_AGE_*):
- * a manual choice gets a year, so it simply outlives casual re-checks; an
- * auto-detected one gets a day, so it naturally falls through to be
- * re-derived once it expires — e.g. a returning visitor connecting over a
- * US VPN after previously browsing from Mexico gets re-detected once their
- * short-lived MX cookie ages out, without ever clobbering an actual manual choice.
- *
- * When there's no cookie to reuse, the market is derived in this order:
- * 1. Vercel's edge geo header, when present (only true when hosted on Vercel).
- * 2. A real IP geolocation lookup (see lib/i18n/geo-lookup.ts) — the path that
- *    matters for a self-hosted VPS behind nginx, where there is no Vercel edge.
- * 3. Accept-Language.
- * 4. The site default.
- *
- * Used by middleware.ts for the root "/" redirect and for legacy unprefixed
- * URLs — NOT for resolving the locale of an already-prefixed /mx or /us
- * request, which next-intl derives directly from the URL segment instead.
+ * Order: cookie → geo (Vercel / IP) → default mx.
+ * Accept-Language is intentionally NOT used for market (that only picks UI language).
  */
 export async function resolveLocale(input: {
   cookieValue?: string | null;
   country?: string | null;
   clientIp?: string | null;
-  acceptLanguage?: string | null;
-}): Promise<{ locale: Locale; source: "cookie" | "geo" | "header" | "default" }> {
+}): Promise<{ locale: Locale; source: "cookie" | "geo" | "default" }> {
   if (isLocale(input.cookieValue)) {
     return { locale: input.cookieValue, source: "cookie" };
   }
@@ -94,10 +94,6 @@ export async function resolveLocale(input: {
     if (ipGeoLocale) {
       return { locale: ipGeoLocale, source: "geo" };
     }
-  }
-
-  if (input.acceptLanguage) {
-    return { locale: localeFromAcceptLanguage(input.acceptLanguage), source: "header" };
   }
 
   return { locale: DEFAULT_LOCALE, source: "default" };

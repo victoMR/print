@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { AnimatedReveal } from "@/components/ui/AnimatedReveal";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { PriceTag } from "@/components/ui/PriceTag";
@@ -9,7 +9,7 @@ import { ProductGallery } from "@/components/boty/product-gallery";
 import type { CatalogProductDetail } from "@/lib/api-types";
 import { useCart } from "@/lib/cart-context";
 import { localizedProductDescription, localizedProductName } from "@/lib/i18n/product-content";
-import type { Locale } from "@/lib/i18n/locale";
+import { useLanguage } from "@/lib/i18n/language-context";
 import { useMemo, useState } from "react";
 
 type ProductDetailViewProps = {
@@ -18,14 +18,14 @@ type ProductDetailViewProps = {
 
 export function ProductDetailView({ product }: ProductDetailViewProps) {
   const { addItem } = useCart();
-  const locale = useLocale() as Locale;
+  const language = useLanguage();
   const t = useTranslations("shop.product");
   const [variantId, setVariantId] = useState(product.variants[0]?.variantId);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
-  const name = localizedProductName(product, locale);
-  const description = localizedProductDescription(product, locale);
+  const name = localizedProductName(product, language);
+  const description = localizedProductDescription(product, language);
 
   const selected = useMemo(
     () => product.variants.find((v) => v.variantId === variantId),

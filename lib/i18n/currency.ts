@@ -2,9 +2,14 @@ import type { Locale } from "./locale";
 
 export type OrderCurrency = "MXN" | "USD";
 
-/** El mercado decide la moneda mostrada/cobrada: us -> USD, mx -> MXN. */
+/** El mercado (path /mx|/us) decide la moneda — nunca el idioma. */
+export function currencyForMarket(market: Locale): OrderCurrency {
+  return market === "us" ? "USD" : "MXN";
+}
+
+/** @deprecated Use `currencyForMarket`. */
 export function currencyForLocale(locale: Locale): OrderCurrency {
-  return locale === "us" ? "USD" : "MXN";
+  return currencyForMarket(locale);
 }
 
 /** null si el producto/variante no tiene precio en la moneda solicitada todavía. */

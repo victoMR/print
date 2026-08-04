@@ -1,24 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
-import { useLocale } from "next-intl";
-import { languageForLocale, type Locale } from "@/lib/i18n/locale";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 /**
- * The <html lang> attribute is set once in the root layout (app/layout.tsx),
- * which — being the single shared root layout for both /admin and
- * app/[locale]/** — does NOT re-render on a client-side navigation between
- * /mx and /us (only the [locale] segment and below does). Without this, the
- * lang attribute goes stale after using the language switcher. Imperatively
- * syncing it here re-runs on every locale change since this component lives
- * inside app/[locale]/layout.tsx.
+ * Syncs <html lang> on client navigations and language switches.
+ * Root layout sets the initial value; this keeps it fresh when only
+ * the language cookie changes (market path may stay the same).
  */
 export function HtmlLangSync() {
-  const locale = useLocale() as Locale;
+  const language = useLanguage();
 
   useEffect(() => {
-    document.documentElement.lang = languageForLocale(locale);
-  }, [locale]);
+    document.documentElement.lang = language;
+  }, [language]);
 
   return null;
 }

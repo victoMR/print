@@ -1,9 +1,9 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { PriceTag } from "@/components/ui/PriceTag";
 import type { CatalogProductSummary } from "@/lib/api-types";
 import { localizedProductName } from "@/lib/i18n/product-content";
-import type { Locale } from "@/lib/i18n/locale";
+import { getRequestLanguage } from "@/lib/i18n/get-request-language";
 import Image from "next/image";
 import { Link } from "@/lib/i18n/navigation";
 
@@ -12,9 +12,9 @@ type ProductCardProps = {
 };
 
 export async function ProductCard({ product }: ProductCardProps) {
-  const locale = (await getLocale()) as Locale;
+  const language = await getRequestLanguage();
   const t = await getTranslations("shop.card");
-  const name = localizedProductName(product, locale);
+  const name = localizedProductName(product, language);
 
   return (
     <Link href={`/product/${product.slug}`} className="group block h-full">

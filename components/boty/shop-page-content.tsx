@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Search, X } from "lucide-react";
 import type { CatalogProductSummary } from "@/lib/api-types";
 import { fetchCatalogProducts } from "@/lib/api";
-import { currencyForLocale } from "@/lib/i18n/currency";
+import { currencyForMarket } from "@/lib/i18n/currency";
 import type { Locale } from "@/lib/i18n/locale";
 import { CatalogProductCard } from "./catalog-product-card";
 
@@ -75,8 +75,8 @@ export function ShopPageContent({ products: initialProducts }: ShopPageContentPr
     void loadProducts();
   }, [loadProducts]);
 
-  const locale = useLocale() as Locale;
-  const currency = currencyForLocale(locale);
+  const market = useLocale() as Locale;
+  const currency = currencyForMarket(market);
 
   // En USD solo se listan productos con precio en USD ya definido — evita
   // mostrar precio $0 o bloquear el carrito por un producto no disponible.

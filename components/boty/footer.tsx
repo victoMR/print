@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { MarketSwitcher } from "@/components/layout/MarketSwitcher";
 import {
   LEGAL_CONTACT_EMAIL,
   LEGAL_CONTACT_MAILTO,
@@ -103,7 +104,10 @@ export function Footer({ variant = "full" }: FooterProps) {
                     {link.name}
                   </FooterExternalLink>
                 ))}
-                <LanguageSwitcher className="text-[#f8f9fa]/70" />
+                <div className="flex flex-col gap-2">
+                  <MarketSwitcher className="text-[#f8f9fa]/70" />
+                  <LanguageSwitcher className="text-[#f8f9fa]/70" />
+                </div>
               </div>
             </div>
           </>
@@ -115,7 +119,13 @@ export function Footer({ variant = "full" }: FooterProps) {
             <p className="text-[10px] tracking-[0.1em] text-[#f8f9fa]/50 uppercase">
               © Mr. Paps 2024. {t("allRightsReserved")}
             </p>
-            <LanguageSwitcher className="text-[#f8f9fa]/70" />
+            <div className="flex items-center gap-3 text-[#f8f9fa]/70">
+              <MarketSwitcher />
+              <span aria-hidden="true" className="opacity-30">
+                ·
+              </span>
+              <LanguageSwitcher />
+            </div>
           </div>
         )}
       </div>

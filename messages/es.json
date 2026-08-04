@@ -2,8 +2,13 @@
   "common": {
     "languageSwitcher": {
       "label": "Idioma",
-      "es": "Español",
-      "en": "English"
+      "es": "ES",
+      "en": "EN"
+    },
+    "marketSwitcher": {
+      "label": "Mercado",
+      "mx": "MX",
+      "us": "US"
     }
   },
   "layout": {

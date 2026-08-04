@@ -9,6 +9,7 @@ import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { MarketSwitcher } from "@/components/layout/MarketSwitcher";
 import { SITE_WHATSAPP_URL } from "@/lib/legal/config";
 
 export function Header({ className, alwaysVisible = false }: { className?: string; alwaysVisible?: boolean }) {
@@ -86,7 +87,13 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
 
           {/* Right side */}
           <div className="flex items-center gap-5">
-            <LanguageSwitcher className="hidden sm:flex text-[#2A2726]/50" />
+            <div className="hidden sm:flex items-center gap-3 text-[#2A2726]/50">
+              <MarketSwitcher />
+              <span aria-hidden="true" className="opacity-30">
+                ·
+              </span>
+              <LanguageSwitcher />
+            </div>
 
             <button
               type="button"
@@ -146,6 +153,13 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
                 </Link>
               ),
             )}
+            <div className="flex items-center gap-3 pt-2 border-t border-[#D4CFC5] text-[#2A2726]/50">
+              <MarketSwitcher />
+              <span aria-hidden="true" className="opacity-30">
+                ·
+              </span>
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
       </nav>

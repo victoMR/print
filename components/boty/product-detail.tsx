@@ -12,8 +12,9 @@ import { clampCartLineQuantity, MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits
 import { formatCurrency } from "@/lib/utils";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { localizedProductDescription, localizedProductName } from "@/lib/i18n/product-content";
-import { currencyForLocale, priceForCurrency } from "@/lib/i18n/currency";
+import { currencyForMarket, priceForCurrency } from "@/lib/i18n/currency";
 import type { Locale } from "@/lib/i18n/locale";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type ProductDetailProps = {
   product: CatalogProductDetail;
@@ -89,11 +90,12 @@ export function ProductDetail({ product }: ProductDetailProps) {
   const router = useRouter();
   const { addItem } = useCart();
   const [isAdded, setIsAdded] = useState(false);
-  const locale = useLocale() as Locale;
+  const market = useLocale() as Locale;
+  const language = useLanguage();
   const t = useTranslations("shop.productDetail");
-  const name = localizedProductName(product, locale);
-  const description = localizedProductDescription(product, locale);
-  const currency = currencyForLocale(locale);
+  const name = localizedProductName(product, language);
+  const description = localizedProductDescription(product, language);
+  const currency = currencyForMarket(market);
 
   const accordionSections: AccordionSection[] = [
     { title: t("detailsTitle"), content: t("detailsContent") },
