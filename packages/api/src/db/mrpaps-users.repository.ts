@@ -444,6 +444,16 @@ export async function deleteUser(userId: string): Promise<void> {
   await query(`DELETE FROM mrpaps_users WHERE id = $1`, [userId]);
 }
 
+export async function updateUserPassword(userId: string, passwordHash: string): Promise<MrpapsUserRow> {
+  return queryRequired<MrpapsUserRow>(
+    `UPDATE mrpaps_users
+     SET password_hash = $2, token_version = token_version + 1, updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [userId, passwordHash],
+  );
+}
+
 export async function incrementCustomerTokenVersion(userId: string): Promise<void> {
   await query(
     `UPDATE mrpaps_users

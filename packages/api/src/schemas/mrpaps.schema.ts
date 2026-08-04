@@ -248,5 +248,10 @@ export const adminUpdateUserRoleSchema = z.object({
   role: adminUserRoleSchema,
 });
 
+export const adminResetUserPasswordSchema = z.object({
+  password: z.string().min(CUSTOMER_PASSWORD_MIN).max(CUSTOMER_PASSWORD_MAX),
+});
+
 export type AdminCreateUserBody = z.infer<typeof adminCreateUserSchema>;
 export type AdminUpdateUserRoleBody = z.infer<typeof adminUpdateUserRoleSchema>;
+export type AdminResetUserPasswordBody = z.infer<typeof adminResetUserPasswordSchema>;

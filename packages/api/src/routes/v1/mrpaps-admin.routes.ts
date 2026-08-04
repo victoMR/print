@@ -14,6 +14,7 @@ import {
   adminListUsersQuerySchema,
   adminCreateUserSchema,
   adminUpdateUserRoleSchema,
+  adminResetUserPasswordSchema,
   createDesignSchema,
   createProductSchema,
   createVariantSchema,
@@ -813,6 +814,40 @@ v1MrpapsAdminRouter.patch('/users/:userId/role', requireDevAuth, async (req, res
     const body = adminUpdateUserRoleSchema.parse(req.body);
     const user = await usersRepo.updateUserRole(userId, body.role);
     res.json({ data: mapUserAdmin(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Diagnóstico de cuenta: muestra estado del usuario sin exponer el hash. */
+v1MrpapsAdminRouter.get('/users/:userId', requireDevAuth, async (req, res, next) => {
+  try {
+    const userId = req.params.userId as string;
+    const user = await usersRepo.findUserById(userId);
+    if (!user) {
+      res.status(404).json({ error: 'Usuario no encontrado' });
+      return;
+    }
+    res.json({
+      data: {
+        ...mapUserAdmin(user),
+        hasPasswordHash: Boolean(user.password_hash),
+        emailVerifiedAt: user.email_verified_at ?? null,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Resetear contraseña de cualquier usuario (invalida sesiones activas). */
+v1MrpapsAdminRouter.patch('/users/:userId/password', requireDevAuth, async (req, res, next) => {
+  try {
+    const userId = req.params.userId as string;
+    const body = adminResetUserPasswordSchema.parse(req.body);
+    const passwordHash = await adminAuth.hashPassword(body.password);
+    const user = await usersRepo.updateUserPassword(userId, passwordHash);
+    res.json({ data: mapUserAdmin(user), message: 'Contraseña actualizada. Las sesiones activas han sido invalidadas.' });
   } catch (err) {
     next(err);
   }
