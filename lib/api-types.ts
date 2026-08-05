@@ -381,24 +381,48 @@ export type AdminProductDetail = AdminProductSummary & {
 
 export type AdminAnalyticsPeriod = "week" | "month" | "quarter" | "year" | "custom";
 
+export type AdminMarketSummary = {
+  market: "mx" | "us";
+  label: string;
+  currency: "MXN" | "USD";
+  paidOrders: number;
+  revenue: string;
+  avgOrder: string;
+  itemsSold: number;
+  uniqueCustomers: number;
+  refundedOrders: number;
+  cancelledOrders: number;
+};
+
 export type AdminDashboardData = {
   period: { key: AdminAnalyticsPeriod; label: string; from: string; to: string };
   summary: {
     paidOrders: number;
     revenueMxn: string;
     avgOrderMxn: string;
+    revenueUsd: string;
+    avgOrderUsd: string;
     itemsSold: number;
     refundedOrders: number;
     cancelledOrders: number;
     uniqueCustomers: number;
   };
-  series: Array<{ bucket: string; label: string; orders: number; revenueMxn: string }>;
+  byMarket: AdminMarketSummary[];
+  series: Array<{
+    bucket: string;
+    label: string;
+    orders: number;
+    revenueMxn: string;
+    revenueUsd: string;
+  }>;
   byStatus: Array<{ status: string; count: number }>;
   topProducts: Array<{
     productName: string;
     variantLabel: string;
     sku: string;
     quantity: number;
+    currency: "MXN" | "USD";
+    revenue: string;
     revenueMxn: string;
   }>;
 };

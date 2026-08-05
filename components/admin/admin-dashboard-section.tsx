@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminDownloadAnalyticsReport, adminFetchDashboard } from "@/lib/api";
 import type { AdminAnalyticsPeriod, AdminDashboardData } from "@/lib/api-types";
 import { ORDER_STATUS_LABELS, type MrpapsOrderStatus } from "@/lib/api-types";
-import { cn, formatMxn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import {
   BotyButton,
   BotyLabel,
@@ -88,12 +88,16 @@ function KpiCard({
 }
 
 function SalesChart({ series }: { series: AdminDashboardData["series"] }) {
-  const maxRevenue = useMemo(
-    () => Math.max(...series.map((s) => Number(s.revenueMxn)), 1),
+  const maxOrders = useMemo(
+    () => Math.max(...series.map((s) => s.orders), 1),
     [series],
   );
-  const totalRevenue = useMemo(
+  const totalRevenueMxn = useMemo(
     () => series.reduce((sum, s) => sum + Number(s.revenueMxn), 0),
+    [series],
+  );
+  const totalRevenueUsd = useMemo(
+    () => series.reduce((sum, s) => sum + Number(s.revenueUsd), 0),
     [series],
   );
   const totalOrders = useMemo(
@@ -118,8 +122,12 @@ function SalesChart({ series }: { series: AdminDashboardData["series"] }) {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-4 text-sm">
         <p>
-          <span className="text-[#7A756E]">Total en el gráfico: </span>
-          <span className="font-semibold">{formatMxn(totalRevenue)}</span>
+          <span className="text-[#7A756E]">MX: </span>
+          <span className="font-semibold">{formatCurrency(totalRevenueMxn, "MXN")}</span>
+        </p>
+        <p>
+          <span className="text-[#7A756E]">US: </span>
+          <span className="font-semibold">{formatCurrency(totalRevenueUsd, "USD")}</span>
         </p>
         <p>
           <span className="text-[#7A756E]">Pedidos: </span>
@@ -129,8 +137,8 @@ function SalesChart({ series }: { series: AdminDashboardData["series"] }) {
 
       <div className="flex items-end gap-1.5 sm:gap-2 min-h-[200px] pt-2 pb-1">
         {series.map((row) => {
-          const pct = (Number(row.revenueMxn) / maxRevenue) * 100;
-          const hasSales = Number(row.revenueMxn) > 0;
+          const pct = (row.orders / maxOrders) * 100;
+          const hasSales = row.orders > 0;
           return (
             <div
               key={row.bucket}
@@ -138,7 +146,7 @@ function SalesChart({ series }: { series: AdminDashboardData["series"] }) {
             >
               {showValuesOnBars && hasSales && (
                 <span className="text-[10px] sm:text-xs font-medium text-[#2A2726] text-center leading-tight px-0.5">
-                  {formatMxn(row.revenueMxn)}
+                  {row.orders}
                 </span>
               )}
               <div
@@ -147,22 +155,17 @@ function SalesChart({ series }: { series: AdminDashboardData["series"] }) {
                   hasSales ? "bg-[#5C1A24] hover:bg-[#4A1520]" : "bg-[#EBE7DB]",
                 )}
                 style={{ height: `${hasSales ? Math.max(pct, 8) : 4}%` }}
-                title={`${row.label}: ${formatMxn(row.revenueMxn)} · ${row.orders} pedido${row.orders !== 1 ? "s" : ""}`}
+                title={`${row.label}: ${row.orders} pedido${row.orders !== 1 ? "s" : ""} · ${formatCurrency(row.revenueMxn, "MXN")} · ${formatCurrency(row.revenueUsd, "USD")}`}
               />
               <span className="text-[10px] sm:text-xs text-[#7A756E] text-center leading-tight w-full truncate px-0.5">
                 {row.label}
               </span>
-              {row.orders > 0 && (
-                <span className="text-[10px] text-[#7A756E]/70">
-                  {row.orders} ped.
-                </span>
-              )}
             </div>
           );
         })}
       </div>
       <p className="text-xs text-[#7A756E]">
-        Cada barra muestra cuánto dinero entró ese día o periodo. Solo cuenta pedidos ya pagados.
+        Cada barra muestra cuántos pedidos pagados hubo. Al pasar el mouse ves MXN y USD del periodo.
       </p>
     </div>
   );
@@ -232,7 +235,7 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
     <section className="space-y-6">
       <BotyPageHeader
         title="Resumen de ventas"
-        description="Aquí ves cuánto vendiste, qué productos salen más y cómo van tus pedidos. Solo entran pedidos con pago confirmado."
+        description="Totales generales y por sucursal (México / EE.UU.). Solo entran pedidos con pago confirmado. Los montos no se mezclan entre monedas."
       />
 
       <AdminSurface className="p-5 space-y-4">
@@ -341,21 +344,32 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
 
       {!loading && data && (
         <>
-          {/* Revenue hero card */}
+          {/* General hero */}
           <AdminSurface className="p-6 sm:p-8 bg-[#2A2726]">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.2em] font-sans text-[#f8f9fa]/50 flex items-center gap-2">
                   <Sparkles className="w-3.5 h-3.5 text-[#f8f9fa]/40" />
-                  {data.period.label}
+                  General · {data.period.label}
                 </p>
                 <p className="text-xs text-[#f8f9fa]/40 mt-1">
                   Del {formatFriendlyDate(data.period.from)} al {formatFriendlyDate(data.period.to)}
                 </p>
-                <p className="font-sans tabular-nums text-3xl sm:text-4xl mt-3 text-[#f8f9fa]">
-                  {formatMxn(data.summary.revenueMxn)}
-                </p>
-                <p className="text-sm text-[#f8f9fa]/55 mt-2">
+                <div className="mt-4 flex flex-wrap gap-6">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#f8f9fa]/45 font-sans">México</p>
+                    <p className="font-sans tabular-nums text-2xl sm:text-3xl mt-1 text-[#f8f9fa]">
+                      {formatCurrency(data.summary.revenueMxn, "MXN")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#f8f9fa]/45 font-sans">EE.UU.</p>
+                    <p className="font-sans tabular-nums text-2xl sm:text-3xl mt-1 text-[#f8f9fa]">
+                      {formatCurrency(data.summary.revenueUsd, "USD")}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm text-[#f8f9fa]/55 mt-3">
                   {hasSales ? (
                     <>
                       <span className="text-[#f8f9fa]">{data.summary.paidOrders}</span>
@@ -363,46 +377,96 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
                       {data.summary.itemsSold > 0 && (
                         <> · <span className="text-[#f8f9fa]">{data.summary.itemsSold}</span> artículos</>
                       )}
+                      {" · "}
+                      <span className="text-[#f8f9fa]">{data.summary.uniqueCustomers}</span>
+                      {data.summary.uniqueCustomers === 1 ? " cliente" : " clientes"}
                     </>
                   ) : (
                     "Sin ventas pagadas en este periodo"
                   )}
                 </p>
               </div>
-              {hasSales && (
-                <div className="border border-[#f8f9fa]/15 px-4 py-3 text-sm">
-                  <p className="text-[#f8f9fa]/45 text-[10px] uppercase tracking-[0.18em] font-sans">Promedio por pedido</p>
-                  <p className="font-sans tabular-nums text-xl mt-1 text-[#f8f9fa]">{formatMxn(data.summary.avgOrderMxn)}</p>
-                </div>
-              )}
             </div>
           </AdminSurface>
 
+          {/* Por sucursal */}
+          <div>
+            <h2 className="font-serif text-xl text-[#2A2726] mb-1">Por sucursal</h2>
+            <p className="text-xs text-[#7A756E] mb-4 uppercase tracking-[0.15em] font-sans">
+              México (/mx) y Estados Unidos (/us)
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              {(data.byMarket ?? []).map((m) => (
+                <AdminSurface key={m.market} className="p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-serif text-lg text-[#2A2726]">{m.label}</p>
+                      <p className="text-xs text-[#7A756E] mt-0.5">{m.currency}</p>
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] uppercase tracking-[0.15em] font-sans px-2.5 py-1 border",
+                        m.market === "us"
+                          ? "bg-sky-500/10 text-sky-800 border-sky-500/20"
+                          : "bg-emerald-500/10 text-emerald-800 border-emerald-500/20",
+                      )}
+                    >
+                      {m.market === "us" ? "US" : "MX"}
+                    </span>
+                  </div>
+                  <p className="font-sans tabular-nums text-2xl text-[#2A2726]">
+                    {formatCurrency(m.revenue, m.currency)}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-[#7A756E] font-sans">Pedidos</p>
+                      <p className="font-medium tabular-nums mt-0.5">{m.paidOrders}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-[#7A756E] font-sans">Ticket prom.</p>
+                      <p className="font-medium tabular-nums mt-0.5">
+                        {formatCurrency(m.avgOrder, m.currency)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-[#7A756E] font-sans">Piezas</p>
+                      <p className="font-medium tabular-nums mt-0.5">{m.itemsSold}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-[#7A756E] font-sans">Clientes</p>
+                      <p className="font-medium tabular-nums mt-0.5">{m.uniqueCustomers}</p>
+                    </div>
+                  </div>
+                </AdminSurface>
+              ))}
+            </div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
-              title="Dinero cobrado"
-              value={formatMxn(data.summary.revenueMxn)}
-              description={`Suma de ${data.summary.paidOrders} pedido${data.summary.paidOrders !== 1 ? "s" : ""} con pago confirmado en Stripe.`}
-              icon={DollarSign}
-            />
-            <KpiCard
-              title="Promedio por pedido"
-              value={formatMxn(data.summary.avgOrderMxn)}
-              description="Cuánto gasta en promedio cada cliente por compra."
+              title="Pedidos (general)"
+              value={String(data.summary.paidOrders)}
+              description="MX + US con pago confirmado en Stripe."
               icon={ShoppingBag}
             />
             <KpiCard
               title="Piezas vendidas"
               value={String(data.summary.itemsSold)}
-              description={`${data.summary.uniqueCustomers} cliente${data.summary.uniqueCustomers !== 1 ? "s" : ""} distinto${data.summary.uniqueCustomers !== 1 ? "s" : ""} compró en este periodo.`}
+              description={`${data.summary.uniqueCustomers} cliente${data.summary.uniqueCustomers !== 1 ? "s" : ""} distinto${data.summary.uniqueCustomers !== 1 ? "s" : ""} en ambas sucursales.`}
               icon={Package}
+            />
+            <KpiCard
+              title="Ticket prom. MX"
+              value={formatCurrency(data.summary.avgOrderMxn, "MXN")}
+              description="Solo pedidos de la tienda México."
+              icon={DollarSign}
             />
             <KpiCard
               title="Devoluciones"
               value={String(data.summary.refundedOrders)}
               description={
                 data.summary.refundedOrders > 0
-                  ? "Pedidos donde se reembolsó al cliente."
+                  ? "Pedidos reembolsados (ambas sucursales)."
                   : "Ningún reembolso en este periodo."
               }
               icon={RotateCcw}
@@ -424,7 +488,7 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
             <AdminSurface className="p-5 sm:p-6 lg:col-span-2">
               <h2 className="font-serif text-xl text-[#2A2726]">¿Cómo fueron las ventas día a día?</h2>
               <p className="text-xs text-[#7A756E] mt-1 mb-5 uppercase tracking-[0.15em] font-sans">
-                Barras más altas = más dinero entró ese día o semana.
+                Barras = pedidos pagados (MX + US).
               </p>
               <SalesChart series={data.series} />
             </AdminSurface>
@@ -468,7 +532,7 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
           <AdminSurface className="p-5 sm:p-6 overflow-hidden">
             <h2 className="font-serif text-xl text-[#2A2726]">Productos más vendidos</h2>
             <p className="text-xs text-[#7A756E] mt-1 mb-5 uppercase tracking-[0.15em] font-sans">
-              Los que más dinero generaron en el periodo.
+              Por piezas; el monto va en la moneda de esa sucursal.
             </p>
             {data.topProducts.length === 0 ? (
               <div className="text-center py-10">
@@ -479,7 +543,7 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
               <div className="space-y-2">
                 {data.topProducts.map((row, index) => (
                   <div
-                    key={`${row.sku}-${row.variantLabel}`}
+                    key={`${row.sku}-${row.variantLabel}-${row.currency}`}
                     className="flex items-center gap-4 p-4 border border-[#D4CFC5] hover:border-[#5C1A24]/30 boty-transition"
                   >
                     <span className="w-7 h-7 bg-[#2A2726] text-[#f8f9fa] text-xs font-sans flex items-center justify-center shrink-0">
@@ -488,11 +552,14 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-[#2A2726] truncate">{row.productName}</p>
                       <p className="text-xs text-[#7A756E] mt-0.5">
-                        {row.variantLabel} · {row.quantity} pieza{row.quantity !== 1 ? "s" : ""}
+                        {row.variantLabel} · {row.quantity} pieza{row.quantity !== 1 ? "s" : ""} ·{" "}
+                        {row.currency === "USD" ? "US" : "MX"}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="font-sans tabular-nums text-base text-[#2A2726]">{formatMxn(row.revenueMxn)}</p>
+                      <p className="font-sans tabular-nums text-base text-[#2A2726]">
+                        {formatCurrency(row.revenue ?? row.revenueMxn, row.currency ?? "MXN")}
+                      </p>
                       <p className="text-[10px] text-[#7A756E] font-mono">{row.sku}</p>
                     </div>
                   </div>
@@ -503,7 +570,7 @@ export function AdminDashboardSection({ onError, refreshKey = 0 }: AdminDashboar
 
           <p className="text-xs text-center text-[#7A756E] flex items-center justify-center gap-1.5 pb-2 font-sans">
             <UserRound className="w-3.5 h-3.5" />
-            Los montos no incluyen pedidos sin pagar ni carritos abandonados.
+            Los montos no incluyen pedidos sin pagar ni carritos abandonados. MXN y USD se muestran por separado.
           </p>
         </>
       )}

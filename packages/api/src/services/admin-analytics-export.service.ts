@@ -21,19 +21,29 @@ export function buildAnalyticsCsv(data: AdminDashboardDto): string {
   lines.push(csvLine(['Hasta', data.period.to]));
   lines.push('');
 
-  lines.push(csvLine(['Resumen']));
+  lines.push(csvLine(['Resumen general']));
   lines.push(csvLine(['Pedidos pagados', data.summary.paidOrders]));
   lines.push(csvLine(['Ingresos MXN', data.summary.revenueMxn]));
   lines.push(csvLine(['Ticket promedio MXN', data.summary.avgOrderMxn]));
+  lines.push(csvLine(['Ingresos USD', data.summary.revenueUsd]));
+  lines.push(csvLine(['Ticket promedio USD', data.summary.avgOrderUsd]));
   lines.push(csvLine(['Artículos vendidos', data.summary.itemsSold]));
   lines.push(csvLine(['Clientes únicos', data.summary.uniqueCustomers]));
   lines.push(csvLine(['Reembolsos', data.summary.refundedOrders]));
   lines.push(csvLine(['Cancelados', data.summary.cancelledOrders]));
   lines.push('');
 
-  lines.push(csvLine(['Serie temporal', 'Pedidos', 'Ingresos MXN']));
+  lines.push(csvLine(['Por sucursal / mercado', 'Moneda', 'Pedidos', 'Ingresos', 'Ticket promedio', 'Piezas', 'Clientes']));
+  for (const m of data.byMarket) {
+    lines.push(
+      csvLine([m.label, m.currency, m.paidOrders, m.revenue, m.avgOrder, m.itemsSold, m.uniqueCustomers]),
+    );
+  }
+  lines.push('');
+
+  lines.push(csvLine(['Serie temporal', 'Pedidos', 'Ingresos MXN', 'Ingresos USD']));
   for (const row of data.series) {
-    lines.push(csvLine([row.label, row.orders, row.revenueMxn]));
+    lines.push(csvLine([row.label, row.orders, row.revenueMxn, row.revenueUsd]));
   }
   lines.push('');
 
@@ -43,10 +53,10 @@ export function buildAnalyticsCsv(data: AdminDashboardDto): string {
   }
   lines.push('');
 
-  lines.push(csvLine(['Producto', 'Variante', 'SKU', 'Cantidad', 'Ingresos MXN']));
+  lines.push(csvLine(['Producto', 'Variante', 'SKU', 'Moneda', 'Cantidad', 'Ingresos']));
   for (const row of data.topProducts) {
     lines.push(
-      csvLine([row.productName, row.variantLabel, row.sku, row.quantity, row.revenueMxn]),
+      csvLine([row.productName, row.variantLabel, row.sku, row.currency, row.quantity, row.revenue]),
     );
   }
 
@@ -68,13 +78,15 @@ export async function buildAnalyticsPdf(data: AdminDashboardDto): Promise<Buffer
     doc.text(`${data.period.label} (${data.period.from} → ${data.period.to})`);
     doc.moveDown();
 
-    doc.fillColor('#000').fontSize(12).text('Resumen', { underline: true });
+    doc.fillColor('#000').fontSize(12).text('Resumen general', { underline: true });
     doc.moveDown(0.4);
     doc.fontSize(10);
     const summaryLines = [
       `Pedidos pagados: ${data.summary.paidOrders}`,
-      `Ingresos: $${data.summary.revenueMxn} MXN`,
-      `Ticket promedio: $${data.summary.avgOrderMxn} MXN`,
+      `Ingresos México: $${data.summary.revenueMxn} MXN`,
+      `Ticket promedio MX: $${data.summary.avgOrderMxn} MXN`,
+      `Ingresos EE.UU.: $${data.summary.revenueUsd} USD`,
+      `Ticket promedio US: $${data.summary.avgOrderUsd} USD`,
       `Artículos vendidos: ${data.summary.itemsSold}`,
       `Clientes únicos: ${data.summary.uniqueCustomers}`,
       `Reembolsos: ${data.summary.refundedOrders}`,
@@ -83,11 +95,23 @@ export async function buildAnalyticsPdf(data: AdminDashboardDto): Promise<Buffer
     for (const line of summaryLines) doc.text(line);
     doc.moveDown();
 
+    doc.fontSize(12).text('Por sucursal', { underline: true });
+    doc.moveDown(0.4);
+    doc.fontSize(10);
+    for (const m of data.byMarket) {
+      doc.text(
+        `${m.label} (${m.currency}): ${m.paidOrders} pedidos — $${m.revenue} — ${m.itemsSold} piezas`,
+      );
+    }
+    doc.moveDown();
+
     doc.fontSize(12).text('Ingresos por periodo', { underline: true });
     doc.moveDown(0.4);
     doc.fontSize(9);
     for (const row of data.series) {
-      doc.text(`${row.label}: ${row.orders} pedidos — $${row.revenueMxn} MXN`);
+      doc.text(
+        `${row.label}: ${row.orders} pedidos — $${row.revenueMxn} MXN / $${row.revenueUsd} USD`,
+      );
     }
     doc.moveDown();
 
@@ -99,7 +123,7 @@ export async function buildAnalyticsPdf(data: AdminDashboardDto): Promise<Buffer
     } else {
       for (const row of data.topProducts) {
         doc.text(
-          `${row.productName} (${row.variantLabel}) — ${row.quantity} uds — $${row.revenueMxn} MXN`,
+          `${row.productName} (${row.variantLabel}) [${row.currency}] — ${row.quantity} uds — $${row.revenue}`,
         );
       }
     }
