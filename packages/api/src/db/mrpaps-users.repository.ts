@@ -96,6 +96,7 @@ export async function updateAddress(
     address2: string | null;
     city: string;
     state_code: string;
+    country_code: string;
     zip: string;
     is_default: boolean;
   }>,

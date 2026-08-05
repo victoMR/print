@@ -15,7 +15,7 @@ import { resolveUsdShipping } from './shipping/usd-shipping-rates.js';
 import { BadRequestError, MarketMismatchError } from '../types/errors.js';
 import { getGuestOrderByCodeAndEmail } from './mrpaps-order-tracking.service.js';
 import { LEGAL_VERSION } from './email-verification.service.js';
-import { marketForCurrency, type Market } from '../lib/market.js';
+import { marketForCurrency, countryForCurrency, type Market } from '../lib/market.js';
 
 type OrderCurrency = 'MXN' | 'USD';
 
@@ -23,8 +23,7 @@ type OrderCurrency = 'MXN' | 'USD';
  * Hard block only on a CONFIRMED mismatch (verifiedMarket is non-null and
  * disagrees with the order's currency) — never on inconclusive geolocation
  * (verifiedMarket === null), since a real customer shouldn't be blocked by an
- * external geo-IP service hiccup. Shipping is Mexico-only for both markets
- * today, which already narrows the real-world abuse window this closes.
+ * external geo-IP service hiccup.
  */
 function assertMarketMatchesCurrency(currency: OrderCurrency, verifiedMarket?: Market | null): void {
   if (!verifiedMarket) return;
@@ -33,6 +32,21 @@ function assertMarketMatchesCurrency(currency: OrderCurrency, verifiedMarket?: M
     throw new MarketMismatchError(
       'La moneda de tu pedido no coincide con tu ubicación detectada. Cambia a la versión correcta del sitio (/mx o /us) para continuar.',
       verifiedMarket,
+    );
+  }
+}
+
+/** /mx → solo México; /us → solo Estados Unidos. */
+function assertCountryMatchesCurrency(
+  currency: OrderCurrency,
+  countryCode: string,
+): void {
+  const expected = countryForCurrency(currency);
+  if (countryCode !== expected) {
+    throw new BadRequestError(
+      expected === 'US'
+        ? 'Esta tienda solo envía a Estados Unidos. Cambia a /mx para envíos a México.'
+        : 'Esta tienda solo envía a México. Cambia a /us para envíos a Estados Unidos.',
     );
   }
 }
@@ -83,6 +97,11 @@ function computeRetailTotals(subtotal: number, shipping: number, ivaRate: number
 }
 
 export async function getShippingRates(input: MrpapsShippingRatesBody) {
+  if (input.address.countryCode !== 'MX') {
+    throw new BadRequestError(
+      'La cotización Envia solo aplica a envíos dentro de México. Usa la tienda /us para envíos a Estados Unidos.',
+    );
+  }
   await catalog.resolveLineItems(input.items);
   return fetchShippingRates(input);
 }
@@ -95,6 +114,7 @@ type EstimateInput = {
 
 export async function estimateCosts(input: EstimateInput) {
   const currency: OrderCurrency = input.currency ?? 'MXN';
+  assertCountryMatchesCurrency(currency, input.address.countryCode);
   const lines = await catalog.resolveLineItems(input.items, currency);
   const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
 
@@ -110,7 +130,18 @@ export async function estimateCosts(input: EstimateInput) {
     return { currency, ...totals, shippingMethod };
   }
 
-  const auto = await resolveAutoShippingMxn({ items: input.items, address: input.address });
+  const mxAddress = {
+    address1: input.address.address1,
+    address2: input.address.address2,
+    city: input.address.city,
+    stateCode: input.address.stateCode,
+    countryCode: 'MX' as const,
+    zip: input.address.zip,
+  };
+  const auto = await resolveAutoShippingMxn({
+    items: input.items,
+    address: mxAddress,
+  } as Parameters<typeof resolveAutoShippingMxn>[0]);
   shippingPrice = auto.priceMxn;
   shippingMethod = auto.method;
   const subtotal = lines.reduce((sum, l) => sum + l.unitPriceMxn * l.quantity, 0);
@@ -139,6 +170,7 @@ export async function createOrder(body: MrpapsCreateOrderBody, verifiedMarket?: 
 
   const currency: OrderCurrency = body.retailCosts.currency;
   assertMarketMatchesCurrency(currency, verifiedMarket);
+  assertCountryMatchesCurrency(currency, body.recipient.countryCode);
   const lines = await catalog.resolveLineItems(body.items, currency);
   const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
 
@@ -155,9 +187,21 @@ export async function createOrder(body: MrpapsCreateOrderBody, verifiedMarket?: 
     shippingLabel = flat.label;
     subtotal = lines.reduce((sum, l) => sum + (l.unitPriceUsd ?? 0) * l.quantity, 0);
   } else {
-    const shippingInput = { items: body.items, address: addressFromRecipient(body.recipient) };
+    // Ya validamos countryCode === MX arriba.
+    const mxAddress = addressFromRecipient(body.recipient);
+    const shippingInput = {
+      items: body.items,
+      address: {
+        address1: mxAddress.address1,
+        address2: mxAddress.address2,
+        city: mxAddress.city,
+        stateCode: mxAddress.stateCode,
+        countryCode: 'MX' as const,
+        zip: mxAddress.zip,
+      },
+    };
     // Tarifa más barata automática; ignore client-supplied shippingMethod
-    const auto = await resolveAutoShippingMxn(shippingInput);
+    const auto = await resolveAutoShippingMxn(shippingInput as Parameters<typeof resolveAutoShippingMxn>[0]);
     shippingPriceMxn = auto.priceMxn;
     shippingMethod = auto.method;
     shippingLabel = auto.label;

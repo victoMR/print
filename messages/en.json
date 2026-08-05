@@ -200,7 +200,9 @@
       "savedAddresses": "Your saved addresses",
       "newAddress": "New address",
       "useDifferentAddress": "Use a different address",
-      "saveAddressCheckbox": "Save this address for future orders"
+      "saveAddressCheckbox": "Save this address for future orders",
+      "shipsToMxOnly": "This store only ships to Mexico.",
+      "shipsToUsOnly": "This store only ships to the United States."
     },
     "fields": {
       "fullName": "Full name",
@@ -209,6 +211,11 @@
       "phonePlaceholder": "10 digits",
       "street": "Street and number",
       "streetPlaceholder": "123 Main St",
+      "address2": "Apartment, suite, etc. (optional)",
+      "address2Placeholder": "Apt, suite, unit…",
+      "city": "City",
+      "zipUs": "ZIP",
+      "stateUs": "State",
       "addressLabel": "Address name",
       "addressLabelPlaceholder": "E.g. Home, Work, Mom's…"
     },

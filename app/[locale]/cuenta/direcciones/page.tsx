@@ -21,7 +21,18 @@ import {
   type SavedAddress,
 } from "@/lib/customer-api";
 
-const EMPTY_FORM = {
+const EMPTY_FORM: {
+  label: string;
+  recipientName: string;
+  phone: string;
+  address1: string;
+  address2: string;
+  city: string;
+  stateCode: string;
+  countryCode: "MX" | "US";
+  zip: string;
+  isDefault: boolean;
+} = {
   label: "Casa",
   recipientName: "",
   phone: "",
@@ -29,6 +40,7 @@ const EMPTY_FORM = {
   address2: "",
   city: "",
   stateCode: "JAL",
+  countryCode: "MX",
   zip: "",
   isDefault: false,
 };
@@ -71,6 +83,7 @@ export default function DireccionesPage() {
       address2: addr.address2 ?? "",
       city: addr.city,
       stateCode: addr.stateCode,
+      countryCode: (addr.countryCode ?? "MX") as "MX" | "US",
       zip: addr.zip,
       isDefault: addr.isDefault,
     });

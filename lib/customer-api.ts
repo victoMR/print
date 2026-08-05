@@ -132,6 +132,7 @@ export type SavedAddress = {
   address2: string | null;
   city: string;
   stateCode: string;
+  countryCode: "MX" | "US";
   zip: string;
   isDefault: boolean;
 };

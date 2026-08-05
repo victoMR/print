@@ -200,7 +200,9 @@
       "savedAddresses": "Tus direcciones guardadas",
       "newAddress": "Nueva dirección",
       "useDifferentAddress": "Usar una dirección diferente",
-      "saveAddressCheckbox": "Guardar esta dirección para futuros pedidos"
+      "saveAddressCheckbox": "Guardar esta dirección para futuros pedidos",
+      "shipsToMxOnly": "Esta tienda solo envía a México.",
+      "shipsToUsOnly": "Esta tienda solo envía a Estados Unidos."
     },
     "fields": {
       "fullName": "Nombre completo",
@@ -209,6 +211,11 @@
       "phonePlaceholder": "10 dígitos",
       "street": "Calle y número",
       "streetPlaceholder": "Av. Revolución 123",
+      "address2": "Apartamento, suite, etc. (opcional)",
+      "address2Placeholder": "Apt, suite, unidad…",
+      "city": "Ciudad",
+      "zipUs": "ZIP",
+      "stateUs": "Estado",
       "addressLabel": "Nombre de la dirección",
       "addressLabelPlaceholder": "Ej. Casa, Trabajo, Mamá…"
     },

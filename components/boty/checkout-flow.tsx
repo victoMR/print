@@ -10,7 +10,9 @@ import { useCustomer } from "@/lib/customer-context";
 import { saveGuestOrderAccess } from "@/lib/order-guest-session";
 import { createAddress, listAddresses, type SavedAddress } from "@/lib/customer-api";
 import { MX_STATES } from "@/lib/mx-states";
+import { US_STATES } from "@/lib/us-states";
 import { MxAddressGeoFields } from "@/components/checkout/mx-address-geo-fields";
+import { UsAddressGeoFields } from "@/components/checkout/us-address-geo-fields";
 import { cn, formatCurrency } from "@/lib/utils";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { LegalConsentCheckbox } from "@/components/legal/legal-consent-checkbox";
@@ -29,6 +31,22 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
+function emptyRecipientForMarket(
+  countryCode: "MX" | "US",
+  base?: Partial<CheckoutRecipient>,
+): CheckoutRecipient {
+  return {
+    name: base?.name ?? "",
+    address1: "",
+    address2: "",
+    city: "",
+    stateCode: countryCode === "US" ? "CA" : "JAL",
+    countryCode,
+    zip: "",
+    phone: base?.phone ?? "",
+    email: base?.email ?? "",
+  };
+}
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Step = "address" | "confirm" | "payment";
@@ -48,14 +66,14 @@ export function BotyCheckoutFlow() {
   const { items, inStockItems, outOfStockItems, clearCart, hydrated, removeItem, currency, itemPrice } = useCart();
   const { user } = useCustomer();
   const router = useRouter();
+  const shipCountry: "MX" | "US" = currency === "USD" ? "US" : "MX";
 
   const STEPS = STEP_ICONS.map((s) => ({ ...s, label: t(`steps.${s.key}`) }));
 
   const [step, setStep] = useState<Step>("address");
-  const [recipient, setRecipient] = useState<CheckoutRecipient>({
-    name: "", address1: "", address2: "", city: "",
-    stateCode: "JAL", countryCode: "MX", zip: "", phone: "", email: "",
-  });
+  const [recipient, setRecipient] = useState<CheckoutRecipient>(() =>
+    emptyRecipientForMarket(currency === "USD" ? "US" : "MX"),
+  );
 
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | "new" | null>(null);
@@ -82,29 +100,58 @@ export function BotyCheckoutFlow() {
         }`
       : undefined;
 
-  // ── Load saved addresses when logged in ───────────────────────────────────
+  // ── Load saved addresses when logged in (filtradas por país del mercado) ──
   useEffect(() => {
     if (!user) return;
     setLoadingAddresses(true);
     listAddresses()
       .then((addrs) => {
-        setSavedAddresses(addrs);
-        const def = addrs.find((a) => a.isDefault) ?? addrs[0];
+        const forMarket = addrs.filter((a) => (a.countryCode ?? "MX") === shipCountry);
+        setSavedAddresses(forMarket);
+        const def = forMarket.find((a) => a.isDefault) ?? forMarket[0];
         if (def) {
           setSelectedAddressId(def.id);
           applyAddress(def, user.email);
         } else {
           setSelectedAddressId("new");
-          setRecipient((prev) => ({ ...prev, name: user.fullName, email: user.email, phone: user.phone ?? "" }));
+          setRecipient(
+            emptyRecipientForMarket(shipCountry, {
+              name: user.fullName,
+              email: user.email,
+              phone: user.phone ?? "",
+            }),
+          );
         }
       })
       .catch(() => {
         setSelectedAddressId("new");
-        setRecipient((prev) => ({ ...prev, name: user.fullName, email: user.email, phone: user.phone ?? "" }));
+        setRecipient(
+          emptyRecipientForMarket(shipCountry, {
+            name: user.fullName,
+            email: user.email,
+            phone: user.phone ?? "",
+          }),
+        );
       })
       .finally(() => setLoadingAddresses(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, shipCountry]);
+
+  // Si cambia el mercado (MX↔US), reinicia dirección al país correcto.
+  useEffect(() => {
+    if (recipient.countryCode === shipCountry) return;
+    setRecipient((prev) =>
+      emptyRecipientForMarket(shipCountry, {
+        name: prev.name,
+        email: prev.email,
+        phone: prev.phone,
+      }),
+    );
+    setSelectedAddressId(user ? "new" : null);
+    setStep("address");
+    setError(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shipCountry]);
 
   function applyAddress(addr: SavedAddress, email: string) {
     setRecipient((prev) => ({
@@ -116,6 +163,7 @@ export function BotyCheckoutFlow() {
       address2: addr.address2 ?? "",
       city: addr.city,
       stateCode: addr.stateCode,
+      countryCode: addr.countryCode ?? shipCountry,
       zip: addr.zip,
     }));
   }
@@ -128,13 +176,13 @@ export function BotyCheckoutFlow() {
 
   function handleSelectNew() {
     setSelectedAddressId("new");
-    setRecipient({
-      name: user?.fullName ?? "",
-      email: user?.email ?? "",
-      phone: user?.phone ?? "",
-      address1: "", address2: "", city: "",
-      stateCode: "JAL", countryCode: "MX", zip: "",
-    });
+    setRecipient(
+      emptyRecipientForMarket(shipCountry, {
+        name: user?.fullName ?? "",
+        email: user?.email ?? "",
+        phone: user?.phone ?? "",
+      }),
+    );
     setError(null);
   }
 
@@ -161,11 +209,13 @@ export function BotyCheckoutFlow() {
     address2: recipient.address2,
     city: recipient.city,
     stateCode: recipient.stateCode,
-    countryCode: "MX" as const,
+    countryCode: shipCountry,
     zip: recipient.zip,
   };
 
-  const currentStateName = MX_STATES.find((s) => s.code === recipient.stateCode)?.name ?? recipient.stateCode;
+  const currentStateName =
+    (shipCountry === "US" ? US_STATES : MX_STATES).find((s) => s.code === recipient.stateCode)?.name ??
+    recipient.stateCode;
 
   function handleClearStaleCart() {
     clearCart();
@@ -231,6 +281,7 @@ export function BotyCheckoutFlow() {
             address2: recipient.address2 || null,
             city: recipient.city,
             stateCode: recipient.stateCode,
+            countryCode: shipCountry,
             zip: recipient.zip,
             isDefault: savedAddresses.length === 0,
           });
@@ -585,16 +636,49 @@ export function BotyCheckoutFlow() {
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <MxAddressGeoFields
-                        value={{
-                          zip: recipient.zip,
-                          stateCode: recipient.stateCode,
-                          city: recipient.city,
-                          address2: recipient.address2,
-                        }}
-                        onChange={(patch) => setRecipient({ ...recipient, ...patch })}
-                      />
+                      {shipCountry === "US" ? (
+                        <UsAddressGeoFields
+                          value={{
+                            zip: recipient.zip,
+                            stateCode: recipient.stateCode,
+                            city: recipient.city,
+                          }}
+                          onChange={(patch) => setRecipient({ ...recipient, ...patch })}
+                          labels={{
+                            zip: t("fields.zipUs"),
+                            state: t("fields.stateUs"),
+                            city: t("fields.city"),
+                          }}
+                        />
+                      ) : (
+                        <MxAddressGeoFields
+                          value={{
+                            zip: recipient.zip,
+                            stateCode: recipient.stateCode,
+                            city: recipient.city,
+                            address2: recipient.address2,
+                          }}
+                          onChange={(patch) => setRecipient({ ...recipient, ...patch })}
+                        />
+                      )}
                     </div>
+                    {shipCountry === "US" ? (
+                      <div className="sm:col-span-2">
+                        <Field
+                          label={t("fields.address2")}
+                          value={recipient.address2 ?? ""}
+                          onChange={(v) => setRecipient({ ...recipient, address2: v })}
+                          autoComplete="address-line2"
+                          placeholder={t("fields.address2Placeholder")}
+                          fieldKey="address2"
+                        />
+                      </div>
+                    ) : null}
+                    <p className="sm:col-span-2 text-[11px] text-[#7A756E] tracking-[0.06em]">
+                      {shipCountry === "US"
+                        ? t("addressStep.shipsToUsOnly")
+                        : t("addressStep.shipsToMxOnly")}
+                    </p>
                   </div>
 
                   {/* Opción de guardar dirección — solo para usuarios con sesión */}

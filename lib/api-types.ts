@@ -221,7 +221,7 @@ export type CheckoutAddress = {
   address2?: string;
   city: string;
   stateCode: string;
-  countryCode: "MX";
+  countryCode: "MX" | "US";
   zip: string;
 };
 
@@ -261,6 +261,8 @@ export type AdminOrderSummary = {
   customerEmail: string;
   customerPhone: string;
   currency: "MXN" | "USD";
+  market: "mx" | "us";
+  shipCountryCode: string;
   totalMxn: string | null;
   totalUsd: string | null;
   shippingLabel: string | null;
@@ -277,6 +279,7 @@ export type AdminOrderSummary = {
     sku: string;
     quantity: number;
     unitPriceMxn: string;
+    unitPriceUsd?: string | null;
     thumbnailUrl?: string | null;
     printFileUrl?: string | null;
   }>;

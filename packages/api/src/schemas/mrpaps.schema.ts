@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { mxStateCodeSchema } from './order.schema.js';
+import { mxStateCodeSchema, postalCode5Schema, usStateCodeSchema } from './order.schema.js';
 import { CUSTOMER_PASSWORD_MAX, CUSTOMER_PASSWORD_MIN } from './customer-auth.schema.js';
 import { assetUrlSchema } from './asset-url.schema.js';
 import { productCategorySchema } from '../lib/product-categories.js';
@@ -40,19 +40,46 @@ export const cartSyncBodySchema = z.object({
     .max(50),
 });
 
+const addressBase = {
+  address1: z.string().min(1),
+  address2: z.string().optional(),
+  city: z.string().min(1),
+  zip: postalCode5Schema,
+};
+
+export const mxShippingAddressSchema = z.object({
+  ...addressBase,
+  stateCode: mxStateCodeSchema,
+  countryCode: z.literal('MX'),
+});
+
+export const usShippingAddressSchema = z.object({
+  ...addressBase,
+  stateCode: usStateCodeSchema,
+  countryCode: z.literal('US'),
+});
+
+/** Dirección de envío: MX (3-letter state) o US (2-letter state). */
+export const shippingAddressSchema = z.union([mxShippingAddressSchema, usShippingAddressSchema]);
+
+const recipientExtrasSchema = z.object({
+  name: z.string().min(1),
+  phone: z.string().min(10),
+  email: z.string().email(),
+  taxNumber: z.string().optional(),
+});
+
+export const orderRecipientSchema = z.union([
+  mxShippingAddressSchema.merge(recipientExtrasSchema),
+  usShippingAddressSchema.merge(recipientExtrasSchema),
+]);
+
 export const shippingRatesBodySchema = z.object({
   items: z.array(z.object({
     variantId: z.string().uuid(),
     quantity: cartQuantitySchema,
   })).min(1),
-  address: z.object({
-    address1: z.string().min(1),
-    address2: z.string().optional(),
-    city: z.string().min(1),
-    stateCode: mxStateCodeSchema,
-    countryCode: z.literal('MX'),
-    zip: z.string().regex(/^\d{5}$/),
-  }),
+  address: shippingAddressSchema,
 });
 
 export const estimateBodySchema = z.object({
@@ -64,7 +91,19 @@ export const estimateBodySchema = z.object({
     retailPriceUsd: z.string().regex(/^\d+\.\d{2}$/).optional(),
   })).min(1),
   shippingMethod: shippingMethodSchema.optional(),
-  address: shippingRatesBodySchema.shape.address,
+  address: shippingAddressSchema,
+}).superRefine((data, ctx) => {
+  const expected = data.currency === 'USD' ? 'US' : 'MX';
+  if (data.address.countryCode !== expected) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['address', 'countryCode'],
+      message:
+        expected === 'US'
+          ? 'Esta tienda solo envía a Estados Unidos. Cambia a /mx para envíos a México.'
+          : 'Esta tienda solo envía a México. Cambia a /us para envíos a Estados Unidos.',
+    });
+  }
 });
 
 export const createOrderBodySchema = z.object({
@@ -75,18 +114,7 @@ export const createOrderBodySchema = z.object({
     retailPriceUsd: z.string().regex(/^\d+\.\d{2}$/).optional(),
   })).min(1),
   shippingMethod: shippingMethodSchema.optional(),
-  recipient: z.object({
-    name: z.string().min(1),
-    phone: z.string().min(10),
-    email: z.string().email(),
-    taxNumber: z.string().optional(),
-    address1: z.string().min(1),
-    address2: z.string().optional(),
-    city: z.string().min(1),
-    stateCode: mxStateCodeSchema,
-    countryCode: z.literal('MX'),
-    zip: z.string().regex(/^\d{5}$/),
-  }),
+  recipient: orderRecipientSchema,
   retailCosts: z.object({
     currency: orderCurrencySchema,
     subtotal: z.string().regex(/^\d+\.\d{2}$/),
@@ -100,6 +128,18 @@ export const createOrderBodySchema = z.object({
   }).optional(),
   /** Solo desde JWT en checkout; no enviar desde el cliente */
   customerUserId: z.string().uuid().optional(),
+}).superRefine((data, ctx) => {
+  const expected = data.retailCosts.currency === 'USD' ? 'US' : 'MX';
+  if (data.recipient.countryCode !== expected) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['recipient', 'countryCode'],
+      message:
+        expected === 'US'
+          ? 'Esta tienda solo envía a Estados Unidos. Cambia a /mx para envíos a México.'
+          : 'Esta tienda solo envía a México. Cambia a /us para envíos a Estados Unidos.',
+    });
+  }
 });
 
 export const updateOrderStatusSchema = z.object({

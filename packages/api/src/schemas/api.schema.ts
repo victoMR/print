@@ -1,16 +1,22 @@
 import { z } from 'zod';
-import { mxStateCodeSchema } from './order.schema.js';
+import {
+  shippingAddressSchema,
+  orderRecipientSchema,
+  orderCurrencySchema as mrpapsOrderCurrencySchema,
+} from './mrpaps.schema.js';
+import { postalCode5Schema } from './order.schema.js';
 
+/** Dirección genérica para cuentas (MX o US). */
 export const addressSchema = z.object({
   address1: z.string().min(1),
   address2: z.string().optional(),
   city: z.string().min(1),
-  stateCode: mxStateCodeSchema,
-  countryCode: z.literal('MX'),
-  zip: z.string().regex(/^\d{5}$/),
+  stateCode: z.string().min(2).max(3),
+  countryCode: z.enum(['MX', 'US']),
+  zip: postalCode5Schema,
 });
 
-export const orderCurrencySchema = z.enum(['MXN', 'USD']);
+export const orderCurrencySchema = mrpapsOrderCurrencySchema;
 
 export const checkoutItemSchema = z.object({
   variantId: z.string().uuid(),
@@ -26,7 +32,7 @@ export const shippingRatesBodySchema = z.object({
     syncVariantId: z.number().int().positive().optional(),
     quantity: z.number().int().positive(),
   })).min(1),
-  address: addressSchema,
+  address: shippingAddressSchema,
   recipient: z.object({
     name: z.string().min(1),
     phone: z.string().regex(/^\d{10}$/, 'El teléfono debe tener 10 dígitos sin espacios ni guiones'),
@@ -44,7 +50,19 @@ export const estimateBodySchema = z.object({
     retailPriceUsd: z.string().regex(/^\d+\.\d{2}$/).optional(),
   })).min(1),
   shippingMethod: z.string().min(1).max(80).optional(),
-  address: addressSchema,
+  address: shippingAddressSchema,
+}).superRefine((data, ctx) => {
+  const expected = data.currency === 'USD' ? 'US' : 'MX';
+  if (data.address.countryCode !== expected) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['address', 'countryCode'],
+      message:
+        expected === 'US'
+          ? 'Esta tienda solo envía a Estados Unidos. Cambia a /mx para envíos a México.'
+          : 'Esta tienda solo envía a México. Cambia a /us para envíos a Estados Unidos.',
+    });
+  }
 });
 
 export const createOrderBodySchema = z.object({
@@ -56,12 +74,7 @@ export const createOrderBodySchema = z.object({
     retailPriceUsd: z.string().regex(/^\d+\.\d{2}$/).optional(),
   })).min(1),
   shippingMethod: z.string().min(1).max(80).optional(),
-  recipient: addressSchema.extend({
-    name: z.string().min(1),
-    phone: z.string().regex(/^\d{10}$/, 'El teléfono debe tener 10 dígitos sin espacios ni guiones'),
-    email: z.string().email(),
-    taxNumber: z.string().optional(),
-  }),
+  recipient: orderRecipientSchema,
   retailCosts: z.object({
     currency: orderCurrencySchema,
     subtotal: z.string().regex(/^\d+\.\d{2}$/),
@@ -73,6 +86,18 @@ export const createOrderBodySchema = z.object({
   acceptedLegal: z.literal(true, {
     errorMap: () => ({ message: 'Debes aceptar los Términos y el Aviso de Privacidad' }),
   }).optional(),
+}).superRefine((data, ctx) => {
+  const expected = data.retailCosts.currency === 'USD' ? 'US' : 'MX';
+  if (data.recipient.countryCode !== expected) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['recipient', 'countryCode'],
+      message:
+        expected === 'US'
+          ? 'Esta tienda solo envía a Estados Unidos. Cambia a /mx para envíos a México.'
+          : 'Esta tienda solo envía a México. Cambia a /us para envíos a Estados Unidos.',
+    });
+  }
 });
 
 const syncFileSchema = z.object({

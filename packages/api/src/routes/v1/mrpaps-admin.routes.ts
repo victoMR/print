@@ -335,10 +335,13 @@ v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
     const search = typeof req.query.search === 'string' && req.query.search.trim()
       ? req.query.search.trim()
       : undefined;
+    const currencyRaw = typeof req.query.currency === 'string' ? req.query.currency.toUpperCase() : undefined;
+    const currency = currencyRaw === 'MXN' || currencyRaw === 'USD' ? currencyRaw : undefined;
     const orders = await ordersRepo.listOrdersAdmin({
       status,
       paidOnly: true,
       search,
+      currency,
     });
     res.json({
       data: orders.map((o) => ({
@@ -350,6 +353,8 @@ v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
         customerEmail: o.customer_email,
         customerPhone: o.customer_phone,
         currency: o.currency,
+        market: o.currency === 'USD' ? 'us' : 'mx',
+        shipCountryCode: o.ship_country_code,
         totalMxn: o.total_mxn !== null ? Number(o.total_mxn).toFixed(2) : null,
         totalUsd: o.total_usd !== null ? Number(o.total_usd).toFixed(2) : null,
         shippingLabel: o.shipping_label,
@@ -366,6 +371,7 @@ v1MrpapsAdminRouter.get('/orders', async (req, res, next) => {
           sku: i.sku,
           quantity: i.quantity,
           unitPriceMxn: Number(i.unit_price_mxn).toFixed(2),
+          unitPriceUsd: i.unit_price_usd !== null ? Number(i.unit_price_usd).toFixed(2) : null,
           thumbnailUrl: i.thumbnail_url,
           printFileUrl: i.print_file_url,
         })),

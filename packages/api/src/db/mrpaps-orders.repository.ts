@@ -424,6 +424,7 @@ export async function listOrdersAdmin(filters?: {
   /** Solo pedidos con pago confirmado (panel admin — oculta pendiente de pago). */
   paidOnly?: boolean;
   search?: string;
+  currency?: 'MXN' | 'USD';
   limit?: number;
 }): Promise<MrpapsOrderWithItems[]> {
   const params: unknown[] = [];
@@ -444,6 +445,11 @@ export async function listOrdersAdmin(filters?: {
   } else if (filters?.excludeStatuses?.length) {
     params.push(filters.excludeStatuses);
     conditions.push(`status <> ALL($${params.length}::mrpaps_order_status[])`);
+  }
+
+  if (filters?.currency) {
+    params.push(filters.currency);
+    conditions.push(`currency = $${params.length}`);
   }
 
   if (filters?.search?.trim()) {

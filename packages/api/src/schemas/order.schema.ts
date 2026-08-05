@@ -9,6 +9,20 @@ export const MX_STATE_CODES = [
 
 export const mxStateCodeSchema = z.enum(MX_STATE_CODES);
 
+/** USPS / ISO 3166-2:US subdivision codes (2 letters). */
+export const US_STATE_CODES = [
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL',
+  'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME',
+  'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH',
+  'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI',
+  'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI',
+  'WY',
+] as const;
+
+export const usStateCodeSchema = z.enum(US_STATE_CODES);
+
+export const postalCode5Schema = z.string().regex(/^\d{5}$/);
+
 export const OrderInput = z.object({
   external_id: z.string().min(1),
   shipping: z.enum(['STANDARD', 'EXPRESS', 'PRINTFUL_FAST']).default('STANDARD'),
@@ -19,7 +33,7 @@ export const OrderInput = z.object({
     city: z.string().min(1),
     state_code: mxStateCodeSchema,
     country_code: z.literal('MX'),
-    zip: z.string().regex(/^\d{5}$/),
+    zip: postalCode5Schema,
     phone: z.string().min(10),
     email: z.string().email(),
     tax_number: z.string().optional(),
@@ -74,8 +88,6 @@ export const ShippingRatesInput = z.object({
     quantity: z.number().int().positive(),
     retail_price: z.string().regex(/^\d+\.\d{2}$/).optional(),
   })).min(1),
-  // Pedimos USD/EUR a Printful; convertimos nosotros a MXN con Banxico.
-  // `MXN` se deja para compatibilidad en flujos legacy.
   currency: z.enum(['USD', 'EUR', 'MXN']).default('USD'),
 });
 

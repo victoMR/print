@@ -354,7 +354,7 @@ export async function fetchShippingRates(body: {
     address2?: string;
     city: string;
     stateCode: string;
-    countryCode: "MX";
+    countryCode: "MX" | "US";
     zip: string;
   };
   recipient?: {
@@ -383,7 +383,7 @@ export async function fetchEstimate(body: {
     address2?: string;
     city: string;
     stateCode: string;
-    countryCode: "MX";
+    countryCode: "MX" | "US";
     zip: string;
   };
 }) {
@@ -499,6 +499,7 @@ export async function adminListOrders(filters?: {
   status?: MrpapsOrderStatus;
   excludeStatus?: MrpapsOrderStatus | MrpapsOrderStatus[];
   search?: string;
+  currency?: "MXN" | "USD";
 }) {
   const params = new URLSearchParams();
   if (filters?.status) params.set("status", filters.status);
@@ -509,6 +510,7 @@ export async function adminListOrders(filters?: {
     for (const s of excluded) params.append("excludeStatus", s);
   }
   if (filters?.search?.trim()) params.set("search", filters.search.trim());
+  if (filters?.currency) params.set("currency", filters.currency);
   const q = params.size > 0 ? `?${params.toString()}` : "";
   return apiFetch<{ data: AdminOrderSummary[] }>(`${V1}/admin/orders${q}`, {
     headers: adminHeaders(),

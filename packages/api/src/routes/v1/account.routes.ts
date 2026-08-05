@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireCustomerAuth } from '../../middleware/customer-auth.js';
 import * as usersRepo from '../../db/mrpaps-users.repository.js';
 import { publicCustomer } from '../../services/customer-auth.service.js';
-import { mxStateCodeSchema } from '../../schemas/order.schema.js';
+import { mxStateCodeSchema, postalCode5Schema, usStateCodeSchema } from '../../schemas/order.schema.js';
 import { getCustomerOrderDetail } from '../../services/mrpaps-order-tracking.service.js';
 import { formatTrackingCodeDisplay } from '../../lib/order-tracking-code.js';
 const ORDER_STATUS_LABELS: Record<string, string> = {
@@ -47,16 +47,28 @@ v1AccountRouter.patch('/profile', async (req, res, next) => {
 
 // ── Direcciones ─────────────────────────────────────────────────────────────
 
-const addressSchema = z.object({
+const addressFieldsSchema = z.object({
   label: z.string().min(1).max(60).default('Casa'),
   recipientName: z.string().min(1),
   phone: z.string().min(10),
   address1: z.string().min(1),
   address2: z.string().optional().nullable(),
   city: z.string().min(1),
-  stateCode: mxStateCodeSchema,
-  zip: z.string().regex(/^\d{5}$/),
+  stateCode: z.union([mxStateCodeSchema, usStateCodeSchema]),
+  countryCode: z.enum(['MX', 'US']).default('MX'),
+  zip: postalCode5Schema,
   isDefault: z.boolean().optional(),
+});
+
+const addressSchema = addressFieldsSchema.superRefine((data, ctx) => {
+  const mxOk = mxStateCodeSchema.safeParse(data.stateCode).success;
+  const usOk = usStateCodeSchema.safeParse(data.stateCode).success;
+  if (data.countryCode === 'MX' && !mxOk) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['stateCode'], message: 'Estado MX inválido' });
+  }
+  if (data.countryCode === 'US' && !usOk) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['stateCode'], message: 'Estado US inválido' });
+  }
 });
 
 function mapAddress(a: Awaited<ReturnType<typeof usersRepo.listAddresses>>[number]) {
@@ -69,6 +81,7 @@ function mapAddress(a: Awaited<ReturnType<typeof usersRepo.listAddresses>>[numbe
     address2: a.address2,
     city: a.city,
     stateCode: a.state_code,
+    countryCode: a.country_code as 'MX' | 'US',
     zip: a.zip,
     isDefault: a.is_default,
   };
@@ -93,7 +106,7 @@ v1AccountRouter.post('/addresses', async (req, res, next) => {
       address2: body.address2 ?? null,
       city: body.city,
       state_code: body.stateCode,
-      country_code: 'MX',
+      country_code: body.countryCode,
       zip: body.zip,
       is_default: body.isDefault ?? false,
     });
@@ -103,7 +116,7 @@ v1AccountRouter.post('/addresses', async (req, res, next) => {
 
 v1AccountRouter.patch('/addresses/:addressId', async (req, res, next) => {
   try {
-    const body = addressSchema.partial().parse(req.body);
+    const body = addressFieldsSchema.partial().parse(req.body);
     const updated = await usersRepo.updateAddress(req.params.addressId, req.customerUser!.id, {
       label: body.label,
       recipient_name: body.recipientName,
@@ -112,6 +125,7 @@ v1AccountRouter.patch('/addresses/:addressId', async (req, res, next) => {
       address2: body.address2,
       city: body.city,
       state_code: body.stateCode,
+      country_code: body.countryCode,
       zip: body.zip,
       is_default: body.isDefault,
     });

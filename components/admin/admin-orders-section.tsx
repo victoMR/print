@@ -40,6 +40,12 @@ import {
   X,
 } from "lucide-react";
 import { mxStateLabel } from "@/lib/mx-state-label";
+import { usStateLabel } from "@/lib/us-states";
+
+function shipStateLabel(countryCode: string, stateCode: string): string {
+  if (countryCode === "US") return usStateLabel(stateCode);
+  return mxStateLabel(stateCode);
+}
 
 // ---------------------------------------------------------------------------
 // TrackingModal — reemplaza window.prompt() para capturar datos de envío
@@ -194,6 +200,7 @@ type AdminOrdersSectionProps = {
 export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: AdminOrdersSectionProps) {
   const [orders, setOrders] = useState<AdminOrderSummary[]>([]);
   const [filterStatus, setFilterStatus] = useState<MrpapsOrderStatus | "">("");
+  const [filterCurrency, setFilterCurrency] = useState<"MXN" | "USD" | "">("");
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [listLoading, setListLoading] = useState(false);
@@ -219,6 +226,7 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
       const res = await adminListOrders({
         status: filterStatus || undefined,
         search: searchQuery || undefined,
+        currency: filterCurrency || undefined,
       });
       setOrders(res.data);
     } catch (err) {
@@ -226,7 +234,7 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
     } finally {
       setListLoading(false);
     }
-  }, [filterStatus, searchQuery, onError]);
+  }, [filterStatus, filterCurrency, searchQuery, onError]);
 
   useEffect(() => {
     void loadList();
@@ -365,6 +373,21 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
           />
         </div>
 
+        <div className="flex items-center gap-2 shrink-0">
+          <BotyLabel className="shrink-0">Mercado</BotyLabel>
+          <AdminSelect
+            value={filterCurrency || "__all__"}
+            onValueChange={(v) => setFilterCurrency(v === "__all__" ? "" : (v as "MXN" | "USD"))}
+            className="max-w-[160px]"
+            placeholder="Todos"
+            options={[
+              { value: "__all__", label: "Todos" },
+              { value: "MXN", label: "MX (MXN)" },
+              { value: "USD", label: "US (USD)" },
+            ]}
+          />
+        </div>
+
         <div className="flex items-center gap-3 w-full lg:w-auto lg:ml-auto shrink-0">
           <AdminViewToggle value={viewMode} onChange={setViewMode} />
           <span className="text-xs text-muted-foreground flex items-center gap-1.5 whitespace-nowrap ml-auto lg:ml-0">
@@ -415,8 +438,18 @@ export function AdminOrdersSection({ busy, setBusy, onError, refreshKey = 0 }: A
 }
 
 function OrderStatusBadges({ order }: { order: AdminOrderSummary }) {
+  const market = order.market ?? (order.currency === "USD" ? "us" : "mx");
   return (
     <>
+      <BotyBadge
+        className={
+          market === "us"
+            ? "bg-sky-500/15 text-sky-800 border border-sky-500/20"
+            : "bg-emerald-500/15 text-emerald-800 border border-emerald-500/20"
+        }
+      >
+        {market === "us" ? "US" : "MX"}
+      </BotyBadge>
       <BotyBadge className={STATUS_BADGE[order.status]}>
         {ORDER_STATUS_LABELS[order.status]}
       </BotyBadge>
@@ -720,7 +753,11 @@ function AdminOrderDetail({
               {order.shipping.address1}
               {order.shipping.address2 && `, ${order.shipping.address2}`}
               <br />
-              {order.shipping.city}, {mxStateLabel(order.shipping.stateCode)} {order.shipping.zip}
+              {order.shipping.city},{" "}
+              {shipStateLabel(order.shipping.countryCode, order.shipping.stateCode)}{" "}
+              {order.shipping.zip}
+              <br />
+              {order.shipping.countryCode === "US" ? "Estados Unidos" : "México"}
             </p>
             {order.tracking.url && (
               <a

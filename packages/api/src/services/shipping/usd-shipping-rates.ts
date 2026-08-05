@@ -22,5 +22,5 @@ export function resolveUsdShipping(itemCount: number): {
   const extraItems = Math.max(0, itemCount - 1);
   const priceUsd = Math.round((base + extraItems * perExtraItem) * 100) / 100;
 
-  return { priceUsd, method: 'usd_flat', label: 'International shipping' };
+  return { priceUsd, method: 'usd_flat', label: 'US shipping' };
 }
