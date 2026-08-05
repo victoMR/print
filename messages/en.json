@@ -4,16 +4,14 @@
       "label": "Language",
       "es": "ES",
       "en": "EN"
-    },
-    "marketSwitcher": {
-      "label": "Market",
-      "mx": "MX",
-      "us": "US"
     }
   },
   "layout": {
     "header": {
-      "announcement": "Currently shipping to Mexico only.",
+      "announcement": {
+        "mx": "Shipping nationwide across Mexico.",
+        "us": "Shipping nationwide across the United States."
+      },
       "nav": {
         "collections": "Collections",
         "about": "About",
@@ -121,7 +119,10 @@
     "shipping": "Shipping",
     "total": "Total",
     "checkoutButton": "Checkout",
-    "shipsNationwide": "Currently ships to Mexico only",
+    "shipsNationwide": {
+      "mx": "Shipping nationwide across Mexico",
+      "us": "Shipping nationwide across the United States"
+    },
     "returnsPolicy": "Exchanges & returns within 15 days",
     "drawer": {
       "empty": "Empty",

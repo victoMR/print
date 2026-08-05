@@ -4,16 +4,14 @@
       "label": "Idioma",
       "es": "ES",
       "en": "EN"
-    },
-    "marketSwitcher": {
-      "label": "Mercado",
-      "mx": "MX",
-      "us": "US"
     }
   },
   "layout": {
     "header": {
-      "announcement": "Envíos a todo México.",
+      "announcement": {
+        "mx": "Envíos a todo México.",
+        "us": "Envíos a todos Estados Unidos."
+      },
       "nav": {
         "collections": "Colecciones",
         "about": "Nosotros",
@@ -121,7 +119,10 @@
     "shipping": "Envío",
     "total": "Total",
     "checkoutButton": "Finalizar compra",
-    "shipsNationwide": "Envíos a todo México",
+    "shipsNationwide": {
+      "mx": "Envíos a todo México",
+      "us": "Envíos a todos Estados Unidos"
+    },
     "returnsPolicy": "Cambios y devoluciones hasta 15 días",
     "drawer": {
       "empty": "Vacío",

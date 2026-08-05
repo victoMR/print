@@ -2,18 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { Link, usePathname } from "@/lib/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import { CartDrawer } from "./cart-drawer";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
-import { MarketSwitcher } from "@/components/layout/MarketSwitcher";
 import { SITE_WHATSAPP_URL } from "@/lib/legal/config";
+import type { Locale } from "@/lib/i18n/locale";
 
 export function Header({ className, alwaysVisible = false }: { className?: string; alwaysVisible?: boolean }) {
   const t = useTranslations("layout.header");
+  const market = useLocale() as Locale;
   const navLinks = [
     { label: t("nav.collections"), href: "/shop" },
     { label: t("nav.about"), href: "/nosotros" },
@@ -44,7 +45,7 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
       {/* Announcement bar */}
       <div className="bg-[#5C1A24] text-[#f8f9fa] text-center py-2.5">
         <p className="text-[10px] tracking-[0.22em] uppercase font-sans">
-          {t("announcement")}
+          {t(`announcement.${market}`)}
         </p>
       </div>
 
@@ -87,13 +88,7 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
 
           {/* Right side */}
           <div className="flex items-center gap-5">
-            <div className="hidden sm:flex items-center gap-3 text-[#2A2726]/50">
-              <MarketSwitcher />
-              <span aria-hidden="true" className="opacity-30">
-                ·
-              </span>
-              <LanguageSwitcher />
-            </div>
+            <LanguageSwitcher className="hidden sm:flex text-[#2A2726]/50" />
 
             <button
               type="button"
@@ -153,11 +148,7 @@ export function Header({ className, alwaysVisible = false }: { className?: strin
                 </Link>
               ),
             )}
-            <div className="flex items-center gap-3 pt-2 border-t border-[#D4CFC5] text-[#2A2726]/50">
-              <MarketSwitcher />
-              <span aria-hidden="true" className="opacity-30">
-                ·
-              </span>
+            <div className="pt-2 border-t border-[#D4CFC5] text-[#2A2726]/50">
               <LanguageSwitcher />
             </div>
           </div>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart-context";
 import { MAX_CART_LINE_QUANTITY } from "@/lib/cart-limits";
 import { formatCurrency } from "@/lib/utils";
 import Image from "next/image";
 import { Link } from "@/lib/i18n/navigation";
 import { Minus, Plus, X, Truck, RotateCcw } from "lucide-react";
+import type { Locale } from "@/lib/i18n/locale";
 
 // Estimado previo al checkout (el monto real se calcula en /checkout según
 // dirección/moneda) — coincide con el valor base de la tabla de envío en USD.
@@ -14,6 +15,7 @@ const SHIPPING_ESTIMATE = { MXN: 150, USD: 12 };
 
 export function CartView() {
   const t = useTranslations("cart");
+  const market = useLocale() as Locale;
   const { items, currency, itemPrice, updateQuantity, removeItem } = useCart();
 
   if (items.length === 0) {
@@ -183,7 +185,7 @@ export function CartView() {
           <div className="flex items-center gap-3">
             <Truck className="w-4 h-4 text-[#7A756E] shrink-0" />
             <span className="text-[10px] tracking-[0.1em] uppercase text-[#7A756E]">
-              {t("shipsNationwide")}
+              {t(`shipsNationwide.${market}`)}
             </span>
           </div>
           <div className="flex items-center gap-3">
