@@ -51,10 +51,11 @@ type RowDraft = {
   retailPriceMxn: string;
   /** Vacío = sin precio en USD todavía (no se cobra en USD para esta variante). */
   retailPriceUsd: string;
-  stockQuantity: string;
+  stockQuantityMx: string;
+  stockQuantityUs: string;
 };
 
-type ColorStock = { color: string; selected: boolean; stock: string };
+type ColorStock = { color: string; selected: boolean; stockMx: string; stockUs: string };
 
 const STATUS_LABEL: Record<AdminProductVariant["status"], string> = {
   active: "Activa",
@@ -107,7 +108,7 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
       setColorStocks((prev) => {
         const next: ColorStock[] = productColors.map((pc) => {
           const existing = prev.find((cs) => cs.color === pc.color);
-          return existing ?? { color: pc.color, selected: false, stock: "0" };
+          return existing ?? { color: pc.color, selected: false, stockMx: "0", stockUs: "0" };
         });
         return next;
       });
@@ -124,7 +125,8 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
           color: v.color,
           retailPriceMxn: v.retailPriceMxn,
           retailPriceUsd: v.retailPriceUsd ?? "",
-          stockQuantity: String(v.stockQuantity ?? 0),
+          stockQuantityMx: String(v.stockQuantityMx ?? 0),
+          stockQuantityUs: String(v.stockQuantityUs ?? 0),
         };
       }
       setDrafts(next);
@@ -172,8 +174,9 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
               return;
             }
           }
-          const stock = Number.parseInt(d.stockQuantity, 10);
-          if (!Number.isFinite(stock) || stock < 0) {
+          const stockMx = Number.parseInt(d.stockQuantityMx, 10);
+          const stockUs = Number.parseInt(d.stockQuantityUs, 10);
+          if (!Number.isFinite(stockMx) || stockMx < 0 || !Number.isFinite(stockUs) || stockUs < 0) {
             onError(`Inventario inválido para ${v.color} / ${v.size}.`);
             return;
           }
@@ -182,7 +185,8 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
             colorLabel: d.color.trim(),
             retailPriceMxn: price,
             retailPriceUsd: priceUsd,
-            stockQuantity: stock,
+            stockQuantityMx: stockMx,
+            stockQuantityUs: stockUs,
           });
         }
         await reload();
@@ -227,8 +231,9 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
       if (selected.length === 0) { onError("Selecciona al menos un color."); return; }
 
       for (const cs of selected) {
-        const stock = Number.parseInt(cs.stock, 10);
-        if (!Number.isFinite(stock) || stock < 0) {
+        const stockMx = Number.parseInt(cs.stockMx, 10);
+        const stockUs = Number.parseInt(cs.stockUs, 10);
+        if (!Number.isFinite(stockMx) || stockMx < 0 || !Number.isFinite(stockUs) || stockUs < 0) {
           onError(`Inventario inválido para "${cs.color}".`); return;
         }
       }
@@ -237,7 +242,8 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
       onError(null);
       try {
         for (const cs of selected) {
-          const stock = Number.parseInt(cs.stock, 10);
+          const stockMx = Number.parseInt(cs.stockMx, 10);
+          const stockUs = Number.parseInt(cs.stockUs, 10);
           const size = newSize.trim();
           const color = cs.color;
           const sku = `${productSlug}-${slugifyName(size)}-${slugifyName(color)}`.slice(0, 50);
@@ -250,20 +256,20 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
             garmentColorHex: defaultGarmentColor,
           });
 
-          if (stock > 0) {
+          if (stockMx > 0 || stockUs > 0) {
             const res = await adminGetProduct(productId);
             const created = res.data.variants.find(
               (v: { size: string; color: string; id: string }) =>
                 v.size === size && v.color === color,
             );
             if (created) {
-              await adminUpdateProductVariant(created.id, { stockQuantity: stock });
+              await adminUpdateProductVariant(created.id, { stockQuantityMx: stockMx, stockQuantityUs: stockUs });
             }
           }
         }
 
         setNewPrice("");
-        setColorStocks((prev) => prev.map((cs) => ({ ...cs, selected: false, stock: "0" })));
+        setColorStocks((prev) => prev.map((cs) => ({ ...cs, selected: false, stockMx: "0", stockUs: "0" })));
         await reload();
       } catch (err) {
         onError(err instanceof Error ? err.message : "No se pudo agregar la variante");
@@ -296,8 +302,8 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
               </p>
               <p className="mt-1.5 text-xs">
                 {activeCount} activa{activeCount !== 1 ? "s" : ""} en tienda · {variants.length} en total
-                {" · "}Inventario{" "}
-                <span className="font-medium text-foreground">0 = sin límite</span> (print-on-demand)
+                {" · "}Inventario separado por mercado —{" "}
+                <span className="font-medium text-foreground">0 = agotado</span> en ese país
               </p>
             </div>
           </div>
@@ -324,7 +330,8 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
                         <th className="px-4 py-2">Color</th>
                         <th className="px-4 py-2">Precio MXN</th>
                         <th className="px-4 py-2">Precio USD</th>
-                        <th className="px-4 py-2 text-center">Inventario</th>
+                        <th className="px-4 py-2 text-center">Stock MX</th>
+                        <th className="px-4 py-2 text-center">Stock US</th>
                         <th className="px-4 py-2">Estado</th>
                         <th className="px-4 py-2 text-center">Pedidos</th>
                         <th className="px-4 py-2 text-right">Acciones</th>
@@ -386,8 +393,19 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
                                 type="number"
                                 min="0"
                                 step="1"
-                                value={d.stockQuantity}
-                                onChange={(e) => patchDraft(v.id, { stockQuantity: e.target.value })}
+                                value={d.stockQuantityMx}
+                                onChange={(e) => patchDraft(v.id, { stockQuantityMx: e.target.value })}
+                                className="w-20 text-center"
+                                disabled={busy}
+                              />
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              <BotyInput
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={d.stockQuantityUs}
+                                onChange={(e) => patchDraft(v.id, { stockQuantityUs: e.target.value })}
                                 className="w-20 text-center"
                                 disabled={busy}
                               />
@@ -482,7 +500,7 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
               <div>
                 <BotyLabel>Colores disponibles para talla {newSize}</BotyLabel>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Selecciona los colores e indica el inventario de cada uno (0 = sin límite).
+                  Selecciona los colores e indica el inventario de cada uno por mercado (0 = agotado en ese país).
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {colorStocks.map((cs) => {
@@ -516,22 +534,41 @@ export const AdminProductVariantsEditor = forwardRef<VariantsEditorHandle, Admin
                         <span className="text-sm font-medium flex-1">{cs.color}</span>
 
                         {cs.selected && (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">Stock:</span>
-                            <BotyInput
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={cs.stock}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                patchColorStock(cs.color, { stock: e.target.value });
-                              }}
-                              onClick={(e) => e.preventDefault()}
-                              onFocus={(e) => e.stopPropagation()}
-                              className="w-16 text-center text-sm"
-                              disabled={busy}
-                            />
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">MX:</span>
+                              <BotyInput
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={cs.stockMx}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  patchColorStock(cs.color, { stockMx: e.target.value });
+                                }}
+                                onClick={(e) => e.preventDefault()}
+                                onFocus={(e) => e.stopPropagation()}
+                                className="w-16 text-center text-sm"
+                                disabled={busy}
+                              />
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">US:</span>
+                              <BotyInput
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={cs.stockUs}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  patchColorStock(cs.color, { stockUs: e.target.value });
+                                }}
+                                onClick={(e) => e.preventDefault()}
+                                onFocus={(e) => e.stopPropagation()}
+                                className="w-16 text-center text-sm"
+                                disabled={busy}
+                              />
+                            </div>
                           </div>
                         )}
                       </label>

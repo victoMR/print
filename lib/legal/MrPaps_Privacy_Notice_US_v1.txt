@@ -1,0 +1,253 @@
+MR. PAPS
+
+mrpapshop.com/us
+
+PRIVACY NOTICE (UNITED STATES)
+
+Version 1.0 · Last updated: June 2026
+
+1. Who We Are
+
+This Privacy Notice applies to mrpapshop.com/us and describes how Mr. Paps ("Mr. Paps," "we," "us") collects, uses, and shares personal information from Buyers who purchase in United States Dollars (USD). Buyers who purchase in Mexican Pesos (MXN) through mrpapshop.com/mx are covered by our separate Aviso de Privacidad, available at mrpapshop.com/mx/privacidad.
+
+Business name
+
+Mr. Paps
+
+Legal entity
+
+[FULL LEGAL NAME]
+
+US fulfillment location
+
+Omaha, Nebraska
+
+Website
+
+https://mrpapshop.com/us
+
+Privacy contact email
+
+contacto@mrpapshop.com
+
+Note: Bracketed fields must be completed with final legal details before publication.
+
+2. Personal Information We Collect
+
+2.1 Identification and Contact
+
+Full name
+
+Email address
+
+Phone number
+
+2.2 Shipping Information
+
+Street address, city, state, and ZIP (or ZIP+4) code
+
+Country (United States)
+
+2.3 Transaction Information
+
+Products purchased, quantities, and prices
+
+Subtotal, shipping cost, sales tax, and order total
+
+Shipping method selected
+
+Order status and tracking number
+
+Stripe payment intent identifier (not bank data)
+
+Payment status (pending, paid, failed, refunded)
+
+2.4 Optional Account Information
+
+Only if the Buyer chooses to create an account or save details at checkout:
+
+Email address and full name
+
+Phone number
+
+Password (stored only as a bcrypt hash; never in plain text)
+
+Saved shipping addresses
+
+Order history linked to the account
+
+2.5 Information We Do Not Store
+
+Mr. Paps does not store or have access to:
+
+Credit or debit card numbers
+
+Security codes (CVV/CVC)
+
+Card expiration dates
+
+Any other sensitive banking data
+
+This information is captured directly by Stripe, Inc., our certified payment processor (see Section 5.1). Mr. Paps only receives the payment result and Stripe's transaction identifier.
+
+3. How We Use Your Information
+
+3.1 To Provide the Service (necessary)
+
+Process, confirm, and charge orders placed through the Site
+
+Arrange shipping and delivery of your order
+
+Calculate shipping costs and applicable sales tax before checkout
+
+Notify you of your order status, tracking number, and payment confirmation
+
+Handle support requests, claims, cancellations, and returns
+
+Prevent and detect fraud, payment disputes, and unlawful activity
+
+Comply with applicable legal and tax obligations
+
+Create and manage your account, if you choose to register
+
+3.2 Optional Uses (you can opt out)
+
+Marketing emails, promotions, and product updates — note: this feature is currently in development; you will not receive marketing communications until it is implemented and your consent is collected
+
+Analysis of purchase habits to improve our product offering and user experience
+
+To opt out of the uses in this section, email contacto@mrpapshop.com with the subject "Privacy / Opt-out" at any time.
+
+4. When We Collect Your Information
+
+4.1 Checkout
+
+When placing an order, you provide identification, contact, and shipping information to generate the order and process payment via Stripe. The minimum information required to complete a purchase is: full name, email, phone number, and a complete US shipping address.
+
+4.2 Account Registration
+
+You may voluntarily create an account by providing an email, password, and full name. Phone number is optional.
+
+4.3 Guest Order Tracking
+
+Buyers without an account can check their order status at mrpapshop.com/us/seguimiento by entering their order code and the email used at purchase, which act as a two-factor check.
+
+4.4 Email Communications
+
+Mr. Paps may collect additional information when you contact us directly by email for support or other requests.
+
+5. Sharing With Service Providers
+
+5.1 Stripe, Inc. (Payment Processing)
+
+Category: Payment service provider
+
+Data shared: Buyer email, transaction amount and currency, internal order identifiers
+
+Data NOT shared: Card number, CVV, expiration date — captured directly by Stripe
+
+Location: United States
+
+Privacy policy: https://stripe.com/privacy
+
+5.2 US Fulfillment Partner (Production and Shipping)
+
+Category: Print-on-demand production and fulfillment provider, based in the United States (Omaha, Nebraska), independent from the fulfillment used for Mexican orders
+
+Data shared: Recipient name, shipping address, and order/product details needed to produce and ship the order
+
+Location: United States
+
+5.3 IONOS (Transactional Email)
+
+Category: Email (SMTP) service provider
+
+Data shared: Recipient email address and the content of the order confirmation email (name, order number, shipping address, products, and totals)
+
+Location: Germany / European Union
+
+Privacy policy: https://www.ionos.com/terms-gtc/terms-privacy
+
+5.4 Vercel, Inc. (Web Hosting and Analytics)
+
+Category: Web hosting infrastructure provider
+
+Data processed: Web traffic data (IP address, pages visited, navigation metrics) via Vercel Analytics, when active. Vercel Analytics does not use third-party tracking cookies and works with aggregated metrics.
+
+Location: United States
+
+Privacy policy: https://vercel.com/legal/privacy-policy
+
+Mr. Paps does not sell, rent, or trade your personal information to third parties for their own commercial purposes. The sharing described above is solely to fulfill the purposes stated in this Notice.
+
+6. Cookies and Local Browser Storage
+
+Mr. Paps uses browser local storage (localStorage and sessionStorage) instead of third-party tracking cookies, for:
+
+Shopping cart contents (product identifiers and prices)
+
+Signed-in session tokens (JWT), for up to 30 days
+
+Guest order tracking (order code and email), cleared when the browser tab is closed
+
+You can configure your browser to block or clear local storage, though this may affect cart, login, and order-tracking functionality.
+
+7. Data Retention
+
+Completed order data: retained for the period required by applicable tax and commercial recordkeeping obligations
+
+Cancelled or unpaid order data: 90 days, unless a dispute is pending
+
+Active account data: retained while your account remains active or until you request deletion
+
+Inactive account data: anonymized or deleted after 12 months of inactivity
+
+Support and claims data: retained for 3 years after case resolution
+
+Session tokens: 30 days
+
+Once the applicable retention period ends, or when you exercise your deletion rights and no legal obligation requires retention, Mr. Paps will securely delete or irreversibly anonymize the data.
+
+8. Security Measures
+
+Password hashing using bcrypt with a high cost factor; no password is ever stored in plain text
+
+JWT-based authentication signed with strong, independent secrets for customer and admin sessions
+
+Thorough input validation on all API endpoints
+
+Cryptographic verification (HMAC signature) of Stripe payment webhooks
+
+Security headers: Content Security Policy (CSP), X-Frame-Options, Referrer-Policy, Permissions-Policy
+
+HTTPS/TLS encryption in transit
+
+Admin panel access restricted to authorized accounts with independent credentials
+
+No method of transmission over the internet is 100% secure, and Mr. Paps cannot guarantee absolute security.
+
+9. Your Privacy Choices
+
+Depending on your state of residence, you may have rights to access, correct, delete, or obtain a copy of your personal information, and to opt out of certain uses. Regardless of where you live, Mr. Paps will honor requests to:
+
+Access the personal information we hold about you
+
+Correct inaccurate or outdated information
+
+Delete your account and associated personal information, subject to legal recordkeeping requirements (e.g., completed order records kept for tax purposes)
+
+Opt out of marketing communications and profiling described in Section 3.2
+
+To exercise any of these choices, email contacto@mrpapshop.com with the subject "Privacy Request — [type of request]", including your full name and the email used on your account or order. We will confirm your identity before acting on the request and will respond within 45 days.
+
+10. Changes to This Notice
+
+Mr. Paps may update this Privacy Notice at any time to reflect changes in our practices or in applicable law. Updates will be posted on the Site, with the "Last updated" date revised accordingly. Continued use of the Site after changes are posted constitutes acceptance of the updated Notice.
+
+11. Contact
+
+Questions about this Privacy Notice can be sent to contacto@mrpapshop.com.
+
+Mr. Paps · mrpapshop.com/us · contacto@mrpapshop.com
+
+Version 1.0 — June 2026

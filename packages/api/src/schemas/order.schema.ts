@@ -23,6 +23,9 @@ export const usStateCodeSchema = z.enum(US_STATE_CODES);
 
 export const postalCode5Schema = z.string().regex(/^\d{5}$/);
 
+/** US ZIP or ZIP+4 (e.g. 90210 or 90210-1234). */
+export const postalCodeUsSchema = z.string().regex(/^\d{5}(-\d{4})?$/);
+
 export const OrderInput = z.object({
   external_id: z.string().min(1),
   shipping: z.enum(['STANDARD', 'EXPRESS', 'PRINTFUL_FAST']).default('STANDARD'),

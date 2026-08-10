@@ -12,7 +12,8 @@ export type AdminVariantDto = {
   color: string;
   retailPriceMxn: string;
   retailPriceUsd: string | null;
-  stockQuantity: number;
+  stockQuantityMx: number;
+  stockQuantityUs: number;
   status: string;
   designId: string | null;
   garmentColorHex: string;
@@ -28,7 +29,8 @@ function toVariantDto(v: MrpapsProductVariantRow, orderItemCount: number): Admin
     color: v.color_label,
     retailPriceMxn: Number(v.retail_price_mxn).toFixed(2),
     retailPriceUsd: v.retail_price_usd !== null ? Number(v.retail_price_usd).toFixed(2) : null,
-    stockQuantity: v.stock_quantity,
+    stockQuantityMx: v.stock_quantity_mx,
+    stockQuantityUs: v.stock_quantity_us,
     status: v.status,
     designId: v.design_id,
     garmentColorHex: v.garment_color_hex ?? '#FFFFFF',
@@ -157,7 +159,8 @@ export async function createVariantAdmin(
     color_label: colorLabel,
     retail_price_mxn: input.retailPriceMxn,
     retail_price_usd: input.retailPriceUsd ?? null,
-    stock_quantity: 0,
+    stock_quantity_mx: 0,
+    stock_quantity_us: 0,
     design_id: input.designId ?? null,
     garment_color_hex: input.garmentColorHex ?? product.default_garment_color ?? '#FFFFFF',
   });
@@ -172,7 +175,8 @@ export type UpdateVariantAdminInput = {
   colorLabel?: string;
   retailPriceMxn?: number;
   retailPriceUsd?: number | null;
-  stockQuantity?: number;
+  stockQuantityMx?: number;
+  stockQuantityUs?: number;
   designId?: string | null;
   garmentColorHex?: string;
   status?: 'active' | 'inactive' | 'archived';
@@ -214,7 +218,8 @@ export async function updateVariantAdmin(
   if (input.designId !== undefined) patch.design_id = input.designId;
   if (input.garmentColorHex !== undefined) patch.garment_color_hex = input.garmentColorHex;
   if (input.status !== undefined) patch.status = input.status;
-  if (input.stockQuantity !== undefined) patch.stock_quantity = input.stockQuantity;
+  if (input.stockQuantityMx !== undefined) patch.stock_quantity_mx = input.stockQuantityMx;
+  if (input.stockQuantityUs !== undefined) patch.stock_quantity_us = input.stockQuantityUs;
 
   const row = await productsRepo.updateVariantAdmin(variantId, patch);
   return toVariantDto(row, orderItemCount);

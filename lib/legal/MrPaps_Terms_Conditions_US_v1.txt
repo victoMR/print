@@ -1,0 +1,209 @@
+MR. PAPS
+
+mrpapshop.com/us
+
+TERMS AND CONDITIONS OF USE AND PURCHASE (UNITED STATES)
+
+Version 1.0 · Last updated: June 2026
+
+1. General Provisions and Acceptance
+
+These Terms and Conditions (the "Terms") govern access to, browsing of, and use of the United States version of the website mrpapshop.com/us (the "Site"), and the purchase of products in United States Dollars (USD) through it, operated by [FULL LEGAL NAME], with a US fulfillment location in Omaha, Nebraska (together, "Mr. Paps"). Purchases made in Mexican Pesos (MXN) through mrpapshop.com/mx are governed by a separate set of Términos y Condiciones, available at mrpapshop.com/mx/terminos.
+
+By accessing the Site, registering as a user, or placing an order, the user (the "Buyer" or "User") fully, expressly, and irrevocably accepts these Terms. If the User does not agree with any provision herein, they must refrain from using the Site or purchasing products.
+
+Mr. Paps reserves the right to modify these Terms at any time. Changes take effect upon publication on the Site. Continued use of the Site after changes are published constitutes acceptance of the updated Terms.
+
+2. Description of Service
+
+Mr. Paps is an online store specializing in custom, print-on-demand products, shipped within the United States. Products are manufactured by a US-based fulfillment partner independent from the fulfillment used for the Mexican market.
+
+Product offerings, prices, designs, and service conditions may change at any time without notice. Product availability is subject to stock or production capacity at the time of purchase.
+
+3. Account Registration and User Responsibility
+
+Users may purchase as a guest or by creating an account. By registering, the User agrees to:
+
+Provide truthful, complete, and up-to-date information
+
+Keep their login credentials (email and password) confidential
+
+Immediately notify Mr. Paps of any unauthorized use of their account
+
+Not transfer or assign their account to third parties
+
+Mr. Paps is not responsible for damages arising from unauthorized access to a User's account resulting from the User's own negligence in safeguarding their credentials.
+
+The User is solely responsible for all activity conducted through their account. Mr. Paps reserves the right to suspend or cancel accounts that violate these Terms.
+
+4. Purchase Process and Contract Formation
+
+4.1 Steps
+
+The User selects products and adds them to the cart
+
+The User provides identification, contact, and shipping details for a US address
+
+The User reviews the order summary, including products, price, shipping, and sales tax
+
+The User completes payment through Stripe (a secure payment platform)
+
+Once Stripe confirms successful payment, Mr. Paps generates the order and sends an email confirmation
+
+The sale is finalized at the moment Mr. Paps receives confirmation of successful payment from Stripe and sends the order confirmation to the Buyer. Orders in "pending payment" status are not a binding contract.
+
+4.2 Price, Currency, and Sales Tax
+
+All prices published on the Site are stated in United States Dollars (USD). Mr. Paps has a physical fulfillment presence in Omaha, Nebraska, and charges Nebraska state and local (Douglas County) combined sales tax on orders shipped within the United States, at the rate in effect at checkout. Mr. Paps reserves the right to change prices at any time; the price in effect at the time the order is confirmed will apply.
+
+4.3 Availability
+
+Product availability is verified when the order is processed. If a product becomes unavailable after payment, Mr. Paps will contact the Buyer to offer alternatives or issue a refund.
+
+5. Payment Methods
+
+Mr. Paps processes all payments through Stripe, Inc., a platform certified under PCI DSS standards. Card data is captured directly by Stripe; Mr. Paps does not store, process, or have access to the Buyer's card data.
+
+By making a payment, the Buyer represents that they are authorized to use the payment method. If an unrecognized charge or fraud is detected, the Buyer should contact their bank and notify Mr. Paps promptly.
+
+Mr. Paps reserves the right to cancel orders where there is reasonable indication of fraud, incorrect data, or suspicious activity, without any liability to Mr. Paps.
+
+6. Shipping and Delivery
+
+6.1 Shipping Coverage
+
+Through mrpapshop.com/us, Mr. Paps ships only to addresses within the United States. Shipments to Mexico are handled exclusively through mrpapshop.com/mx, under different terms and currency (see Section 1).
+
+6.2 Shipping Cost
+
+Shipping is charged as a flat rate in USD shown at checkout before payment, based on the items in the order.
+
+6.3 Delivery Times
+
+Estimated delivery time is 5–10 business days from payment confirmation, though this may vary depending on production demand and factors outside Mr. Paps' control (weather, carrier delays, holidays, etc.). Mr. Paps makes reasonable efforts to meet estimated timelines but does not guarantee exact delivery dates.
+
+6.4 Order Tracking
+
+Once a shipping label is generated, Mr. Paps will provide the Buyer with a tracking number and carrier tracking URL. The Buyer can check their order status at mrpapshop.com/us/seguimiento by entering their order code and email address.
+
+6.5 Delivery Address
+
+The Buyer is responsible for providing a correct and complete delivery address. Mr. Paps is not responsible for failed deliveries, losses, or delays resulting from incorrect, incomplete, or illegible address information provided by the Buyer.
+
+6.6 Risk of Loss
+
+Risk of loss or damage to the product transfers to the Buyer once the carrier delivers the order to the address provided. After delivery, any claim should be directed to the carrier, without prejudice to the warranty rights described below.
+
+7. Cancellations, Returns, and Warranty
+
+7.1 Cancellations
+
+The Buyer may request cancellation only while the order is in production or pending shipment. Once an order has shipped, it cannot be cancelled. To request a cancellation, contact Mr. Paps as soon as possible at contacto@mrpapshop.com.
+
+7.2 Returns and Refunds
+
+Because Mr. Paps products are custom, print-on-demand items, returns for buyer's remorse are not accepted once production has started.
+
+A free replacement or refund will be issued when:
+
+The product received has manufacturing or print defects attributable to Mr. Paps
+
+The product does not match the design or specifications of the confirmed order
+
+The product was damaged in transit (must be documented with photos taken upon receipt)
+
+The Buyer must report the defect within 5 calendar days of receiving the product, including photos showing the issue. Mr. Paps will review each case and, if approved, offer a replacement or refund, at Mr. Paps' discretion.
+
+7.3 Warranty
+
+Products are covered by a manufacturing and print-defect warranty for 6 months from the date of purchase, covering the defects described in Section 7.2. This warranty does not cover damage from improper use, incorrect washing, or normal wear and tear. To claim the warranty, the Buyer should keep proof of purchase.
+
+8. Invoicing
+
+Mr. Paps does not issue Mexican CFDI tax invoices for US orders. A standard order confirmation and receipt is sent by email for every purchase; this satisfies typical recordkeeping needs for US consumers. Buyers who need a different form of documentation should contact contacto@mrpapshop.com.
+
+9. Intellectual Property
+
+All content on the Site — including text, images, logos, designs, photographs, software, source code, and site structure — is the exclusive property of Mr. Paps or its licensors and is protected by applicable US copyright and trademark law and international treaties.
+
+It is expressly prohibited to:
+
+Reproduce, copy, distribute, modify, or publicly communicate any content from the Site without Mr. Paps' prior written authorization
+
+Use Mr. Paps' trade name, trademarks, or logos without authorization
+
+Systematically extract or reuse Site content for any purpose
+
+A Buyer who purchases a custom design from Mr. Paps receives a personal, non-exclusive license to use that design for the purposes of the purchase made. No copyright is transferred and no commercial-use license is granted, except by express written agreement.
+
+The Buyer represents that any designs, images, or materials they provide to Mr. Paps for product customization do not infringe the rights of any third party. Mr. Paps assumes no liability for materials provided by the Buyer.
+
+10. User Conduct
+
+By using the Site, the User agrees not to:
+
+Provide false, inaccurate, or fraudulent information
+
+Use the Site for unlawful or morally objectionable activities
+
+Attempt unauthorized access to Mr. Paps' systems, servers, or databases
+
+Introduce viruses, malware, or other elements that could damage or disrupt the Site
+
+Request products with illegal, discriminatory, defamatory, or obscene content, or content that incites violence or infringes third-party rights
+
+Misuse or abuse the returns or claims process
+
+Make fraudulent purchases using stolen or unauthorized payment methods
+
+Mr. Paps reserves the right to reject, cancel, or void orders that violate the above, without liability to Mr. Paps.
+
+11. Limitation of Liability
+
+To the maximum extent permitted by applicable law:
+
+Mr. Paps does not guarantee uninterrupted availability of the Site or the absence of technical errors
+
+Mr. Paps is not liable for indirect, incidental, special, or consequential damages arising from use or inability to use the Site or the products purchased
+
+Mr. Paps' maximum liability to the Buyer will not exceed the total amount paid in the transaction giving rise to the claim
+
+Mr. Paps is not responsible for delays, losses, or damage in shipping once the package has been handed to the carrier, beyond what is stated in the returns policy above
+
+Mr. Paps is not responsible for the content of third-party websites linked from the Site
+
+Nothing above limits any non-waivable consumer protection rights the Buyer may have under applicable state or federal law.
+
+12. Privacy
+
+The handling of personal data provided by the User is governed by Mr. Paps' US Privacy Notice, published at mrpapshop.com/us/privacidad, which forms part of these Terms. By accepting these Terms, the User acknowledges having read and accepted the Privacy Notice in full.
+
+13. Governing Law and Venue
+
+These Terms, and any dispute arising from their interpretation or performance, are governed by the laws of the State of Nebraska and applicable US federal law, without regard to conflict-of-law principles. The parties submit to the state and federal courts located in Nebraska for the resolution of any dispute, without prejudice to any right the Buyer may have to bring a claim in small claims court in their own jurisdiction or to file a complaint with the Federal Trade Commission (reportfraud.ftc.gov) or their state Attorney General's consumer protection office.
+
+14. Contact
+
+For questions, claims, or communications related to these Terms, contact Mr. Paps at:
+
+Email
+
+contacto@mrpapshop.com
+
+Website
+
+https://mrpapshop.com/us
+
+Subject line for claims
+
+"Claim / Support — [Order number]"
+
+Subject line for legal questions
+
+"Legal inquiry / Terms"
+
+Mr. Paps will respond to general inquiries within 5 business days.
+
+Mr. Paps · mrpapshop.com/us · contacto@mrpapshop.com
+
+Version 1.0 — June 2026

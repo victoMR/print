@@ -116,7 +116,9 @@ export type MrpapsProductVariantRow = {
   color_label: string;
   retail_price_mxn: number;
   retail_price_usd: number | null;
-  stock_quantity: number;
+  is_pod: boolean;
+  stock_quantity_mx: number;
+  stock_quantity_us: number;
   low_stock_threshold: number;
   design_id: string | null;
   garment_color_hex: string;

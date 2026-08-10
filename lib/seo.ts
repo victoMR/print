@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { CatalogProductDetail } from "./api-types";
+import type { Locale } from "./i18n/locale";
 import {
   LEGAL_CONTACT_EMAIL,
   SITE_INSTAGRAM_URL,
@@ -65,7 +66,20 @@ export const defaultOpenGraph = {
   siteName: SITE_NAME,
 };
 
-export function buildDefaultMetadata(): Pick<
+/** OG `locale` and JSON-LD `inLanguage` per market — approximates the market's default language. */
+export function ogLocaleForMarket(market: Locale): "es_MX" | "en_US" {
+  return market === "us" ? "en_US" : "es_MX";
+}
+
+export function jsonLdLanguageForMarket(market: Locale): "es-MX" | "en-US" {
+  return market === "us" ? "en-US" : "es-MX";
+}
+
+export function currencyForMarket(market: Locale): "MXN" | "USD" {
+  return market === "us" ? "USD" : "MXN";
+}
+
+export function buildDefaultMetadata(market: Locale = "mx"): Pick<
   Metadata,
   "metadataBase" | "openGraph" | "twitter"
 > {
@@ -74,6 +88,7 @@ export function buildDefaultMetadata(): Pick<
     metadataBase: new URL(getSiteUrl()),
     openGraph: {
       ...defaultOpenGraph,
+      locale: ogLocaleForMarket(market),
       title: `${SITE_NAME} — ${SITE_TAGLINE}`,
       description: DEFAULT_DESCRIPTION,
       images: [{ url: ogImage, width: 1280, height: 720, alt: SITE_NAME }],
@@ -93,14 +108,17 @@ export const noIndexRobots: Metadata["robots"] = {
   googleBot: { index: false, follow: false },
 };
 
-export function productMetadata(product: CatalogProductDetail): Metadata {
+export function productMetadata(product: CatalogProductDetail, market: Locale = "mx"): Metadata {
   const title = product.name;
   const description =
     product.description?.trim() ||
-    `${product.name} — impresión bajo demanda con envío a México.`;
+    (market === "us"
+      ? `${product.name} — print on demand, shipped within the US.`
+      : `${product.name} — impresión bajo demanda con envío a México.`);
   const canonical = `/product/${product.slug}`;
   const ogImage = absoluteUrl(product.thumbnail || DEFAULT_OG_IMAGE_PATH);
-  const prices = product.variants.map((v) => v.retailPriceMxn);
+  const useUsd = market === "us" && product.variants.some((v) => v.retailPriceUsd);
+  const prices = product.variants.map((v) => (useUsd ? v.retailPriceUsd : v.retailPriceMxn) ?? v.retailPriceMxn);
   const price = prices.reduce(
     (min, p) => (Number(p) < Number(min) ? p : min),
     prices[0] ?? "0.00",
@@ -112,6 +130,7 @@ export function productMetadata(product: CatalogProductDetail): Metadata {
     alternates: { canonical },
     openGraph: {
       ...defaultOpenGraph,
+      locale: ogLocaleForMarket(market),
       type: "website",
       title,
       description,
@@ -126,7 +145,7 @@ export function productMetadata(product: CatalogProductDetail): Metadata {
     },
     other: {
       "product:price:amount": price,
-      "product:price:currency": "MXN",
+      "product:price:currency": useUsd ? "USD" : "MXN",
     },
   };
 }
@@ -140,7 +159,10 @@ export function organizationJsonLd() {
     url,
     logo: absoluteUrl(DEFAULT_OG_IMAGE_PATH),
     description: DEFAULT_DESCRIPTION,
-    areaServed: { "@type": "Country", name: "México" },
+    areaServed: [
+      { "@type": "Country", name: "México" },
+      { "@type": "Country", name: "United States" },
+    ],
     email: LEGAL_CONTACT_EMAIL,
     telephone: SITE_WHATSAPP_PHONE_E164,
     sameAs: [SITE_INSTAGRAM_URL],
@@ -162,7 +184,7 @@ export function organizationJsonLd() {
   };
 }
 
-export function websiteJsonLd() {
+export function websiteJsonLd(market: Locale = "mx") {
   const url = getSiteUrl();
   return {
     "@context": "https://schema.org",
@@ -170,14 +192,15 @@ export function websiteJsonLd() {
     name: SITE_NAME,
     url,
     description: DEFAULT_DESCRIPTION,
-    inLanguage: "es-MX",
+    inLanguage: jsonLdLanguageForMarket(market),
     publisher: { "@type": "Organization", name: SITE_NAME, url },
   };
 }
 
-export function productJsonLd(product: CatalogProductDetail) {
+export function productJsonLd(product: CatalogProductDetail, market: Locale = "mx") {
   const url = absoluteUrl(`/product/${product.slug}`);
-  const prices = product.variants.map((v) => Number(v.retailPriceMxn));
+  const useUsd = market === "us" && product.variants.some((v) => v.retailPriceUsd);
+  const prices = product.variants.map((v) => Number((useUsd ? v.retailPriceUsd : v.retailPriceMxn) ?? v.retailPriceMxn));
   const lowPrice = Math.min(...prices).toFixed(2);
   const highPrice = Math.max(...prices).toFixed(2);
   const inStock = product.variants.some((v) => v.inStock);
@@ -195,7 +218,7 @@ export function productJsonLd(product: CatalogProductDetail) {
     brand: { "@type": "Brand", name: SITE_NAME },
     offers: {
       "@type": "AggregateOffer",
-      priceCurrency: "MXN",
+      priceCurrency: useUsd ? "USD" : "MXN",
       lowPrice,
       highPrice,
       offerCount: product.variants.length,

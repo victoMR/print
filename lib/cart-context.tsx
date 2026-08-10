@@ -136,6 +136,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const runSync = useCallback(async (stored: CartItem[]): Promise<CartItem[]> => {
     const synced = await syncCartWithCatalog(
       stored.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+      marketRef.current,
     );
     return synced;
   }, []);

@@ -30,8 +30,14 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
   const trackingCode = sanitizeMailHeaderValue(formatTrackingCodeDisplay(order.public_id));
   const customerName = sanitizeMailHeaderValue(order.customer_name);
   const storeUrl = storefrontUrl();
-  const trackingUrl = `${storeUrl}/seguimiento`;
-  const orderUrl = `${storeUrl}/pedido/${encodeURIComponent(order.public_id)}`;
+  const market = order.currency === 'USD' ? 'us' : 'mx';
+  const trackingUrl = `${storeUrl}/${market}/seguimiento`;
+  const orderUrl = `${storeUrl}/${market}/pedido/${encodeURIComponent(order.public_id)}`;
+  const taxLabel = order.currency === 'USD' ? 'Sales tax' : 'IVA';
+  const deliveryEstimate =
+    order.currency === 'USD'
+      ? 'Tiempo estimado de entrega: 5–10 días hábiles dentro de Estados Unidos.'
+      : 'Tiempo estimado de entrega: 5–14 días hábiles en México.';
 
   const unitPriceFor = (item: MrpapsOrderWithItems['items'][number]): number =>
     order.currency === 'USD' && item.unit_price_usd !== null
@@ -113,7 +119,7 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;">
             <tr><td style="padding:4px 0;color:#52525b;">Subtotal</td><td align="right">${formatAmount(subtotalAmount, order.currency)}</td></tr>
             <tr><td style="padding:4px 0;color:#52525b;">Envío</td><td align="right">${formatAmount(shippingAmount, order.currency)}</td></tr>
-            <tr><td style="padding:4px 0;color:#52525b;">IVA</td><td align="right">${formatAmount(taxAmount, order.currency)}</td></tr>
+            <tr><td style="padding:4px 0;color:#52525b;">${taxLabel}</td><td align="right">${formatAmount(taxAmount, order.currency)}</td></tr>
             <tr><td style="padding:10px 0 0;font-size:16px;font-weight:700;">Total pagado</td><td align="right" style="padding:10px 0 0;font-size:16px;font-weight:700;">${formatAmount(totalAmount, order.currency)}</td></tr>
           </table>
         </td></tr>
@@ -121,7 +127,7 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
           <a href="${trackingUrl}" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;padding:14px 24px;border-radius:999px;font-size:14px;font-family:system-ui,sans-serif;">Consultar mi pedido</a>
           <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#71717a;">
             También puedes entrar a <a href="${orderUrl}" style="color:#18181b;">tu pedido</a> con el código y el correo con el que compraste.
-            Tiempo estimado de entrega: 5–14 días hábiles en México.
+            ${deliveryEstimate}
           </p>
         </td></tr>
       </table>
@@ -144,13 +150,13 @@ ${itemLinesText}
 
 Subtotal: ${formatAmount(subtotalAmount, order.currency)}
 Envío (${shippingLine}): ${formatAmount(shippingAmount, order.currency)}
-IVA: ${formatAmount(taxAmount, order.currency)}
+${taxLabel}: ${formatAmount(taxAmount, order.currency)}
 Total pagado: ${formatAmount(totalAmount, order.currency)}
 
 Consulta tu pedido en: ${trackingUrl}
 (Usa el código de seguimiento y este correo: ${order.customer_email})
 
-Tiempo estimado de entrega: 5–14 días hábiles en México.
+${deliveryEstimate}
 
 — Mr. Paps`;
 

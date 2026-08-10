@@ -23,3 +23,11 @@ export function countryForCurrency(currency: 'MXN' | 'USD'): ShipCountry {
 export function currencyForCountry(country: ShipCountry): 'MXN' | 'USD' {
   return country === 'US' ? 'USD' : 'MXN';
 }
+
+/** Stock físico de la variante en el mercado dado — MX y US se rastrean por separado. */
+export function stockForMarket(
+  variant: { stock_quantity_mx: number; stock_quantity_us: number },
+  market: Market,
+): number {
+  return market === 'us' ? variant.stock_quantity_us : variant.stock_quantity_mx;
+}

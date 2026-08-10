@@ -12,6 +12,7 @@ import {
   productJsonLd,
   productMetadata,
 } from "@/lib/seo";
+import { getRequestMarket } from "@/lib/i18n/get-request-market";
 
 type ProductPageProps = {
   params: Promise<{ slug: string }>;
@@ -19,17 +20,22 @@ type ProductPageProps = {
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const res = await fetchCatalogProduct(slug);
+  const market = await getRequestMarket();
+  const res = await fetchCatalogProduct(slug, market);
   if (!res?.data) {
     return { title: "Producto no encontrado" };
   }
-  return productMetadata(res.data);
+  return productMetadata(res.data, market);
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
-  const res = await fetchCatalogProduct(slug);
+  const market = await getRequestMarket();
+  const [headerList, res] = await Promise.all([
+    headers(),
+    fetchCatalogProduct(slug, market),
+  ]);
+  const nonce = headerList.get("x-nonce") ?? undefined;
 
   if (!res?.data) notFound();
 
@@ -45,7 +51,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <main className="min-h-screen">
-      <JsonLd data={[productJsonLd(product), productBreadcrumbJsonLd(product)]} nonce={nonce} />
+      <JsonLd data={[productJsonLd(product, market), productBreadcrumbJsonLd(product)]} nonce={nonce} />
       <Header alwaysVisible />
       <ProductDetail product={product} />
       <Footer />

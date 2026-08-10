@@ -49,6 +49,7 @@ const MOCK_INTENT = {
   id: 'pi_test_123',
   status: 'succeeded',
   amount: 50000, // 500.00 MXN in cents
+  currency: 'mxn',
   metadata: { public_order_id: 'ABC-123' },
 };
 
@@ -144,6 +145,26 @@ describe('finalizeOrderPayment', () => {
     expect(emailService.sendOrderConfirmationEmail).not.toHaveBeenCalled();
     expect(result.paymentStatus).toBe('refunded');
     expect(result.message).toContain('reembolsado');
+  });
+
+  it('returns amount_mismatch when Stripe currency differs from order currency', async () => {
+    vi.mocked(ordersRepo.getOrderForPaymentFinalize).mockResolvedValue({
+      ...BASE_ORDER,
+      currency: 'USD',
+      total_mxn: null,
+      total_usd: '500.00',
+    });
+    vi.mocked(stripeLib.isStripeConfigured).mockReturnValue(true);
+    vi.mocked(stripeLib.getStripe).mockReturnValue({
+      // Order expects USD but Stripe confirms an MXN-denominated intent.
+      paymentIntents: { retrieve: vi.fn().mockResolvedValue({ ...MOCK_INTENT, amount: 50000, currency: 'mxn' }) },
+    } as never);
+    vi.mocked(ordersRepo.updateOrderPaymentByPublicId).mockResolvedValue(undefined);
+
+    const result = await finalizeOrderPayment('ABC-123');
+
+    expect(result.paymentStatus).toBe('amount_mismatch');
+    expect(ordersRepo.tryMarkOrderAsPaid).not.toHaveBeenCalled();
   });
 
   it('returns amount_mismatch when Stripe amount differs', async () => {

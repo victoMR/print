@@ -7,7 +7,8 @@ import { logger } from '../lib/logger.js';
 export async function invalidateCatalogCache(productSlug?: string): Promise<void> {
   const deleted = await cacheDelByPattern(catalogPattern());
   if (productSlug) {
-    await cacheDel(catalogProductKey(productSlug));
+    await cacheDel(catalogProductKey(productSlug, 'mx'));
+    await cacheDel(catalogProductKey(productSlug, 'us'));
   }
   logger.info({ deleted, productSlug }, 'Catálogo cache invalidado');
 }

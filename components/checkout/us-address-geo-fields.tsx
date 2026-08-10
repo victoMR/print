@@ -8,6 +8,12 @@ type UsAddressValue = {
   city: string;
 };
 
+/** Formats to 5 digits, or 9 digits as ZIP+4 (12345-6789). */
+function formatUsZip(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 9);
+  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+}
+
 type UsAddressGeoFieldsProps = {
   value: UsAddressValue;
   onChange: (patch: Partial<UsAddressValue>) => void;
@@ -40,10 +46,10 @@ export function UsAddressGeoFields({
         <input
           type="text"
           inputMode="numeric"
-          maxLength={5}
+          maxLength={10}
           disabled={disabled}
           value={value.zip}
-          onChange={(e) => onChange({ zip: e.target.value.replace(/\D/g, "").slice(0, 5) })}
+          onChange={(e) => onChange({ zip: formatUsZip(e.target.value) })}
           className="w-full border border-[#D4CFC5] bg-[#f8f9fa] px-3 py-2.5 text-sm text-[#2A2726] outline-none focus:border-[#5C1A24]"
           autoComplete="postal-code"
         />

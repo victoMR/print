@@ -839,6 +839,7 @@ export function BotyCheckoutFlow() {
               <StripePaymentForm
                 publicOrderId={publicOrderId}
                 totalMxn={formatCurrency(totals.total, currency)}
+                currency={currency}
                 returnUrl={paymentReturnUrl}
                 billing={{
                   name: recipient.name,

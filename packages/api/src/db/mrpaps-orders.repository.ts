@@ -3,6 +3,7 @@ import { pool } from '../lib/db.js';
 import * as productsRepo from './mrpaps-products.repository.js';
 import { BadRequestError } from '../types/errors.js';
 import { generateTrackingCode, normalizeTrackingCode } from '../lib/order-tracking-code.js';
+import { marketForCurrency } from '../lib/market.js';
 import type {
   MrpapsOrderItemRow,
   MrpapsOrderRow,
@@ -120,14 +121,15 @@ export async function createOrder(input: CreateOrderInput): Promise<MrpapsOrderW
     const orderRow = orderResult.rows[0];
     if (!orderRow) throw new Error('Failed to insert order');
 
+    const market = marketForCurrency(order.currency);
     const itemRows: MrpapsOrderItemRow[] = [];
     for (const item of items) {
       // Reserve stock at order creation (standard soft-reservation model).
-      // POD variants (stock_quantity = 0) return 0 — no deduction needed.
+      // POD variants (is_pod = true) return 0 — no deduction needed.
       const deducted =
         item.inventory_reserved_qty != null
           ? item.inventory_reserved_qty
-          : await productsRepo.reserveVariantStockTx(client, item.variant_id, item.quantity);
+          : await productsRepo.reserveVariantStockTx(client, item.variant_id, item.quantity, market);
 
       if (deducted === false) {
         throw new BadRequestError(
@@ -385,10 +387,11 @@ export async function commitOrderInventoryOnPaid(rawPublicId: string): Promise<{
       [orderRow.id],
     );
 
+    const market = marketForCurrency(orderRow.currency);
     for (const item of itemsResult.rows) {
       if ((item.inventory_reserved_qty ?? 0) > 0) continue;
 
-      const deducted = await productsRepo.reserveVariantStockTx(client, item.variant_id, item.quantity);
+      const deducted = await productsRepo.reserveVariantStockTx(client, item.variant_id, item.quantity, market);
       if (deducted === false) {
         return {
           ok: false,
@@ -572,11 +575,12 @@ export async function updateOrderStatus(
         `SELECT * FROM mrpaps_order_items WHERE order_id = $1 FOR UPDATE`,
         [existing.id],
       );
+      const market = marketForCurrency(existing.currency);
       let releasedAny = false;
       for (const item of freshItems.rows) {
         const reserved = item.inventory_reserved_qty ?? 0;
         if (reserved > 0) {
-          await productsRepo.releaseVariantStockTx(client, item.variant_id, reserved);
+          await productsRepo.releaseVariantStockTx(client, item.variant_id, reserved, market);
           releasedAny = true;
         }
       }
@@ -629,8 +633,9 @@ export async function releaseExpiredOrderReservations(ttlMinutes = 20): Promise<
       id: string;
       variant_id: string;
       inventory_reserved_qty: number;
+      currency: 'MXN' | 'USD';
     }>(
-      `SELECT oi.id, oi.variant_id, oi.inventory_reserved_qty
+      `SELECT oi.id, oi.variant_id, oi.inventory_reserved_qty, o.currency
        FROM mrpaps_order_items oi
        JOIN mrpaps_orders o ON o.id = oi.order_id
        WHERE o.status = 'pendiente_pago'
@@ -644,7 +649,12 @@ export async function releaseExpiredOrderReservations(ttlMinutes = 20): Promise<
     if (expiredItems.rows.length === 0) return 0;
 
     for (const item of expiredItems.rows) {
-      await productsRepo.releaseVariantStockTx(client, item.variant_id, item.inventory_reserved_qty);
+      await productsRepo.releaseVariantStockTx(
+        client,
+        item.variant_id,
+        item.inventory_reserved_qty,
+        marketForCurrency(item.currency),
+      );
     }
 
     await client.query(

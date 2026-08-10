@@ -194,6 +194,7 @@ function InnerPaymentForm({
 export function StripePaymentForm({
   publicOrderId,
   totalMxn,
+  currency = "MXN",
   billing,
   returnUrl,
   onSuccess,
@@ -201,6 +202,7 @@ export function StripePaymentForm({
 }: {
   publicOrderId: string;
   totalMxn: string;
+  currency?: "MXN" | "USD";
   billing: StripeCheckoutBilling;
   returnUrl?: string;
   onSuccess: () => void;
@@ -252,7 +254,7 @@ export function StripePaymentForm({
         stripe={stripePromise}
         options={{
           clientSecret,
-          locale: "es-419",
+          locale: currency === "USD" ? "en" : "es-419",
           appearance: { theme: "stripe", variables: { borderRadius: "12px" } },
         }}
       >

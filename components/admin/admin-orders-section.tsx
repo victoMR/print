@@ -776,7 +776,7 @@ function AdminOrderDetail({
             <p className="font-medium mb-2">Totales</p>
             <p>Subtotal: {orderAmount(order, order.totals.subtotalMxn, order.totals.subtotalUsd)}</p>
             <p>Envío: {orderAmount(order, order.totals.shippingMxn, order.totals.shippingUsd)}</p>
-            <p>IVA: {orderAmount(order, order.totals.taxMxn, order.totals.taxUsd)}</p>
+            <p>{order.currency === "USD" ? "Sales tax" : "IVA"}: {orderAmount(order, order.totals.taxMxn, order.totals.taxUsd)}</p>
             <p className="font-semibold text-primary pt-2">Total: {orderAmount(order, order.totals.totalMxn, order.totals.totalUsd)}</p>
           </BotySurface>
 

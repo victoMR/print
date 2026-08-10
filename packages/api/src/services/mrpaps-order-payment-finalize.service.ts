@@ -98,6 +98,20 @@ export async function finalizeOrderPayment(
     };
   }
 
+  const expectedCurrency = order.currency === 'USD' ? 'usd' : 'mxn';
+  if (intent.currency !== expectedCurrency) {
+    logger.error(
+      { publicOrderId: publicId, intentCurrency: intent.currency, expectedCurrency },
+      'Finalizar pago: moneda no coincide',
+    );
+    await updateOrderPaymentByPublicId(publicId, { payment_status: 'amount_mismatch' });
+    return {
+      paymentStatus: 'amount_mismatch',
+      emailSent: false,
+      message: 'Moneda del pago no coincide con el pedido',
+    };
+  }
+
   const expectedAmount = order.currency === 'USD' ? order.total_usd : order.total_mxn;
   const expectedCents = Math.round(Number(expectedAmount) * 100);
   if (intent.amount !== expectedCents) {

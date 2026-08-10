@@ -27,10 +27,10 @@ export function catalogListKey(
   return `${CACHE_PREFIX}catalog:list:${cat}:${q}:${page}:${limit}`;
 }
 
-export function catalogProductKey(idOrSlug: string): string {
+export function catalogProductKey(idOrSlug: string, market: 'mx' | 'us' = 'mx'): string {
   // Sanitize to prevent Redis key injection via special characters or path traversal.
   const safe = idOrSlug.toLowerCase().replace(/[^a-z0-9-]/g, '_').slice(0, 128);
-  return `${CACHE_PREFIX}catalog:product:${safe}`;
+  return `${CACHE_PREFIX}catalog:product:${market}:${safe}`;
 }
 
 export function catalogPattern(): string {

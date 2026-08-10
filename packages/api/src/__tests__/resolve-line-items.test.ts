@@ -17,7 +17,9 @@ const BASE_VARIANT = {
   size_label: 'M',
   color_label: 'Blanco',
   retail_price_mxn: '399.00',
-  stock_quantity: 0,
+  is_pod: true,
+  stock_quantity_mx: 0,
+  stock_quantity_us: 0,
   status: 'active',
   product: {
     id: 'p1',
@@ -50,7 +52,8 @@ describe('resolveLineItems', () => {
   it('rejects quantities above tracked stock', async () => {
     vi.mocked(productsRepo.getVariantById).mockResolvedValue({
       ...BASE_VARIANT,
-      stock_quantity: 5,
+      is_pod: false,
+      stock_quantity_mx: 5,
     } as never);
 
     await expect(

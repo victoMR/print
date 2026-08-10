@@ -8,7 +8,7 @@ Versión 1.0 · Última actualización: Junio de 2026
 
 1. Generalidades y Aceptación
 
-Los presentes Términos y Condiciones (en adelante "Términos") regulan el acceso, navegación y uso del sitio web mrpapshop.com (en adelante el "Sitio"), así como la adquisición de productos a través del mismo, operado por [RAZÓN SOCIAL COMPLETA], RFC [RFC], con domicilio en [DOMICILIO FISCAL] (en adelante "Mr. Paps").
+Los presentes Términos y Condiciones (en adelante "Términos") regulan el acceso, navegación y uso de la versión mexicana del sitio web mrpapshop.com/mx (en adelante el "Sitio"), así como la adquisición de productos en pesos mexicanos (MXN) a través del mismo, operado por [RAZÓN SOCIAL COMPLETA], RFC [RFC], con domicilio en [DOMICILIO FISCAL] (en adelante "Mr. Paps"). Las compras realizadas en dólares estadounidenses (USD) a través de mrpapshop.com/us se rigen por los Términos y Condiciones de EE. UU., disponibles en mrpapshop.com/us/terminos.
 
 Al acceder al Sitio, registrarse como usuario o realizar una compra, el usuario (en adelante el "Comprador" o "Usuario") acepta de manera plena, expresa e irrevocable los presentes Términos en su totalidad. Si el Usuario no está de acuerdo con alguna de las disposiciones aquí contenidas, deberá abstenerse de utilizar el Sitio o adquirir productos.
 
@@ -74,7 +74,7 @@ Mr. Paps se reserva el derecho de cancelar pedidos cuando existan indicios razon
 
 6.1 Cobertura de Envío
 
-Mr. Paps realiza envíos únicamente a territorio de los Estados Unidos Mexicanos. No se realizan envíos internacionales al momento de la publicación de los presentes Términos.
+A través de la versión mexicana del Sitio (mrpapshop.com/mx), Mr. Paps realiza envíos únicamente a territorio de los Estados Unidos Mexicanos. Los envíos a Estados Unidos se realizan exclusivamente a través de mrpapshop.com/us, bajo términos y moneda distintos (ver sección 1).
 
 6.2 Cotización y Costo
 

@@ -360,8 +360,9 @@ export type AdminProductVariant = {
   retailPriceMxn: string;
   /** null si esta variante no tiene precio en USD todavía. */
   retailPriceUsd: string | null;
-  /** Unidades en inventario. 0 = sin límite (print-on-demand). */
-  stockQuantity: number;
+  /** Unidades en inventario físico por mercado — 0 = agotado (no ilimitado). */
+  stockQuantityMx: number;
+  stockQuantityUs: number;
   status: "active" | "inactive" | "archived";
   designId: string | null;
   garmentColorHex: string;

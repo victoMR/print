@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { mxStateCodeSchema, postalCode5Schema, usStateCodeSchema } from './order.schema.js';
+import { mxStateCodeSchema, postalCode5Schema, postalCodeUsSchema, usStateCodeSchema } from './order.schema.js';
 import { CUSTOMER_PASSWORD_MAX, CUSTOMER_PASSWORD_MIN } from './customer-auth.schema.js';
 import { assetUrlSchema } from './asset-url.schema.js';
 import { productCategorySchema } from '../lib/product-categories.js';
@@ -44,17 +44,18 @@ const addressBase = {
   address1: z.string().min(1),
   address2: z.string().optional(),
   city: z.string().min(1),
-  zip: postalCode5Schema,
 };
 
 export const mxShippingAddressSchema = z.object({
   ...addressBase,
+  zip: postalCode5Schema,
   stateCode: mxStateCodeSchema,
   countryCode: z.literal('MX'),
 });
 
 export const usShippingAddressSchema = z.object({
   ...addressBase,
+  zip: postalCodeUsSchema,
   stateCode: usStateCodeSchema,
   countryCode: z.literal('US'),
 });
@@ -188,7 +189,8 @@ export const updateVariantAdminSchema = z.object({
   retailPriceMxn: z.number().positive().optional(),
   // Nullable para permitir borrar el precio en USD (vuelve a "no disponible en USD").
   retailPriceUsd: z.number().positive().nullable().optional(),
-  stockQuantity: z.number().int().min(0).optional(),
+  stockQuantityMx: z.number().int().min(0).optional(),
+  stockQuantityUs: z.number().int().min(0).optional(),
   designId: z.string().uuid().nullable().optional(),
   garmentColorHex: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   status: z.enum(['active', 'inactive', 'archived']).optional(),

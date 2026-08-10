@@ -11,6 +11,7 @@ import {
   MAX_CART_LINE_QUANTITY,
   maxPurchasableQuantity,
 } from '../lib/cart-limits.js';
+import { marketForCurrency, stockForMarket, type Market } from '../lib/market.js';
 import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { logger } from '../lib/logger.js';
 import {
@@ -126,7 +127,7 @@ export async function listPublicProducts(
   );
 }
 
-async function getPublicProductUncached(idOrSlug: string) {
+async function getPublicProductUncached(idOrSlug: string, market: Market) {
   let product = await productsRepo.getProductBySlug(idOrSlug);
   if (!product) {
     product = await productsRepo.getProductById(idOrSlug);
@@ -159,29 +160,32 @@ async function getPublicProductUncached(idOrSlug: string) {
       color: ci.color_label,
       imageUrl: normalizeAssetUrl(ci.image_url),
     })),
-    variants: variants.map((v) => ({
-      variantId: v.id,
-      size: v.size_label,
-      color: v.color_label,
-      retailPriceMxn: Number(v.retail_price_mxn).toFixed(2),
-      // null si esta variante no tiene precio en USD todavía.
-      retailPriceUsd: v.retail_price_usd !== null ? Number(v.retail_price_usd).toFixed(2) : null,
-      garmentColorHex: v.garment_color_hex ?? product.default_garment_color ?? undefined,
-      inStock: !isTrackedStock(v.stock_quantity) || v.stock_quantity > 0,
-      maxQuantity: maxPurchasableQuantity(v.stock_quantity),
-    })),
+    variants: variants.map((v) => {
+      const stock = stockForMarket(v, market);
+      return {
+        variantId: v.id,
+        size: v.size_label,
+        color: v.color_label,
+        retailPriceMxn: Number(v.retail_price_mxn).toFixed(2),
+        // null si esta variante no tiene precio en USD todavía.
+        retailPriceUsd: v.retail_price_usd !== null ? Number(v.retail_price_usd).toFixed(2) : null,
+        garmentColorHex: v.garment_color_hex ?? product.default_garment_color ?? undefined,
+        inStock: !isTrackedStock(v.is_pod) || stock > 0,
+        maxQuantity: maxPurchasableQuantity(stock, v.is_pod),
+      };
+    }),
   };
 }
 
-export async function getPublicProduct(idOrSlug: string) {
-  const key = catalogProductKey(idOrSlug);
+export async function getPublicProduct(idOrSlug: string, market: Market = 'mx') {
+  const key = catalogProductKey(idOrSlug, market);
 
   try {
-    return await wrapCache(key, CacheTTL.catalogProduct(), () => getPublicProductUncached(idOrSlug));
+    return await wrapCache(key, CacheTTL.catalogProduct(), () => getPublicProductUncached(idOrSlug, market));
   } catch (err) {
     if (err instanceof NotFoundError) throw err;
     logger.warn({ err, idOrSlug }, 'Catalog cache miss with error; retrying uncached');
-    return getPublicProductUncached(idOrSlug);
+    return getPublicProductUncached(idOrSlug, market);
   }
 }
 
@@ -207,14 +211,16 @@ function variantLabel(size: string, color: string): string {
 function assertPurchasableQuantity(
   variant: Awaited<ReturnType<typeof productsRepo.getVariantById>> & object,
   quantity: number,
+  market: Market,
 ): void {
   if (quantity > MAX_CART_LINE_QUANTITY) {
     throw new BadRequestError(`Máximo ${MAX_CART_LINE_QUANTITY} unidades por artículo.`);
   }
 
-  if (isTrackedStock(variant.stock_quantity) && quantity > variant.stock_quantity) {
+  const stock = stockForMarket(variant, market);
+  if (isTrackedStock(variant.is_pod) && quantity > stock) {
     throw new BadRequestError(
-      `Solo hay ${variant.stock_quantity} unidades disponibles de ${variantLabel(variant.size_label, variant.color_label)}.`,
+      `Solo hay ${stock} unidades disponibles de ${variantLabel(variant.size_label, variant.color_label)}.`,
     );
   }
 }
@@ -222,6 +228,7 @@ function assertPurchasableQuantity(
 /** Sincroniza líneas del carrito del cliente con precios y stock del catálogo. */
 export async function syncCartLineItems(
   items: Array<{ variantId: string; quantity: number }>,
+  market: Market = 'mx',
 ) {
   const synced = [];
 
@@ -232,8 +239,9 @@ export async function syncCartLineItems(
     }
 
     const dbPriceUsd = variant.retail_price_usd !== null ? Number(variant.retail_price_usd).toFixed(2) : null;
+    const stock = stockForMarket(variant, market);
 
-    if (isTrackedStock(variant.stock_quantity) && variant.stock_quantity < 1) {
+    if (isTrackedStock(variant.is_pod) && stock < 1) {
       // Mantener en el carrito pero marcado como agotado — el cliente ve el aviso
       const dbPrice = Number(variant.retail_price_mxn).toFixed(2);
       synced.push({
@@ -251,7 +259,7 @@ export async function syncCartLineItems(
       continue;
     }
 
-    const quantity = clampCartLineQuantity(item.quantity, variant.stock_quantity);
+    const quantity = clampCartLineQuantity(item.quantity, stock, variant.is_pod);
     const dbPrice = Number(variant.retail_price_mxn).toFixed(2);
 
     synced.push({
@@ -263,7 +271,7 @@ export async function syncCartLineItems(
       retailPriceUsd: dbPriceUsd,
       thumbnail: variant.product.thumbnail_url,
       quantity,
-      maxQuantity: maxPurchasableQuantity(variant.stock_quantity),
+      maxQuantity: maxPurchasableQuantity(stock, variant.is_pod),
       outOfStock: false,
     });
   }
@@ -276,6 +284,7 @@ export async function resolveLineItems(
   currency: 'MXN' | 'USD' = 'MXN',
 ) {
   const resolved = [];
+  const market = marketForCurrency(currency);
 
   for (const item of items) {
     const variant = await productsRepo.getVariantById(item.variantId);
@@ -287,7 +296,7 @@ export async function resolveLineItems(
       throw new BadRequestError(STALE_CART_MESSAGE);
     }
 
-    assertPurchasableQuantity(variant, item.quantity);
+    assertPurchasableQuantity(variant, item.quantity, market);
 
     const dbPriceMxn = Number(variant.retail_price_mxn).toFixed(2);
     if (item.retailPriceMxn && item.retailPriceMxn !== dbPriceMxn) {

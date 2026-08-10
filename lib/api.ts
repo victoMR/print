@@ -157,11 +157,12 @@ export async function fetchCatalogProducts(
 
 export async function fetchCatalogProduct(
   idOrSlug: string,
+  market: "mx" | "us" = "mx",
 ): Promise<CatalogDetailResponse | null> {
   if (!isApiConfigured()) return null;
   try {
     return await apiFetch<CatalogDetailResponse>(
-      `${V1}/catalog/products/${encodeURIComponent(idOrSlug)}`,
+      `${V1}/catalog/products/${encodeURIComponent(idOrSlug)}?market=${market}`,
     );
   } catch {
     return null;
@@ -171,9 +172,10 @@ export async function fetchCatalogProduct(
 /** Re-sincroniza precios, stock y metadatos del carrito con el catálogo. */
 export async function syncCartWithCatalog(
   items: Array<{ variantId: string; quantity: number }>,
+  market: "mx" | "us" = "mx",
 ): Promise<CartSyncResponse["data"]> {
   if (items.length === 0) return [];
-  const res = await apiFetch<CartSyncResponse>(`${V1}/catalog/cart/sync`, {
+  const res = await apiFetch<CartSyncResponse>(`${V1}/catalog/cart/sync?market=${market}`, {
     method: "POST",
     body: JSON.stringify({ items }),
     cache: "no-store",
@@ -694,7 +696,8 @@ export async function adminUpdateProductVariant(
     colorLabel?: string;
     retailPriceMxn?: number;
     retailPriceUsd?: number | null;
-    stockQuantity?: number;
+    stockQuantityMx?: number;
+    stockQuantityUs?: number;
     designId?: string | null;
     garmentColorHex?: string;
     status?: "active" | "inactive" | "archived";

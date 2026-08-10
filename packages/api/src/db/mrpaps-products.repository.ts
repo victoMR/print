@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 import { query, queryOne, queryRequired, buildUpdateSet } from '../lib/db-helper.js';
 import { isTrackedStock } from '../lib/cart-limits.js';
+import type { Market } from '../lib/market.js';
 import type {
   MrpapsProductRow,
   MrpapsProductStatus,
@@ -149,19 +150,6 @@ export async function getVariantById(id: string): Promise<MrpapsVariantWithProdu
   return row ? mapVariantWithProduct(row) : null;
 }
 
-export async function updateVariantStock(
-  variantId: string,
-  stockQuantity: number,
-): Promise<MrpapsProductVariantRow> {
-  return queryRequired<MrpapsProductVariantRow>(
-    `UPDATE mrpaps_product_variants
-     SET stock_quantity = $2, updated_at = NOW()
-     WHERE id = $1
-     RETURNING *`,
-    [variantId, stockQuantity],
-  );
-}
-
 export async function findVariantByProductSizeColor(
   productId: string,
   sizeLabel: string,
@@ -198,7 +186,9 @@ export async function updateVariantAdmin(
     color_label: string;
     retail_price_mxn: number;
     retail_price_usd: number | null;
-    stock_quantity: number;
+    is_pod: boolean;
+    stock_quantity_mx: number;
+    stock_quantity_us: number;
     status: MrpapsProductStatus;
     design_id: string | null;
     garment_color_hex: string;
@@ -274,22 +264,24 @@ export async function upsertVariant(input: {
   color_label: string;
   retail_price_mxn: number;
   retail_price_usd?: number | null;
-  stock_quantity: number;
+  stock_quantity_mx: number;
+  stock_quantity_us: number;
   design_id?: string | null;
   garment_color_hex?: string;
 }): Promise<MrpapsProductVariantRow> {
   return queryRequired<MrpapsProductVariantRow>(
     `INSERT INTO mrpaps_product_variants (
-       product_id, sku, size_label, color_label, retail_price_mxn, retail_price_usd, stock_quantity,
-       design_id, garment_color_hex, status
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active')
+       product_id, sku, size_label, color_label, retail_price_mxn, retail_price_usd,
+       stock_quantity_mx, stock_quantity_us, design_id, garment_color_hex, status
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active')
      ON CONFLICT (sku) DO UPDATE SET
        product_id = EXCLUDED.product_id,
        size_label = EXCLUDED.size_label,
        color_label = EXCLUDED.color_label,
        retail_price_mxn = EXCLUDED.retail_price_mxn,
        retail_price_usd = EXCLUDED.retail_price_usd,
-       stock_quantity = EXCLUDED.stock_quantity,
+       stock_quantity_mx = EXCLUDED.stock_quantity_mx,
+       stock_quantity_us = EXCLUDED.stock_quantity_us,
        design_id = EXCLUDED.design_id,
        garment_color_hex = EXCLUDED.garment_color_hex,
        status = 'active',
@@ -302,61 +294,70 @@ export async function upsertVariant(input: {
       input.color_label,
       input.retail_price_mxn,
       input.retail_price_usd ?? null,
-      input.stock_quantity,
+      input.stock_quantity_mx,
+      input.stock_quantity_us,
       input.design_id ?? null,
       input.garment_color_hex ?? '#FFFFFF',
     ],
   );
 }
 
+function stockColumnFor(market: Market): 'stock_quantity_mx' | 'stock_quantity_us' {
+  return market === 'us' ? 'stock_quantity_us' : 'stock_quantity_mx';
+}
+
 /**
- * Verifica inventario sin descontar (checkout pendiente de pago).
+ * Verifica inventario del mercado dado sin descontar (checkout pendiente de pago).
  * @returns unidades disponibles (0 si POD), false si no alcanza o variante inexistente.
  */
 export async function assertVariantStockAvailableTx(
   client: PoolClient,
   variantId: string,
   quantity: number,
+  market: Market,
 ): Promise<number | false> {
-  const lock = await client.query<{ stock_quantity: string }>(
-    `SELECT stock_quantity FROM mrpaps_product_variants WHERE id = $1 FOR UPDATE`,
+  const column = stockColumnFor(market);
+  const lock = await client.query<{ is_pod: boolean; stock: string }>(
+    `SELECT is_pod, ${column} AS stock FROM mrpaps_product_variants WHERE id = $1 FOR UPDATE`,
     [variantId],
   );
   const row = lock.rows[0];
   if (!row) return false;
 
-  const stock = Number(row.stock_quantity);
-  if (!isTrackedStock(stock)) return 0;
+  if (!isTrackedStock(row.is_pod)) return 0;
 
+  const stock = Number(row.stock);
   if (stock < quantity) return false;
 
   return quantity;
 }
 
 /**
- * Descuenta inventario rastreado (stock_quantity > 0) — al confirmar pago.
+ * Descuenta inventario rastreado del mercado dado — al confirmar pago.
  * @returns unidades descontadas (0 si POD sin inventario), false si no hay stock o variante inexistente.
  */
 export async function reserveVariantStockTx(
   client: PoolClient,
   variantId: string,
   quantity: number,
+  market: Market,
 ): Promise<number | false> {
-  const lock = await client.query<{ stock_quantity: string }>(
-    `SELECT stock_quantity FROM mrpaps_product_variants WHERE id = $1 FOR UPDATE`,
+  const column = stockColumnFor(market);
+  const lock = await client.query<{ is_pod: boolean; stock: string }>(
+    `SELECT is_pod, ${column} AS stock FROM mrpaps_product_variants WHERE id = $1 FOR UPDATE`,
     [variantId],
   );
   const row = lock.rows[0];
   if (!row) return false;
 
-  const stock = Number(row.stock_quantity);
-  if (!isTrackedStock(stock)) return 0;
+  if (!isTrackedStock(row.is_pod)) return 0;
 
+  const stock = Number(row.stock);
   if (stock < quantity) return false;
 
   await client.query(
     `UPDATE mrpaps_product_variants
-     SET stock_quantity = stock_quantity - $2, updated_at = NOW()
+     SET ${column} = ${column} - $2, updated_at = NOW()
      WHERE id = $1`,
     [variantId, quantity],
   );
@@ -421,17 +422,19 @@ export async function deleteColorImage(
   );
 }
 
-/** Devuelve inventario reservado al cancelar un pedido pendiente de pago. */
+/** Devuelve inventario reservado del mercado dado al cancelar un pedido pendiente de pago. */
 export async function releaseVariantStockTx(
   client: PoolClient,
   variantId: string,
   quantity: number,
+  market: Market,
 ): Promise<void> {
   if (quantity <= 0) return;
 
+  const column = stockColumnFor(market);
   await client.query(
     `UPDATE mrpaps_product_variants
-     SET stock_quantity = stock_quantity + $2, updated_at = NOW()
+     SET ${column} = ${column} + $2, updated_at = NOW()
      WHERE id = $1`,
     [variantId, quantity],
   );

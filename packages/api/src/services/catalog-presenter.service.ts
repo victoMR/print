@@ -1,5 +1,6 @@
 import * as mrpapsCatalog from './mrpaps-catalog.service.js';
 import type { MrpapsProductCategory } from '../db/mrpaps.types.js';
+import type { Market } from '../lib/market.js';
 
 export const slugify = mrpapsCatalog.slugify;
 
@@ -26,8 +27,8 @@ export async function listPublicProducts(
   };
 }
 
-export async function getPublicProduct(idOrSlug: string) {
-  const product = await mrpapsCatalog.getPublicProduct(idOrSlug);
+export async function getPublicProduct(idOrSlug: string, market: Market = 'mx') {
+  const product = await mrpapsCatalog.getPublicProduct(idOrSlug, market);
   return {
     id: product.id,
     slug: product.slug,

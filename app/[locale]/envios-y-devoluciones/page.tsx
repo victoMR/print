@@ -4,12 +4,19 @@ import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
 import { LEGAL_CONTACT_EMAIL, LEGAL_CONTACT_MAILTO, SITE_WHATSAPP_URL } from "@/lib/legal/config";
 import { SITE_NAME } from "@/lib/seo";
+import { getRequestMarket } from "@/lib/i18n/get-request-market";
 
-export const metadata: Metadata = {
-  title: "Envíos y Devoluciones",
-  description: `Política de envíos y devoluciones de ${SITE_NAME}. Envíos a todo México en 5–14 días hábiles.`,
-  alternates: { canonical: "/envios-y-devoluciones" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const market = await getRequestMarket();
+  return {
+    title: market === "us" ? "Shipping & Returns" : "Envíos y Devoluciones",
+    description:
+      market === "us"
+        ? `${SITE_NAME} shipping and returns policy. Shipped within the US in 5–10 business days.`
+        : `Política de envíos y devoluciones de ${SITE_NAME}. Envíos a todo México en 5–14 días hábiles.`,
+    alternates: { canonical: "/envios-y-devoluciones" },
+  };
+}
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="mb-12">
@@ -20,7 +27,140 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
   </section>
 );
 
-export default function EnviosYDevolucionesPage() {
+export default async function EnviosYDevolucionesPage() {
+  const market = await getRequestMarket();
+
+  if (market === "us") {
+    return (
+      <main className="min-h-screen flex flex-col">
+        <Header alwaysVisible />
+
+        <div className="pt-[148px] pb-12 px-6 bg-[#F5F0E6]">
+          <div className="max-w-2xl mx-auto">
+            <p className="text-[11px] tracking-[0.25em] uppercase text-[#7A756E] mb-3">
+              Mr. Paps
+            </p>
+            <h1 className="font-serif text-4xl md:text-5xl text-[#2A2726]">
+              Shipping & Returns
+            </h1>
+            <p className="mt-4 text-[#7A756E] text-[15px] leading-relaxed">
+              All our products are made to order. Here's what to expect on delivery times and our returns policy.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 py-14 px-6">
+          <div className="max-w-2xl mx-auto">
+
+            <Section title="Shipping">
+              <p>
+                <strong>Coverage:</strong> We ship within the United States only, from a US-based fulfillment partner.
+              </p>
+              <p>
+                <strong>Delivery time:</strong> Your order is produced and printed after checkout. Estimated delivery is <strong>5 to 10 business days</strong> from payment confirmation.
+              </p>
+              <p>
+                <strong>Shipping cost:</strong> A flat shipping rate in USD is shown at checkout before you pay.
+              </p>
+              <p>
+                <strong>Tracking:</strong> Once your order ships, you'll get a tracking number by email.
+              </p>
+              <p>
+                <strong>Please note:</strong> Delivery times are estimates. Weather, holidays, or carrier delays may affect them.
+              </p>
+            </Section>
+
+            <Section title="Returns & Refunds">
+              <p>
+                Since every product is made specifically for your order, <strong>we don't accept returns for buyer's remorse</strong>. We do stand behind the quality of our products.
+              </p>
+
+              <div className="bg-[#F5F0E6] p-5 border-l-2 border-[#2A2726]">
+                <p className="font-semibold text-[#2A2726] mb-2">Manufacturing defects or damage</p>
+                <p>
+                  If your product arrives with a print defect, fabric damage, or the wrong item (size or product), you have <strong>5 days from delivery</strong> to report it.
+                </p>
+                <p className="mt-2">
+                  Send photo evidence of the issue to{" "}
+                  <a href={LEGAL_CONTACT_MAILTO} className="underline text-[#2A2726] hover:opacity-70">
+                    {LEGAL_CONTACT_EMAIL}
+                  </a>{" "}
+                  or via{" "}
+                  <a href={SITE_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="underline text-[#2A2726] hover:opacity-70">
+                    WhatsApp
+                  </a>
+                  . We'll arrange a free reshipment or a full refund.
+                </p>
+              </div>
+
+              <div className="bg-[#F5F0E6] p-5 border-l-2 border-[#5C1A24]">
+                <p className="font-semibold text-[#2A2726] mb-2">Order cancellation</p>
+                <p>
+                  You can cancel your order <strong>before it enters production</strong>. Once production has started, the order cannot be cancelled or modified.
+                </p>
+                <p className="mt-2">
+                  To request a cancellation, contact us right away via{" "}
+                  <a href={SITE_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="underline text-[#2A2726] hover:opacity-70">
+                    WhatsApp
+                  </a>{" "}
+                  or email at{" "}
+                  <a href={LEGAL_CONTACT_MAILTO} className="underline text-[#2A2726] hover:opacity-70">
+                    {LEGAL_CONTACT_EMAIL}
+                  </a>
+                  .
+                </p>
+              </div>
+            </Section>
+
+            <Section title="Product Warranty">
+              <p>
+                All our products come with a manufacturing and print-defect warranty:
+              </p>
+              <ul className="list-disc list-inside space-y-2 pl-2">
+                <li>Print or manufacturing defects: <strong>6 months</strong> from date of purchase</li>
+                <li>Fabric defects: <strong>6 months</strong> from date of purchase</li>
+              </ul>
+              <p>
+                The warranty <strong>does not cover</strong> damage from improper use, discoloration from incorrect washing (check the care label), or normal wear and tear.
+              </p>
+            </Section>
+
+            <Section title="Questions?">
+              <p>
+                We're here to help. Reach us through either of these:
+              </p>
+              <ul className="space-y-2">
+                <li>
+                  <strong>WhatsApp:</strong>{" "}
+                  <a href={SITE_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">
+                    Message us directly
+                  </a>
+                </li>
+                <li>
+                  <strong>Email:</strong>{" "}
+                  <a href={LEGAL_CONTACT_MAILTO} className="underline hover:opacity-70">
+                    {LEGAL_CONTACT_EMAIL}
+                  </a>
+                </li>
+              </ul>
+            </Section>
+
+            <div className="pt-4 border-t border-[#D4CFC5]">
+              <Link
+                href="/shop"
+                className="text-[11px] tracking-[0.2em] uppercase text-[#7A756E] hover:text-[#2A2726] boty-transition"
+              >
+                ← Back to the shop
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <Footer variant="compact" />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen flex flex-col">
       <Header alwaysVisible />

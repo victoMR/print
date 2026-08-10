@@ -64,21 +64,23 @@ function addressFromRecipient(recipient: MrpapsCreateOrderBody['recipient']) {
 
 const IVA_RATE_MXN = 0.16;
 
+/** Nebraska state + Omaha (Douglas County) combined sales tax — nexus físico del fulfillment US. */
+const SALES_TAX_RATE_US_DEFAULT = 0.07;
+
 /**
- * Tasa de IVA para órdenes en USD — configurable (no hardcodeada) porque el
- * trato fiscal correcto (¿16% normal o 0% por exportación?) depende de una
- * decisión de negocio/contable pendiente. Por defecto igual a MXN hasta que
- * se defina lo contrario.
+ * Sales tax para órdenes en USD — configurable (no hardcodeada) porque la
+ * tasa exacta cambia con el tiempo. Por defecto la tasa combinada de
+ * Nebraska/Omaha, donde está el nexus físico (fulfillment US).
  */
-function getIvaRateUsd(): number {
-  const raw = process.env.IVA_RATE_USD;
-  if (!raw) return IVA_RATE_MXN;
+function getSalesTaxRateUs(): number {
+  const raw = process.env.SALES_TAX_RATE_US;
+  if (!raw) return SALES_TAX_RATE_US_DEFAULT;
   const parsed = Number.parseFloat(raw);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : IVA_RATE_MXN;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : SALES_TAX_RATE_US_DEFAULT;
 }
 
 function ivaRateFor(currency: OrderCurrency): number {
-  return currency === 'USD' ? getIvaRateUsd() : IVA_RATE_MXN;
+  return currency === 'USD' ? getSalesTaxRateUs() : IVA_RATE_MXN;
 }
 
 function computeRetailTotals(subtotal: number, shipping: number, ivaRate: number) {

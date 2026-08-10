@@ -6,8 +6,13 @@ import {
   syncCartLineItems,
 } from '../../services/mrpaps-catalog.service.js';
 import { cartSyncBodySchema } from '../../schemas/mrpaps.schema.js';
+import type { Market } from '../../lib/market.js';
 
 export const v1CatalogRouter: Router = Router();
+
+function parseMarketQuery(value: unknown): Market {
+  return value === 'us' ? 'us' : 'mx';
+}
 
 v1CatalogRouter.get('/products', async (req, res, next) => {
   try {
@@ -29,7 +34,8 @@ v1CatalogRouter.get('/products', async (req, res, next) => {
 
 v1CatalogRouter.get('/products/:id', async (req, res, next) => {
   try {
-    const data = await catalogPresenter.getPublicProduct(req.params.id);
+    const market = parseMarketQuery(req.query.market);
+    const data = await catalogPresenter.getPublicProduct(req.params.id, market);
     res.json({ data });
   } catch (err) {
     next(err);
@@ -40,7 +46,8 @@ v1CatalogRouter.get('/products/:id', async (req, res, next) => {
 v1CatalogRouter.post('/cart/sync', async (req, res, next) => {
   try {
     const body = cartSyncBodySchema.parse(req.body);
-    const data = await syncCartLineItems(body.items);
+    const market = parseMarketQuery(req.query.market);
+    const data = await syncCartLineItems(body.items, market);
     res.json({ data });
   } catch (err) {
     next(err);
