@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
-import { customerLogin } from "@/lib/customer-api";
+import { customerLogin, CustomerApiError } from "@/lib/customer-api";
+import { apiErrorMessage } from "@/lib/i18n/api-error-message";
 import { validateLoginForm } from "@/lib/customer-auth-rules";
 import { useCustomer } from "@/lib/customer-context";
 import { broadcastSession } from "@/lib/session-broadcast";
@@ -18,6 +20,8 @@ function buildAuthHref(path: string, redirect: string) {
 }
 
 export function LoginForm() {
+  const t = useTranslations("auth");
+  const tRoot = useTranslations();
   const router = useRouter();
   const params = useSearchParams();
   const { refresh } = useCustomer();
@@ -25,6 +29,7 @@ export function LoginForm() {
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const redirect = safeRedirectPath(params.get("redirect"), "/cuenta");
@@ -42,7 +47,7 @@ export function LoginForm() {
   if (isAdminPath(redirect)) {
     return (
       <p className="text-center py-20 text-muted-foreground text-sm">
-        Redirigiendo al panel de administración…
+        {t("redirectingToAdmin")}
       </p>
     );
   }
@@ -50,7 +55,10 @@ export function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const validationError = validateLoginForm(form.email, form.password);
+    setNeedsVerification(false);
+    const validationError = validateLoginForm(form.email, form.password, (key, values) =>
+      t(`errors.${key}`, values),
+    );
     if (validationError) {
       setError(validationError);
       return;
@@ -62,8 +70,12 @@ export function LoginForm() {
       broadcastSession({ type: "customer:login" });
       router.push(redirect);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error al iniciar sesión";
-      setError(msg);
+      if (err instanceof CustomerApiError && err.code === "EMAIL_NOT_VERIFIED") {
+        setError(t("errors.emailNotVerified"));
+        setNeedsVerification(true);
+      } else {
+        setError(apiErrorMessage(err, tRoot, t("errors.loginFailed")));
+      }
     } finally {
       setBusy(false);
     }
@@ -73,17 +85,15 @@ export function LoginForm() {
     <AuthShell variant="customer">
       <AuthCard>
         <div className="text-center mb-8">
-          <h1 className="font-serif text-3xl mb-2">Bienvenido de nuevo</h1>
-          <p className="text-sm text-muted-foreground">
-            Accede para ver pedidos, direcciones y pagar más rápido.
-          </p>
+          <h1 className="font-serif text-3xl mb-2">{t("login.welcomeBack")}</h1>
+          <p className="text-sm text-muted-foreground">{t("login.subtitle")}</p>
         </div>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5" autoComplete="on">
           {error && <BotyAlert variant="error">{error}</BotyAlert>}
 
           <label className="flex flex-col gap-2">
-            <BotyLabel>Correo electrónico</BotyLabel>
+            <BotyLabel>{t("fields.email")}</BotyLabel>
             <BotyInput
               required
               type="email"
@@ -95,7 +105,7 @@ export function LoginForm() {
           </label>
 
           <label className="flex flex-col gap-2">
-            <BotyLabel>Contraseña</BotyLabel>
+            <BotyLabel>{t("fields.password")}</BotyLabel>
             <div className="relative">
               <BotyInput
                 required
@@ -110,7 +120,7 @@ export function LoginForm() {
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground"
-                aria-label={showPassword ? "Ocultar" : "Mostrar"}
+                aria-label={showPassword ? t("hidePassword") : t("showPassword")}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -124,29 +134,29 @@ export function LoginForm() {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 rounded border-border accent-primary"
             />
-            <span className="text-sm text-muted-foreground">Recordarme en este dispositivo (30 días)</span>
+            <span className="text-sm text-muted-foreground">{t("login.rememberMe")}</span>
           </label>
 
           <BotyButton type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
-            {busy ? "Entrando…" : "Iniciar sesión"}
+            {busy ? t("login.signingIn") : t("login.submit")}
           </BotyButton>
         </form>
 
-        {error?.includes("Confirma tu correo") && (
+        {needsVerification && (
           <p className="text-center text-sm mt-4">
             <Link
               href={`/registro/verificar?email=${encodeURIComponent(form.email.trim().toLowerCase())}`}
               className="text-primary font-medium hover:underline"
             >
-              Reenviar enlace de verificación
+              {t("resendVerification")}
             </Link>
           </p>
         )}
 
         <p className="text-center text-sm text-muted-foreground mt-8 pt-6 border-t border-border/50">
-          ¿Primera vez aquí?{" "}
+          {t("login.firstTime")}{" "}
           <Link href={registerHref} className="text-primary font-medium hover:underline">
-            Crear cuenta gratis
+            {t("login.createFree")}
           </Link>
         </p>
       </AuthCard>

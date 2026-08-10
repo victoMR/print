@@ -5,11 +5,14 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { noIndexRobots } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Carrito",
-  description: "Revisa los productos en tu carrito antes de pagar.",
-  robots: noIndexRobots,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("cart.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+    robots: noIndexRobots,
+  };
+}
 
 export default async function CarritoPage() {
   const t = await getTranslations("cart");

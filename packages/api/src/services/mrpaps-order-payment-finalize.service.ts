@@ -29,12 +29,12 @@ export async function finalizeOrderPayment(
 ): Promise<FinalizePaymentResult> {
   const publicId = normalizeTrackingCode(rawPublicId);
   if (!publicId) {
-    throw new NotFoundError('Código de pedido no válido');
+    throw new NotFoundError('Código de pedido no válido', 'INVALID_TRACKING_CODE');
   }
 
   const order = await getOrderForPaymentFinalize(publicId);
   if (!order) {
-    throw new NotFoundError('Pedido no encontrado');
+    throw new NotFoundError('Pedido no encontrado', 'ORDER_NOT_FOUND');
   }
 
   logger.info(

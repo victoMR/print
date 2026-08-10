@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Header } from "@/components/boty/header";
 import { Footer } from "@/components/boty/footer";
 import { BotyCheckoutFlow } from "@/components/boty/checkout-flow";
 import { noIndexRobots } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Checkout",
-  description: "Finaliza tu compra de forma segura en Mr. Paps.",
-  robots: noIndexRobots,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("checkout.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+    robots: noIndexRobots,
+  };
+}
 
 export default function CheckoutPage() {
   return (

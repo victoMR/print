@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -30,11 +31,12 @@ export type StripeCheckoutBilling = {
 };
 
 function BillingSummary({ billing }: { billing: StripeCheckoutBilling }) {
+  const t = useTranslations("checkout.paymentForm");
   const stateName = mxStateLabel(billing.state) ?? billing.state;
   return (
     <div className="rounded-2xl bg-muted/40 border border-border/50 px-4 py-3 text-sm space-y-1">
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        Datos de facturación (del paso de envío)
+        {t("billingSummaryLabel")}
       </p>
       <p className="font-medium text-foreground">{billing.name}</p>
       <p className="text-muted-foreground">{billing.email}</p>
@@ -53,17 +55,20 @@ function BillingSummary({ billing }: { billing: StripeCheckoutBilling }) {
 
 function InnerPaymentForm({
   publicOrderId,
+  currency,
   billing,
   returnUrl,
   onSuccess,
   onError,
 }: {
   publicOrderId: string;
+  currency: "MXN" | "USD";
   billing: StripeCheckoutBilling;
   returnUrl?: string;
   onSuccess: () => void;
   onError: (msg: string) => void;
 }) {
+  const t = useTranslations("checkout.paymentForm");
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
@@ -81,18 +86,19 @@ function InnerPaymentForm({
     try {
       const { error: submitError } = await elements.submit();
       if (submitError) {
-        const msg = submitError.message ?? "Revisa los datos de la tarjeta";
+        const msg = submitError.message ?? t("cardErrorFallback");
         setMessage(msg);
         onError(msg);
         return;
       }
 
+      const market = currency === "USD" ? "us" : "mx";
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url:
             returnUrl ??
-            `${window.location.origin}/pedido/${encodeURIComponent(publicOrderId)}?paid=1`,
+            `${window.location.origin}/${market}/pedido/${encodeURIComponent(publicOrderId)}?paid=1`,
           receipt_email: billing.email,
           payment_method_data: {
             billing_details: {
@@ -114,7 +120,7 @@ function InnerPaymentForm({
       });
 
       if (error) {
-        const msg = error.message ?? "Error al procesar el pago";
+        const msg = error.message ?? t("paymentErrorFallback");
         setMessage(msg);
         onError(msg);
         return;
@@ -123,7 +129,7 @@ function InnerPaymentForm({
       paymentSucceeded = true;
       onSuccess();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error inesperado al pagar";
+      const msg = err instanceof Error ? err.message : t("unexpectedError");
       setMessage(msg);
       onError(msg);
     } finally {
@@ -179,11 +185,11 @@ function InnerPaymentForm({
         disabled={busy || !stripe || !elementReady}
         className="w-full bg-primary text-primary-foreground py-3 rounded-full font-medium hover:bg-primary/90 disabled:opacity-60 transition-opacity"
       >
-        {busy ? "Procesando pago…" : "Pagar ahora"}
+        {busy ? t("processing") : t("payNow")}
       </button>
 
       <p className="text-center text-xs text-muted-foreground">
-        Pago seguro vía Stripe · No guardamos datos de tu tarjeta
+        {t("secureNotice")}
       </p>
     </form>
   );
@@ -208,6 +214,7 @@ export function StripePaymentForm({
   onSuccess: () => void;
   onError: (msg: string) => void;
 }) {
+  const t = useTranslations("checkout.paymentForm");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
@@ -217,37 +224,38 @@ export function StripePaymentForm({
     createPaymentIntent(publicOrderId)
       .then(({ clientSecret: cs }) => { if (!cancelled) setClientSecret(cs); })
       .catch((err) => {
-        if (!cancelled) setInitError(err instanceof Error ? err.message : "No se pudo iniciar el pago");
+        if (!cancelled) setInitError(err instanceof Error ? err.message : t("initError"));
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable per locale
   }, [publicOrderId]);
 
   if (!stripePromise) {
     return (
       <div className="text-center py-8 space-y-3">
         <p className="text-muted-foreground text-sm">
-          Pagos en línea no configurados aún. Te contactaremos para coordinar el pago.
+          {t("notConfigured")}
         </p>
         <button
           type="button"
           onClick={onSuccess}
           className="bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-sm font-medium"
         >
-          Confirmar pedido sin pago en línea
+          {t("confirmWithoutOnlinePayment")}
         </button>
       </div>
     );
   }
 
-  if (loading) return <p className="text-center text-muted-foreground text-sm py-6">Preparando pago…</p>;
+  if (loading) return <p className="text-center text-muted-foreground text-sm py-6">{t("preparing")}</p>;
   if (initError) return <p className="text-sm text-destructive">{initError}</p>;
   if (!clientSecret) return null;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="font-medium text-sm">Total a pagar</p>
+        <p className="font-medium text-sm">{t("totalToPay")}</p>
         <p className="font-semibold text-lg">{totalMxn}</p>
       </div>
       <Elements
@@ -260,6 +268,7 @@ export function StripePaymentForm({
       >
         <InnerPaymentForm
           publicOrderId={publicOrderId}
+          currency={currency}
           billing={billing}
           returnUrl={returnUrl}
           onSuccess={onSuccess}

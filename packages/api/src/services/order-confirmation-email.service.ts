@@ -30,14 +30,69 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
   const trackingCode = sanitizeMailHeaderValue(formatTrackingCodeDisplay(order.public_id));
   const customerName = sanitizeMailHeaderValue(order.customer_name);
   const storeUrl = storefrontUrl();
-  const market = order.currency === 'USD' ? 'us' : 'mx';
+  const isUs = order.currency === 'USD';
+  const market = isUs ? 'us' : 'mx';
   const trackingUrl = `${storeUrl}/${market}/seguimiento`;
   const orderUrl = `${storeUrl}/${market}/pedido/${encodeURIComponent(order.public_id)}`;
-  const taxLabel = order.currency === 'USD' ? 'Sales tax' : 'IVA';
-  const deliveryEstimate =
-    order.currency === 'USD'
-      ? 'Tiempo estimado de entrega: 5–10 días hábiles dentro de Estados Unidos.'
-      : 'Tiempo estimado de entrega: 5–14 días hábiles en México.';
+
+  // Todo el correo se traduce por mercado — /us es un mercado angloparlante,
+  // no solo una moneda distinta (ver taxLabel/deliveryEstimate, que ya
+  // variaban antes de que se generalizara al resto del copy).
+  const copy = isUs
+    ? {
+        lang: 'en',
+        subject: `Thank you for your order — ${trackingCode}`,
+        heading: 'Thank you for your order!',
+        greeting: `Hi ${escapeHtml(customerName)}, we received your order and we're already working on it.`,
+        trackingCodeLabel: 'Tracking code',
+        trackingCodeNote: 'Keep it along with this email to check your order.',
+        orderNumberLabel: 'Order number',
+        shipToLabel: 'Shipping to',
+        shippingMethodLabel: 'Shipping method',
+        productHeader: 'Product',
+        qtyHeader: 'Qty',
+        totalHeader: 'Total',
+        subtotalLabel: 'Subtotal',
+        shippingLabel: 'Shipping',
+        taxLabel: 'Sales tax',
+        totalPaidLabel: 'Total paid',
+        trackButtonLabel: 'Track my order',
+        alsoAccess: (link: string) =>
+          `You can also access <a href="${link}" style="color:#18181b;">your order</a> with the code and the email you used to purchase.`,
+        deliveryEstimate: 'Estimated delivery time: 5–10 business days within the United States.',
+        textHeading: 'Thank you for your order at Mr. Paps!',
+        textGreeting: `Hi ${customerName},\n\nWe received your order and we're already working on it.`,
+        textProductsLabel: 'Products:',
+        textTrackAt: 'Track your order at:',
+        textUseCode: `(Use the tracking code and this email: ${order.customer_email})`,
+      }
+    : {
+        lang: 'es',
+        subject: `Gracias por tu compra — ${trackingCode}`,
+        heading: '¡Gracias por tu compra!',
+        greeting: `Hola ${escapeHtml(customerName)}, recibimos tu pedido y ya estamos preparándolo.`,
+        trackingCodeLabel: 'Código de seguimiento',
+        trackingCodeNote: 'Guárdalo junto con este correo para consultar tu pedido.',
+        orderNumberLabel: 'Pedido interno',
+        shipToLabel: 'Envío a',
+        shippingMethodLabel: 'Método de envío',
+        productHeader: 'Producto',
+        qtyHeader: 'Cant.',
+        totalHeader: 'Total',
+        subtotalLabel: 'Subtotal',
+        shippingLabel: 'Envío',
+        taxLabel: 'IVA',
+        totalPaidLabel: 'Total pagado',
+        trackButtonLabel: 'Consultar mi pedido',
+        alsoAccess: (link: string) =>
+          `También puedes entrar a <a href="${link}" style="color:#18181b;">tu pedido</a> con el código y el correo con el que compraste.`,
+        deliveryEstimate: 'Tiempo estimado de entrega: 5–14 días hábiles en México.',
+        textHeading: '¡Gracias por tu compra en Mr. Paps!',
+        textGreeting: `Hola ${customerName},\n\nRecibimos tu pedido y ya estamos preparándolo.`,
+        textProductsLabel: 'Productos:',
+        textTrackAt: 'Consulta tu pedido en:',
+        textUseCode: `(Usa el código de seguimiento y este correo: ${order.customer_email})`,
+      };
 
   const unitPriceFor = (item: MrpapsOrderWithItems['items'][number]): number =>
     order.currency === 'USD' && item.unit_price_usd !== null
@@ -69,14 +124,14 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
     ? `${order.shipping_label}`
     : order.shipping_method;
 
-  const subject = `Gracias por tu compra — ${trackingCode}`;
+  const subject = copy.subject;
   const subtotalAmount = order.currency === 'USD' ? order.subtotal_usd : order.subtotal_mxn;
   const shippingAmount = order.currency === 'USD' ? order.shipping_usd : order.shipping_mxn;
   const taxAmount = order.currency === 'USD' ? order.tax_usd : order.tax_mxn;
   const totalAmount = order.currency === 'USD' ? order.total_usd : order.total_mxn;
 
   const html = `<!DOCTYPE html>
-<html lang="es">
+<html lang="${copy.lang}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:Georgia,'Times New Roman',serif;color:#18181b;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;padding:32px 16px;">
@@ -84,32 +139,32 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.08);">
         <tr><td style="padding:32px 32px 16px;">
           <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;color:#71717a;">Mr. Paps</p>
-          <h1 style="margin:0 0 12px;font-size:28px;line-height:1.2;">¡Gracias por tu compra!</h1>
+          <h1 style="margin:0 0 12px;font-size:28px;line-height:1.2;">${copy.heading}</h1>
           <p style="margin:0;font-size:16px;line-height:1.6;color:#52525b;">
-            Hola ${escapeHtml(customerName)}, recibimos tu pedido y ya estamos preparándolo.
+            ${copy.greeting}
           </p>
         </td></tr>
         <tr><td style="padding:8px 32px 24px;">
           <div style="background:#fafafa;border:1px solid #e4e4e7;border-radius:16px;padding:20px;text-align:center;">
-            <p style="margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:0.12em;color:#71717a;">Código de seguimiento</p>
+            <p style="margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:0.12em;color:#71717a;">${copy.trackingCodeLabel}</p>
             <p style="margin:0;font-size:24px;font-weight:700;font-family:ui-monospace,Menlo,monospace;letter-spacing:0.06em;">${escapeHtml(trackingCode)}</p>
-            <p style="margin:10px 0 0;font-size:13px;color:#71717a;">Guárdalo junto con este correo para consultar tu pedido.</p>
+            <p style="margin:10px 0 0;font-size:13px;color:#71717a;">${copy.trackingCodeNote}</p>
           </div>
         </td></tr>
         <tr><td style="padding:0 32px 24px;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#52525b;">
-            <tr><td style="padding:6px 0;"><strong>Pedido interno:</strong> ${escapeHtml(order.order_number)}</td></tr>
-            <tr><td style="padding:6px 0;"><strong>Envío a:</strong> ${escapeHtml(order.ship_address1)}${order.ship_address2 ? `, ${escapeHtml(order.ship_address2)}` : ''}, ${escapeHtml(order.ship_city)}, ${escapeHtml(order.ship_state_code)} ${escapeHtml(order.ship_zip)}</td></tr>
-            <tr><td style="padding:6px 0;"><strong>Método de envío:</strong> ${escapeHtml(shippingLine)}</td></tr>
+            <tr><td style="padding:6px 0;"><strong>${copy.orderNumberLabel}:</strong> ${escapeHtml(order.order_number)}</td></tr>
+            <tr><td style="padding:6px 0;"><strong>${copy.shipToLabel}:</strong> ${escapeHtml(order.ship_address1)}${order.ship_address2 ? `, ${escapeHtml(order.ship_address2)}` : ''}, ${escapeHtml(order.ship_city)}, ${escapeHtml(order.ship_state_code)} ${escapeHtml(order.ship_zip)}</td></tr>
+            <tr><td style="padding:6px 0;"><strong>${copy.shippingMethodLabel}:</strong> ${escapeHtml(shippingLine)}</td></tr>
           </table>
         </td></tr>
         <tr><td style="padding:0 32px 8px;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;">
             <thead>
               <tr>
-                <th align="left" style="padding:0 0 8px;border-bottom:2px solid #18181b;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">Producto</th>
-                <th align="center" style="padding:0 0 8px;border-bottom:2px solid #18181b;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">Cant.</th>
-                <th align="right" style="padding:0 0 8px;border-bottom:2px solid #18181b;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">Total</th>
+                <th align="left" style="padding:0 0 8px;border-bottom:2px solid #18181b;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">${copy.productHeader}</th>
+                <th align="center" style="padding:0 0 8px;border-bottom:2px solid #18181b;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">${copy.qtyHeader}</th>
+                <th align="right" style="padding:0 0 8px;border-bottom:2px solid #18181b;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">${copy.totalHeader}</th>
               </tr>
             </thead>
             <tbody>${itemRows}</tbody>
@@ -117,17 +172,17 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
         </td></tr>
         <tr><td style="padding:16px 32px 24px;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;">
-            <tr><td style="padding:4px 0;color:#52525b;">Subtotal</td><td align="right">${formatAmount(subtotalAmount, order.currency)}</td></tr>
-            <tr><td style="padding:4px 0;color:#52525b;">Envío</td><td align="right">${formatAmount(shippingAmount, order.currency)}</td></tr>
-            <tr><td style="padding:4px 0;color:#52525b;">${taxLabel}</td><td align="right">${formatAmount(taxAmount, order.currency)}</td></tr>
-            <tr><td style="padding:10px 0 0;font-size:16px;font-weight:700;">Total pagado</td><td align="right" style="padding:10px 0 0;font-size:16px;font-weight:700;">${formatAmount(totalAmount, order.currency)}</td></tr>
+            <tr><td style="padding:4px 0;color:#52525b;">${copy.subtotalLabel}</td><td align="right">${formatAmount(subtotalAmount, order.currency)}</td></tr>
+            <tr><td style="padding:4px 0;color:#52525b;">${copy.shippingLabel}</td><td align="right">${formatAmount(shippingAmount, order.currency)}</td></tr>
+            <tr><td style="padding:4px 0;color:#52525b;">${copy.taxLabel}</td><td align="right">${formatAmount(taxAmount, order.currency)}</td></tr>
+            <tr><td style="padding:10px 0 0;font-size:16px;font-weight:700;">${copy.totalPaidLabel}</td><td align="right" style="padding:10px 0 0;font-size:16px;font-weight:700;">${formatAmount(totalAmount, order.currency)}</td></tr>
           </table>
         </td></tr>
         <tr><td style="padding:0 32px 32px;">
-          <a href="${trackingUrl}" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;padding:14px 24px;border-radius:999px;font-size:14px;font-family:system-ui,sans-serif;">Consultar mi pedido</a>
+          <a href="${trackingUrl}" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;padding:14px 24px;border-radius:999px;font-size:14px;font-family:system-ui,sans-serif;">${copy.trackButtonLabel}</a>
           <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#71717a;">
-            También puedes entrar a <a href="${orderUrl}" style="color:#18181b;">tu pedido</a> con el código y el correo con el que compraste.
-            ${deliveryEstimate}
+            ${copy.alsoAccess(orderUrl)}
+            ${copy.deliveryEstimate}
           </p>
         </td></tr>
       </table>
@@ -136,27 +191,25 @@ export function buildOrderConfirmationContent(order: MrpapsOrderWithItems): {
 </body>
 </html>`;
 
-  const text = `¡Gracias por tu compra en Mr. Paps!
+  const text = `${copy.textHeading}
 
-Hola ${customerName},
+${copy.textGreeting}
 
-Recibimos tu pedido y ya estamos preparándolo.
+${copy.trackingCodeLabel}: ${trackingCode}
+${copy.orderNumberLabel}: ${order.order_number}
 
-Código de seguimiento: ${trackingCode}
-Pedido interno: ${order.order_number}
-
-Productos:
+${copy.textProductsLabel}
 ${itemLinesText}
 
-Subtotal: ${formatAmount(subtotalAmount, order.currency)}
-Envío (${shippingLine}): ${formatAmount(shippingAmount, order.currency)}
-${taxLabel}: ${formatAmount(taxAmount, order.currency)}
-Total pagado: ${formatAmount(totalAmount, order.currency)}
+${copy.subtotalLabel}: ${formatAmount(subtotalAmount, order.currency)}
+${copy.shippingLabel} (${shippingLine}): ${formatAmount(shippingAmount, order.currency)}
+${copy.taxLabel}: ${formatAmount(taxAmount, order.currency)}
+${copy.totalPaidLabel}: ${formatAmount(totalAmount, order.currency)}
 
-Consulta tu pedido en: ${trackingUrl}
-(Usa el código de seguimiento y este correo: ${order.customer_email})
+${copy.textTrackAt} ${trackingUrl}
+${copy.textUseCode}
 
-${deliveryEstimate}
+${copy.deliveryEstimate}
 
 — Mr. Paps`;
 

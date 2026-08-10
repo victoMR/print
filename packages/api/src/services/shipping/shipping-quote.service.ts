@@ -198,7 +198,7 @@ export async function resolveShippingPriceMxn(
   const { rates } = await quoteShipping(input, { forCustomer });
   const match = rates.find((r) => r.id === method);
   if (!match) {
-    throw new BadRequestError('Método de envío no válido o expirado. Vuelve a cotizar.');
+    throw new BadRequestError('Método de envío no válido o expirado. Vuelve a cotizar.', 'SHIPPING_METHOD_EXPIRED');
   }
   return Number.parseFloat(match.priceMxn);
 }

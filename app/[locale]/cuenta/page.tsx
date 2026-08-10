@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   BotyAlert,
   BotyButton,
@@ -13,6 +14,7 @@ import { useCustomer } from "@/lib/customer-context";
 import { updateProfile } from "@/lib/customer-api";
 
 export default function ProfilePage() {
+  const t = useTranslations("account.profile");
   const { user, refresh } = useCustomer();
   const [form, setForm] = useState({ fullName: "", phone: "" });
   const [busy, setBusy] = useState(false);
@@ -33,7 +35,7 @@ export default function ProfilePage() {
       await refresh();
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar");
+      setError(err instanceof Error ? err.message : t("saveError"));
     } finally {
       setBusy(false);
     }
@@ -42,23 +44,23 @@ export default function ProfilePage() {
   return (
     <>
       <BotyPageHeader
-        title="Mi perfil"
-        description="Actualiza tu nombre y teléfono de contacto para envíos y notificaciones."
+        title={t("title")}
+        description={t("subtitle")}
       />
 
       <BotySurface className="p-6 md:p-8 max-w-xl">
         <form onSubmit={(e) => void handleSave(e)} className="space-y-5">
-          {success && <BotyAlert variant="success">Perfil actualizado correctamente.</BotyAlert>}
+          {success && <BotyAlert variant="success">{t("saved")}</BotyAlert>}
           {error && <BotyAlert variant="error">{error}</BotyAlert>}
 
           <label className="flex flex-col gap-2">
-            <BotyLabel>Correo</BotyLabel>
+            <BotyLabel>{t("emailLabel")}</BotyLabel>
             <BotyInput disabled value={user?.email ?? ""} className="bg-muted/40" />
-            <span className="text-xs text-muted-foreground">El correo no se puede cambiar por seguridad.</span>
+            <span className="text-xs text-muted-foreground">{t("emailImmutable")}</span>
           </label>
 
           <label className="flex flex-col gap-2">
-            <BotyLabel>Nombre completo</BotyLabel>
+            <BotyLabel>{t("nameLabel")}</BotyLabel>
             <BotyInput
               required
               autoComplete="name"
@@ -68,7 +70,7 @@ export default function ProfilePage() {
           </label>
 
           <label className="flex flex-col gap-2">
-            <BotyLabel>Teléfono</BotyLabel>
+            <BotyLabel>{t("phoneLabel")}</BotyLabel>
             <BotyInput
               type="tel"
               autoComplete="tel"
@@ -78,7 +80,7 @@ export default function ProfilePage() {
           </label>
 
           <BotyButton type="submit" variant="primary" disabled={busy}>
-            {busy ? "Guardando…" : "Guardar cambios"}
+            {busy ? t("saving") : t("save")}
           </BotyButton>
         </form>
       </BotySurface>

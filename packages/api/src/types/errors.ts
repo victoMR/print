@@ -26,14 +26,22 @@ export class RateLimitError extends Error {
 }
 
 export class BadRequestError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    public readonly code?: string,
+    /** Valores dinámicos para interpolar en el mensaje traducido del frontend (ej. cantidad disponible). */
+    public readonly details?: Record<string, string | number>,
+  ) {
     super(message);
     this.name = 'BadRequestError';
   }
 }
 
 export class NotFoundError extends Error {
-  constructor(public readonly operation: string) {
+  constructor(
+    public readonly operation: string,
+    public readonly code?: string,
+  ) {
     super(`Not found: ${operation}`);
     this.name = 'NotFoundError';
   }

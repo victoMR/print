@@ -6,6 +6,186 @@
       "en": "EN"
     }
   },
+  "about": {
+    "metaTitle": "Nosotros — Mr. Paps",
+    "metaDescription": "Conoce la historia detrás de Mr. Paps: moda que habla en silencio, prendas producidas con intención y un compromiso genuino con la calidad.",
+    "hero": {
+      "eyebrow": "SOBRE NOSOTROS",
+      "titleLine1": "UNA MARCA",
+      "titleLine2": "CON PRESENCIA."
+    },
+    "manifesto": {
+      "eyebrow": "MANIFIESTO",
+      "quoteLine1": "\"Diseño, poder & estilo.",
+      "quoteLine2": "Presencia que permanece.\"",
+      "body": "Mr. Paps nació de una convicción: la moda más poderosa no grita. Habla en los detalles, en la caída de una tela, en la precisión de un acabado. Creamos para quienes entienden eso."
+    },
+    "story": {
+      "eyebrow": "NUESTRA HISTORIA",
+      "titleLine1": "Nació de",
+      "titleLine2": "una pregunta.",
+      "paragraph1": "¿Por qué la ropa que realmente expresa quién eres tiene que ser escasa, inaccesible o genérica? Esa pregunta fue el origen de Mr. Paps.",
+      "paragraph2": "Empezamos con una premisa simple: calidad de autor, sin los intermediarios que encarecen sin agregar valor. Producción bajo demanda, con materiales seleccionados y atención obsesiva al acabado de cada pieza.",
+      "paragraph3": "Hoy somos una marca que mezcla identidad editorial con la comodidad de lo cotidiano. Prendas que se sienten bien porque están bien hechas — no porque un logo diga que deberían estarlo.",
+      "quote": "\"La prenda perfecta es aquella que pasa desapercibida para todos, excepto para quien la usa.\"",
+      "stat1Value": "100%",
+      "stat1Label": "Producción bajo pedido",
+      "stat2Value": "MX",
+      "stat2Label": "Hecho en México para México"
+    },
+    "values": {
+      "eyebrow": "LO QUE NOS DEFINE",
+      "items": [
+        { "num": "01", "title": "LUJO SIN RUIDO", "body": "Prendas que no necesitan anunciarse. El verdadero lujo es invisible para quien no sabe ver — y completamente legible para quien sí." },
+        { "num": "02", "title": "PRODUCCIÓN CONSCIENTE", "body": "Cada pieza se crea al recibir tu pedido. Sin inventario masivo, sin desperdicio. Tu compra tiene un propósito antes de llegar a tus manos." },
+        { "num": "03", "title": "DISEÑO ATEMPORAL", "body": "No seguimos tendencias: las observamos, las filtramos y creamos algo que permanece. Colecciones pensadas para durar más allá de una temporada." }
+      ]
+    },
+    "process": {
+      "eyebrow": "EL PROCESO",
+      "statValue": "5–14",
+      "statLabelLine1": "días de producción y envío",
+      "statLabelLine2": "para una prenda única",
+      "description": "Cada pedido activa su propia cadena de producción. Nada existe en bodega: tu pieza se crea específicamente para ti.",
+      "stepsEyebrow": "ASÍ FUNCIONA",
+      "steps": [
+        { "title": "Eliges tu pieza", "body": "Navegas el catálogo, seleccionas color, talla y cantidad. Sin mínimos, sin esperas de restock." },
+        { "title": "Producción a tu medida", "body": "Tu pedido se envía a producción en el momento de confirmarse. Impresión de alta resolución sobre materiales premium." },
+        { "title": "Empaque y envío", "body": "La pieza se revisa, empaca y despacha directamente hacia ti. Seguimiento en tiempo real desde el primer día." }
+      ]
+    },
+    "cta": {
+      "eyebrow": "EXPLORAR",
+      "titleLine1": "La colección",
+      "titleLine2": "te espera.",
+      "button": "DESCUBRIR COLECCIÓN"
+    }
+  },
+  "shippingReturnsMx": {
+    "metaTitle": "Envíos y Devoluciones",
+    "metaDescription": "Política de envíos y devoluciones de Mr. Paps. Envíos a todo México en 5–14 días hábiles.",
+    "title": "Envíos y Devoluciones",
+    "subtitle": "Todos nuestros productos se fabrican bajo demanda. Conoce los tiempos de entrega y nuestra política de devoluciones.",
+    "shipping": {
+      "title": "Envíos",
+      "coverageLabel": "Cobertura:",
+      "coverage": "Realizamos envíos únicamente dentro de la República Mexicana.",
+      "deliveryLabel": "Tiempo de entrega:",
+      "delivery": "Nuestros productos se fabrican e imprimen al recibir tu pedido. El tiempo estimado de entrega es de 5 a 14 días hábiles a partir de la confirmación de pago, dependiendo de tu ubicación.",
+      "costLabel": "Costo de envío:",
+      "cost": "El costo se calcula automáticamente al ingresar tu dirección en el checkout, antes de confirmar el pago. Seleccionamos la tarifa más económica disponible.",
+      "trackingLabel": "Seguimiento:",
+      "tracking": "Una vez que tu pedido sea enviado, recibirás un número de guía en tu correo para rastrear la entrega en tiempo real.",
+      "noteLabel": "Nota importante:",
+      "note": "Los tiempos de entrega son estimados. Factores externos como condiciones climáticas, días festivos o saturación de la paquetería pueden afectar el plazo de entrega."
+    },
+    "returns": {
+      "title": "Devoluciones y Reembolsos",
+      "intro": "Dado que cada producto se fabrica específicamente para tu pedido, no aceptamos devoluciones por cambio de opinión. Sin embargo, garantizamos la calidad de nuestros productos.",
+      "defectsTitle": "Defectos o daños de fabricación",
+      "defectsBody": "Si tu producto llega con un defecto de impresión, daño en la tela, o error en el pedido (talla o producto incorrecto), tienes 5 días hábiles a partir de la entrega para reportarlo.",
+      "defectsSendTo": "Envíanos evidencia fotográfica del defecto a",
+      "defectsOr": "o por",
+      "defectsResolution": ". Gestionaremos el reenvío del producto sin costo adicional o el reembolso completo.",
+      "cancelTitle": "Cancelación de pedido",
+      "cancelBody": "Puedes cancelar tu pedido antes de que entre a producción. Una vez que el proceso de fabricación ha iniciado, no es posible cancelar ni modificar el pedido.",
+      "cancelContact": "Para solicitar una cancelación, contáctanos de inmediato por",
+      "cancelOr": "o por correo a"
+    },
+    "warranty": {
+      "title": "Garantía del producto",
+      "intro": "Todos nuestros productos cuentan con la garantía mínima obligatoria establecida en la Ley Federal de Protección al Consumidor (LFPC):",
+      "printDefects": "Defectos de impresión o fabricación: 6 meses desde la fecha de compra",
+      "fabricDefects": "Defectos de tela: 6 meses desde la fecha de compra",
+      "exclusion": "La garantía no cubre daños por uso inadecuado, decoloración por lavado incorrecto (consulta las instrucciones de lavado en la etiqueta), ni desgaste natural del producto."
+    },
+    "questions": {
+      "title": "¿Tienes dudas?",
+      "intro": "Estamos para ayudarte. Contáctanos por cualquiera de estos medios:",
+      "whatsappLabel": "WhatsApp:",
+      "whatsappCta": "Escríbenos directamente",
+      "emailLabel": "Correo:"
+    },
+    "backToShop": "← Volver a la tienda"
+  },
+  "shippingReturnsUs": {
+    "metaTitle": "Shipping & Returns",
+    "metaDescription": "Mr. Paps shipping and returns policy. Shipped within the US in 5–10 business days.",
+    "title": "Shipping & Returns",
+    "subtitle": "All our products are made to order. Here's what to expect on delivery times and our returns policy.",
+    "shipping": {
+      "title": "Shipping",
+      "coverageLabel": "Cobertura:",
+      "coverage": "Enviamos únicamente dentro de Estados Unidos, desde un proveedor de fulfillment con sede en EE. UU.",
+      "deliveryLabel": "Tiempo de entrega:",
+      "delivery": "Tu pedido se produce e imprime después de confirmar el pago. La entrega estimada es de 5 a 10 días hábiles a partir de la confirmación del pago.",
+      "costLabel": "Costo de envío:",
+      "cost": "Se muestra una tarifa plana de envío en dólares en el checkout antes de pagar.",
+      "trackingLabel": "Seguimiento:",
+      "tracking": "Una vez que tu pedido sea enviado, recibirás un número de guía por correo.",
+      "noteLabel": "Nota importante:",
+      "note": "Los tiempos de entrega son estimados. El clima, días festivos o retrasos de paquetería pueden afectarlos."
+    },
+    "returns": {
+      "title": "Devoluciones y Reembolsos",
+      "intro": "Como cada producto se fabrica específicamente para tu pedido, no aceptamos devoluciones por cambio de opinión. Sí respaldamos la calidad de nuestros productos.",
+      "defectsTitle": "Defectos de fabricación o daños",
+      "defectsBody": "Si tu producto llega con un defecto de impresión, daño en la tela, o el artículo equivocado (talla o producto), tienes 5 días desde la entrega para reportarlo.",
+      "defectsSendTo": "Envíanos evidencia fotográfica del problema a",
+      "defectsOr": "o por",
+      "defectsResolution": ". Coordinaremos un reenvío gratuito o un reembolso completo.",
+      "cancelTitle": "Cancelación de pedido",
+      "cancelBody": "Puedes cancelar tu pedido antes de que entre a producción. Una vez iniciada, el pedido no se puede cancelar ni modificar.",
+      "cancelContact": "Para solicitar una cancelación, contáctanos de inmediato por",
+      "cancelOr": "o por correo a"
+    },
+    "warranty": {
+      "title": "Garantía del producto",
+      "intro": "Todos nuestros productos cuentan con garantía contra defectos de fabricación e impresión:",
+      "printDefects": "Defectos de impresión o fabricación: 6 meses desde la fecha de compra",
+      "fabricDefects": "Defectos de tela: 6 meses desde la fecha de compra",
+      "exclusion": "La garantía no cubre daños por mal uso, decoloración por lavado incorrecto (revisa la etiqueta de cuidado) ni desgaste normal."
+    },
+    "questions": {
+      "title": "¿Tienes dudas?",
+      "intro": "Estamos para ayudarte. Contáctanos por cualquiera de estos medios:",
+      "whatsappLabel": "WhatsApp:",
+      "whatsappCta": "Escríbenos directamente",
+      "emailLabel": "Correo:"
+    },
+    "backToShop": "← Volver a la tienda"
+  },
+  "apiErrors": {
+    "MARKET_MISMATCH": "La moneda de tu pedido no coincide con tu ubicación detectada. Cambia a la versión correcta del sitio (/mx o /us) para continuar.",
+    "COUNTRY_CURRENCY_MISMATCH": "{expectedCountry, select, US {Esta tienda solo envía a Estados Unidos. Cambia a /mx para envíos a México.} other {Esta tienda solo envía a México. Cambia a /us para envíos a Estados Unidos.}}",
+    "SHIPPING_MX_ONLY": "La cotización Envia solo aplica a envíos dentro de México. Usa la tienda /us para envíos a Estados Unidos.",
+    "INVALID_CUSTOMER_SESSION": "Sesión de cliente no válida.",
+    "EMAIL_NOT_VERIFIED": "Verifica tu correo antes de realizar un pedido.",
+    "LEGAL_NOT_ACCEPTED_ACCOUNT": "Debes aceptar los Términos y el Aviso de Privacidad en tu cuenta.",
+    "LEGAL_NOT_ACCEPTED": "Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para continuar.",
+    "TOTALS_MISMATCH": "Los totales no coinciden. Vuelve a cotizar el pedido.",
+    "MAX_QUANTITY_EXCEEDED": "Máximo {max} unidades por artículo.",
+    "INSUFFICIENT_STOCK": "Solo hay {available} unidades disponibles de {variantLabel}.",
+    "STALE_CART_ITEM": "Tu carrito tiene productos que ya no existen en el catálogo. Vacía el carrito y vuelve a agregar los artículos desde la tienda.",
+    "CART_PRICE_MISMATCH": "El precio del carrito no coincide con el catálogo. Actualiza la página.",
+    "VARIANT_NOT_AVAILABLE_IN_USD": "{variantLabel} no está disponible en USD. Quítalo del carrito.",
+    "PASSWORD_TOO_SHORT_8": "La contraseña debe tener al menos 8 caracteres.",
+    "EMAIL_ALREADY_REGISTERED": "Ya existe una cuenta con ese correo. Inicia sesión.",
+    "INVALID_CREDENTIALS": "Correo o contraseña incorrectos.",
+    "INVALID_TRACKING_CODE": "Código no reconocido. Usa el código de seguimiento que recibiste al comprar (formato MRP-XXXX-XXXX-XXXX con letras y números).",
+    "ORDER_NOT_FOUND": "No encontramos un pedido con ese código y correo.",
+    "INVALID_VERIFICATION_LINK": "Enlace de verificación no válido.",
+    "VERIFICATION_LINK_INVALID_OR_USED": "Enlace de verificación inválido o ya utilizado.",
+    "VERIFICATION_LINK_EXPIRED": "El enlace de verificación expiró. Solicita uno nuevo.",
+    "EMAIL_ALREADY_VERIFIED": "Este correo ya está verificado. Puedes iniciar sesión.",
+    "SHIPPING_METHOD_EXPIRED": "Método de envío no válido o expirado. Vuelve a cotizar."
+  },
+  "hero": {
+    "imageAlt": "Mr. Paps — Presencia que permanece",
+    "headlineLine1": "DISEÑO, PODER & ESTILO.",
+    "headlineLine2": "PRESENCIA QUE PERMANECE.",
+    "cta": "DESCUBRIR COLECCIÓN"
+  },
   "layout": {
     "header": {
       "announcement": {
@@ -51,6 +231,11 @@
     }
   },
   "shop": {
+    "metadata": {
+      "title": "Tienda",
+      "description": "Explora camisetas, sudaderas y más productos personalizados con impresión bajo demanda. Envío a todo México.",
+      "ogTitle": "Tienda — Mr. Paps"
+    },
     "page": {
       "title": "Colección",
       "filter": "Filtrar",
@@ -72,7 +257,14 @@
       "addToCart": "Agregar al carrito",
       "shippingNote": "Envío estimado 5–14 días · Aduana incluida para México"
     },
+    "unavailable": {
+      "title": "Producto no disponible",
+      "defaultMessage": "Este producto aún no tiene variantes activas (talla/precio). Si eres el administrador, edítalo en el panel y agrega variantes.",
+      "noVariantsMessage": "Este producto está en el catálogo pero no tiene variantes con precio. En admin, edítalo y agrega al menos una variante activa.",
+      "backToShop": "Volver a la tienda"
+    },
     "productDetail": {
+      "galleryAriaLabel": "Galería del producto",
       "backToShop": "Volver a la tienda",
       "collection": "Colección",
       "outOfStock": "Agotado",
@@ -97,8 +289,16 @@
       "careContent": "Lavar a máquina en frío. No usar blanqueador. Planchar a temperatura baja si es necesario. Ver etiqueta interior para instrucciones completas."
     }
   },
+  "home": {
+    "metaTitle": "Inicio",
+    "ogTitle": "Mr. Paps — Presencia que permanece"
+  },
   "cart": {
     "title": "Carrito",
+    "metadata": {
+      "title": "Carrito",
+      "description": "Revisa los productos en tu carrito antes de pagar."
+    },
     "empty": {
       "title": "Tu carrito está vacío",
       "subtitle": "Explora el catálogo y agrega productos."
@@ -140,6 +340,10 @@
     }
   },
   "checkout": {
+    "metadata": {
+      "title": "Checkout",
+      "description": "Finaliza tu compra de forma segura en Mr. Paps."
+    },
     "addressGeo": {
       "statesLoadError": "No se pudieron cargar los estados (INEGI).",
       "colonyHint": "Colonia y municipio según SEPOMEX (datos postales oficiales).",
@@ -258,8 +462,241 @@
       "errorDescription": "Revisa los datos de tu tarjeta o prueba con otro método.",
       "retryPayment": "Reintentar pago",
       "withEmail": "Tu pedido quedó registrado. Te enviamos la confirmación de pago y los detalles del pedido a {email}. Revisa también tu bandeja de spam.",
-      "noEmail": "Tu pedido quedó registrado. Te enviamos la confirmación de pago al correo que indicaste en la compra. Revisa también tu bandeja de spam."
+      "noEmail": "Tu pedido quedó registrado. Te enviamos la confirmación de pago al correo que indicaste en la compra. Revisa también tu bandeja de spam.",
+      "redirecting": "Redirigiendo a los detalles de tu pedido…",
+      "redirectingAriaLabel": "Redirigiendo"
     },
-    "clearCartAndShop": "Vaciar carrito e ir a la tienda"
+    "clearCartAndShop": "Vaciar carrito e ir a la tienda",
+    "paymentForm": {
+      "billingSummaryLabel": "Datos de facturación (del paso de envío)",
+      "cardErrorFallback": "Revisa los datos de la tarjeta",
+      "paymentErrorFallback": "Error al procesar el pago",
+      "unexpectedError": "Error inesperado al pagar",
+      "processing": "Procesando pago…",
+      "payNow": "Pagar ahora",
+      "secureNotice": "Pago seguro vía Stripe · No guardamos datos de tu tarjeta",
+      "notConfigured": "Pagos en línea no configurados aún. Te contactaremos para coordinar el pago.",
+      "confirmWithoutOnlinePayment": "Confirmar pedido sin pago en línea",
+      "preparing": "Preparando pago…",
+      "initError": "No se pudo iniciar el pago",
+      "totalToPay": "Total a pagar"
+    }
+  },
+  "auth": {
+    "redirectingToAdmin": "Redirigiendo al panel de administración…",
+    "showPassword": "Mostrar",
+    "hidePassword": "Ocultar",
+    "resendVerification": "Reenviar enlace de verificación",
+    "login": {
+      "welcomeBack": "Bienvenido de nuevo",
+      "subtitle": "Accede para ver pedidos y direcciones guardadas.",
+      "submit": "Iniciar sesión",
+      "signingIn": "Entrando…",
+      "rememberMe": "Recordarme en este dispositivo (30 días)",
+      "firstTime": "¿Primera vez aquí?",
+      "createFree": "Crear cuenta gratis"
+    },
+    "register": {
+      "title": "Crea tu cuenta",
+      "subtitle": "Guarda direcciones, revisa pedidos y compra con un solo clic.",
+      "fullName": "Nombre completo",
+      "phone": "Teléfono",
+      "optional": "opcional",
+      "confirmPassword": "Confirmar contraseña",
+      "passwordHint": "Mínimo {min} caracteres",
+      "submit": "Crear cuenta",
+      "creating": "Creando cuenta…",
+      "alreadyHaveAccount": "¿Ya tienes cuenta?"
+    },
+    "fields": {
+      "email": "Correo electrónico",
+      "password": "Contraseña"
+    },
+    "errors": {
+      "emailInvalid": "Ingresa un correo electrónico válido.",
+      "nameRequired": "El nombre completo es obligatorio.",
+      "nameTooLong": "El nombre no puede superar {max} caracteres.",
+      "passwordTooShort": "La contraseña debe tener al menos {min} caracteres.",
+      "passwordTooLong": "La contraseña no puede superar {max} caracteres.",
+      "passwordMismatch": "Las contraseñas no coinciden.",
+      "phoneTooShort": "Si agregas teléfono, debe tener al menos 10 dígitos.",
+      "legalRequired": "Debes aceptar los Términos y Condiciones y el Aviso de Privacidad.",
+      "emailRequired": "Ingresa tu correo electrónico.",
+      "passwordRequired": "Ingresa tu contraseña.",
+      "emailNotVerified": "Confirma tu correo antes de iniciar sesión. Revisa tu bandeja de entrada o solicita un nuevo enlace.",
+      "loginFailed": "Error al iniciar sesión",
+      "registerFailed": "Error al crear la cuenta"
+    }
+  },
+  "orderDetail": {
+    "paymentConfirmed": "Pago confirmado",
+    "thankYou": "Gracias por tu compra",
+    "confirmationSentTo": "Te enviamos la confirmación de pago y los detalles del pedido a {email}. Si no lo ves, revisa spam o correo no deseado.",
+    "trackingCodeLabel": "Código de seguimiento:",
+    "trackingCode": "Código de seguimiento",
+    "back": "Volver",
+    "internalRef": "Ref. interna (solo soporte): {orderNumber}",
+    "products": "{count, plural, one {Producto (#)} other {Productos (#)}}",
+    "shipping": "Envío",
+    "trackPackage": "Rastrear paquete",
+    "paymentSummary": "Resumen de pago",
+    "subtotal": "Subtotal",
+    "tax": "IVA",
+    "taxUS": "Sales tax",
+    "total": "Total",
+    "willNotifyByEmail": "Te avisaremos por correo cuando tu pedido avance de estado.",
+    "viewAllOrders": "Ver todos mis pedidos",
+    "trackAnotherOrder": "Consultar otro pedido",
+    "keepShopping": "Seguir comprando",
+    "loadingOrder": "Cargando pedido…",
+    "couldNotLoad": "No se pudo cargar el pedido",
+    "paymentStatus": {
+      "pending": "Pago pendiente",
+      "paid": "Pagado",
+      "failed": "Pago fallido",
+      "refunded": "Reembolsado"
+    },
+    "status": {
+      "pendiente_pago": "Pago pendiente",
+      "pedido": "Pedido recibido",
+      "solicitado_imprenta": "Solicitado a imprenta",
+      "recibido_imprenta": "Recibido de imprenta",
+      "enviado": "Enviado al cliente",
+      "cancelado": "Cancelado"
+    },
+    "verifyOrder": {
+      "title": "Verifica tu pedido",
+      "subtitle": "Por seguridad, confirma el código de seguimiento y el correo con el que compraste.",
+      "submit": "Ver pedido",
+      "retry": "Reintentar"
+    },
+    "backToOrders": "Mis pedidos",
+    "backToTracking": "Seguimiento"
+  },
+  "tracking": {
+    "title": "Seguimiento de pedido",
+    "subtitle": "Consulta el estado con tu código de seguimiento y el correo con el que compraste.",
+    "hasAccount": "¿Tienes cuenta?",
+    "login": "Inicia sesión",
+    "loginSuffix": "para ver todos tus pedidos.",
+    "form": {
+      "submitLabel": "Consultar pedido",
+      "queryError": "No se pudo consultar el pedido",
+      "trackingCodeLabel": "Código de seguimiento",
+      "trackingCodeHint": "Es el código con letras y números (ej. MRP-K7NH-9P2W-X7M8), no el número interno tipo MRP-2026-00006 de la lista de pedidos.",
+      "emailLabel": "Correo del pedido",
+      "querying": "Consultando…"
+    }
+  },
+  "emailVerification": {
+    "loading": "Cargando…",
+    "verifying": "Verificando tu correo…",
+    "linkIncomplete": "Enlace de verificación incompleto.",
+    "verifyErrorFallback": "No se pudo verificar el correo.",
+    "verifiedTitle": "¡Correo verificado!",
+    "verifiedFallbackMessage": "Correo verificado correctamente.",
+    "loginButton": "Iniciar sesión",
+    "failedTitle": "No se pudo verificar",
+    "requestNewLink": "Solicitar nuevo enlace",
+    "goToLogin": "Ir a iniciar sesión",
+    "pending": {
+      "verifiedRedirectMessage": "¡Correo verificado! Te llevamos al inicio de sesión…",
+      "resendSuccess": "Enlace reenviado. Revisa tu bandeja de entrada.",
+      "resendErrorFallback": "No se pudo enviar el correo",
+      "activeAccountMessage": "Tu cuenta ya está activa. Redirigiendo al inicio de sesión…",
+      "confirmEmailTitle": "Confirma tu correo",
+      "confirmEmailSubtitle": "Te enviamos un enlace de verificación. Ábrelo en cualquier dispositivo; esta pantalla se actualizará sola cuando confirmes.",
+      "emailLabel": "Correo:",
+      "waitingConfirmation": "Esperando confirmación…",
+      "resendLabel": "¿No llegó? Reenviar a",
+      "sending": "Enviando…",
+      "resendLink": "Reenviar enlace",
+      "alreadyVerified": "¿Ya verificaste?",
+      "login": "Iniciar sesión"
+    }
+  },
+  "cookieConsent": {
+    "ariaLabel": "Consentimiento de cookies",
+    "message": "Usamos cookies esenciales para el carrito y tu sesión. ¿Nos permites activar analítica de Vercel para mejorar la tienda?",
+    "privacyLink": "Aviso de privacidad",
+    "essentialOnly": "Solo esenciales",
+    "acceptAll": "Aceptar todo"
+  },
+  "legalConsent": {
+    "prefix": "He leído y acepto los",
+    "terms": "Términos y Condiciones",
+    "and": "y el",
+    "privacy": "Aviso de Privacidad"
+  },
+  "notFound": {
+    "metaTitle": "Página no encontrada",
+    "metaDescription": "La página que buscas no existe o fue movida.",
+    "eyebrow": "No encontrada",
+    "title": "Esta página no existe",
+    "description": "El enlace puede estar roto o la página fue eliminada. Prueba volver al inicio o explorar la tienda.",
+    "goHome": "Ir al inicio",
+    "viewShop": "Ver tienda"
+  },
+  "errorPage": {
+    "eyebrow": "Error",
+    "title": "Algo salió mal",
+    "description": "No pudimos cargar esta página. Puedes intentar de nuevo o volver al inicio.",
+    "retry": "Reintentar",
+    "goHome": "Ir al inicio"
+  },
+  "account": {
+    "nav": { "profile": "Mi perfil", "orders": "Mis pedidos", "addresses": "Direcciones" },
+    "loading": "Cargando tu cuenta…",
+    "title": "Mi cuenta",
+    "greeting": "Hola, {firstName}",
+    "logout": "Cerrar sesión",
+    "logoutShort": "Salir",
+    "profile": {
+      "title": "Mi perfil",
+      "subtitle": "Actualiza tu nombre y teléfono de contacto para envíos y notificaciones.",
+      "saved": "Perfil actualizado correctamente.",
+      "emailLabel": "Correo",
+      "emailImmutable": "El correo no se puede cambiar por seguridad.",
+      "nameLabel": "Nombre completo",
+      "phoneLabel": "Teléfono",
+      "saving": "Guardando…",
+      "save": "Guardar cambios",
+      "saveError": "Error al guardar"
+    },
+    "orders": {
+      "title": "Mis pedidos",
+      "subtitle": "Sigue el estado de tus compras y abre el detalle de cada pedido.",
+      "loading": "Cargando pedidos…",
+      "loadError": "Error al cargar pedidos",
+      "emptyTitle": "Aún no tienes pedidos",
+      "emptySubtitle": "Cuando compres en la tienda, aparecerán aquí con su estado y total.",
+      "explore": "Explorar productos",
+      "itemCount": "{count, plural, one {# pieza} other {# piezas}}"
+    },
+    "addresses": {
+      "title": "Mis direcciones",
+      "subtitle": "Guarda varias direcciones y elige una predeterminada para el checkout.",
+      "new": "Nueva dirección",
+      "edit": "Editar dirección",
+      "labelHint": "Etiqueta (Casa, Trabajo…)",
+      "recipientName": "Nombre del destinatario",
+      "phone": "Teléfono",
+      "street": "Calle y número",
+      "useAsDefault": "Usar como dirección predeterminada",
+      "saving": "Guardando…",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "loading": "Cargando direcciones…",
+      "emptyTitle": "Sin direcciones guardadas",
+      "emptySubtitle": "Agrega tu primera dirección para agilizar tus próximos pedidos.",
+      "add": "Agregar dirección",
+      "default": "Predeterminada",
+      "setDefault": "Predeterminar",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar esta dirección?",
+      "loadError": "Error al cargar",
+      "saveError": "Error al guardar",
+      "deleteError": "Error al eliminar"
+    }
   }
 }

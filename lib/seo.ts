@@ -10,9 +10,17 @@ import {
 
 export const SITE_NAME = "Mr. Paps";
 export const SITE_TAGLINE = "Tienda POD";
-export const DEFAULT_DESCRIPTION =
-  "Productos personalizados impresos bajo demanda con envío a todo México.";
 export const DEFAULT_OG_IMAGE_PATH = "/og-image.png";
+
+const DEFAULT_DESCRIPTION_BY_MARKET: Record<Locale, string> = {
+  mx: "Productos personalizados impresos bajo demanda con envío a todo México.",
+  us: "Custom, print-on-demand products shipped within the United States.",
+};
+
+/** Descripción SEO por defecto — varía por mercado (menciona el país de envío), no por idioma de UI. */
+export function defaultDescription(market: Locale = "mx"): string {
+  return DEFAULT_DESCRIPTION_BY_MARKET[market];
+}
 
 const PRODUCTION_SITE_URL = "https://mrpapshop.com";
 
@@ -90,13 +98,13 @@ export function buildDefaultMetadata(market: Locale = "mx"): Pick<
       ...defaultOpenGraph,
       locale: ogLocaleForMarket(market),
       title: `${SITE_NAME} — ${SITE_TAGLINE}`,
-      description: DEFAULT_DESCRIPTION,
+      description: defaultDescription(market),
       images: [{ url: ogImage, width: 1280, height: 720, alt: SITE_NAME }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${SITE_NAME} — ${SITE_TAGLINE}`,
-      description: DEFAULT_DESCRIPTION,
+      description: defaultDescription(market),
       images: [ogImage],
     },
   };
@@ -158,7 +166,7 @@ export function organizationJsonLd() {
     name: SITE_NAME,
     url,
     logo: absoluteUrl(DEFAULT_OG_IMAGE_PATH),
-    description: DEFAULT_DESCRIPTION,
+    description: defaultDescription("mx"),
     areaServed: [
       { "@type": "Country", name: "México" },
       { "@type": "Country", name: "United States" },
@@ -191,7 +199,7 @@ export function websiteJsonLd(market: Locale = "mx") {
     "@type": "WebSite",
     name: SITE_NAME,
     url,
-    description: DEFAULT_DESCRIPTION,
+    description: defaultDescription(market),
     inLanguage: jsonLdLanguageForMarket(market),
     publisher: { "@type": "Organization", name: SITE_NAME, url },
   };
@@ -209,7 +217,7 @@ export function productJsonLd(product: CatalogProductDetail, market: Locale = "m
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.description || DEFAULT_DESCRIPTION,
+    description: product.description || defaultDescription(market),
     image: (product.images?.length ? product.images : [product.thumbnail])
       .filter(Boolean)
       .map((url) => absoluteUrl(url)),
@@ -230,14 +238,20 @@ export function productJsonLd(product: CatalogProductDetail, market: Locale = "m
   };
 }
 
-export function productBreadcrumbJsonLd(product: CatalogProductDetail) {
+const BREADCRUMB_LABELS_BY_MARKET: Record<Locale, { home: string; shop: string }> = {
+  mx: { home: "Inicio", shop: "Tienda" },
+  us: { home: "Home", shop: "Shop" },
+};
+
+export function productBreadcrumbJsonLd(product: CatalogProductDetail, market: Locale = "mx") {
   const home = getSiteUrl();
+  const labels = BREADCRUMB_LABELS_BY_MARKET[market];
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Inicio", item: home },
-      { "@type": "ListItem", position: 2, name: "Tienda", item: `${home}/shop` },
+      { "@type": "ListItem", position: 1, name: labels.home, item: home },
+      { "@type": "ListItem", position: 2, name: labels.shop, item: `${home}/shop` },
       {
         "@type": "ListItem",
         position: 3,

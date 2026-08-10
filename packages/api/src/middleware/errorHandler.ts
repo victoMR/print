@@ -35,7 +35,12 @@ export function errorHandler(
   }
 
   if (err instanceof BadRequestError) {
-    res.status(400).json({ ok: false, error: err.message });
+    res.status(400).json({
+      ok: false,
+      error: err.message,
+      ...(err.code ? { code: err.code } : {}),
+      ...(err.details ? { details: err.details } : {}),
+    });
     return;
   }
 
@@ -64,7 +69,7 @@ export function errorHandler(
   }
 
   if (err instanceof NotFoundError) {
-    res.status(404).json({ ok: false, error: err.message });
+    res.status(404).json({ ok: false, error: err.message, ...(err.code ? { code: err.code } : {}) });
     return;
   }
 

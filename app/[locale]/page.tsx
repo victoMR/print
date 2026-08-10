@@ -6,19 +6,22 @@ import { Footer } from "@/components/boty/footer";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { JsonLd } from "@/components/seo/json-ld";
 import type { Metadata } from "next";
-import { DEFAULT_DESCRIPTION, getSiteUrl, ogLocaleForMarket, websiteJsonLd } from "@/lib/seo";
+import { defaultDescription, getSiteUrl, ogLocaleForMarket, websiteJsonLd } from "@/lib/seo";
 import { getRequestMarket } from "@/lib/i18n/get-request-market";
+import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const market = await getRequestMarket();
+  const t = await getTranslations("home");
+  const description = defaultDescription(market);
   return {
-    title: "Inicio",
-    description: DEFAULT_DESCRIPTION,
+    title: t("metaTitle"),
+    description,
     alternates: { canonical: "/" },
     openGraph: {
       locale: ogLocaleForMarket(market),
-      title: "Mr. Paps — Presencia que permanece",
-      description: DEFAULT_DESCRIPTION,
+      title: t("ogTitle"),
+      description,
       url: getSiteUrl(),
     },
   };

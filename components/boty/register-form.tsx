@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { customerRegister } from "@/lib/customer-api";
+import { apiErrorMessage } from "@/lib/i18n/api-error-message";
 import {
   CUSTOMER_PASSWORD_MIN,
   normalizeRegisterPayload,
@@ -20,6 +22,8 @@ function buildAuthHref(path: string, redirect: string) {
 }
 
 export function RegisterForm() {
+  const t = useTranslations("auth");
+  const tRoot = useTranslations();
   const router = useRouter();
   const params = useSearchParams();
   const [form, setForm] = useState({
@@ -41,7 +45,7 @@ export function RegisterForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const validationError = validateRegisterForm(form);
+    const validationError = validateRegisterForm(form, (key, values) => t(`errors.${key}`, values));
     if (validationError) {
       setError(validationError);
       return;
@@ -51,7 +55,7 @@ export function RegisterForm() {
       const result = await customerRegister(normalizeRegisterPayload(form));
       router.push(`/registro/verificar?email=${encodeURIComponent(result.email)}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al crear la cuenta");
+      setError(apiErrorMessage(err, tRoot, t("errors.registerFailed")));
     } finally {
       setBusy(false);
     }
@@ -61,17 +65,15 @@ export function RegisterForm() {
     <AuthShell variant="customer">
       <AuthCard>
         <div className="text-center mb-8">
-          <h1 className="font-serif text-3xl mb-2">Crea tu cuenta</h1>
-          <p className="text-sm text-muted-foreground">
-            Guarda direcciones, revisa pedidos y compra con un solo clic.
-          </p>
+          <h1 className="font-serif text-3xl mb-2">{t("register.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("register.subtitle")}</p>
         </div>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" autoComplete="on">
           {error && <BotyAlert variant="error">{error}</BotyAlert>}
 
           <label className="flex flex-col gap-2">
-            <BotyLabel>Nombre completo</BotyLabel>
+            <BotyLabel>{t("register.fullName")}</BotyLabel>
             <BotyInput
               required
               autoComplete="name"
@@ -81,7 +83,7 @@ export function RegisterForm() {
           </label>
 
           <label className="flex flex-col gap-2">
-            <BotyLabel>Correo electrónico</BotyLabel>
+            <BotyLabel>{t("fields.email")}</BotyLabel>
             <BotyInput
               required
               type="email"
@@ -92,7 +94,7 @@ export function RegisterForm() {
           </label>
 
           <label className="flex flex-col gap-2">
-            <BotyLabel>Teléfono <span className="font-normal text-muted-foreground">(opcional)</span></BotyLabel>
+            <BotyLabel>{t("register.phone")} <span className="font-normal text-muted-foreground">({t("register.optional")})</span></BotyLabel>
             <BotyInput
               type="tel"
               autoComplete="tel"
@@ -102,20 +104,24 @@ export function RegisterForm() {
           </label>
 
           <PasswordRow
-            label="Contraseña"
+            label={t("fields.password")}
             value={form.password}
             onChange={(v) => setForm({ ...form, password: v })}
             show={showPassword}
             onToggle={() => setShowPassword((s) => !s)}
-            hint={`Mínimo ${CUSTOMER_PASSWORD_MIN} caracteres`}
+            hint={t("register.passwordHint", { min: CUSTOMER_PASSWORD_MIN })}
+            showLabel={t("showPassword")}
+            hideLabel={t("hidePassword")}
           />
 
           <PasswordRow
-            label="Confirmar contraseña"
+            label={t("register.confirmPassword")}
             value={form.confirmPassword}
             onChange={(v) => setForm({ ...form, confirmPassword: v })}
             show={showConfirm}
             onToggle={() => setShowConfirm((s) => !s)}
+            showLabel={t("showPassword")}
+            hideLabel={t("hidePassword")}
           />
 
           <LegalConsentCheckbox
@@ -132,14 +138,14 @@ export function RegisterForm() {
             className="w-full mt-2"
             disabled={busy || !form.acceptedLegal}
           >
-            {busy ? "Creando cuenta…" : "Crear cuenta"}
+            {busy ? t("register.creating") : t("register.submit")}
           </BotyButton>
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-8 pt-6 border-t border-border/50">
-          ¿Ya tienes cuenta?{" "}
+          {t("register.alreadyHaveAccount")}{" "}
           <Link href={loginHref} className="text-primary font-medium hover:underline">
-            Iniciar sesión
+            {t("login.submit")}
           </Link>
         </p>
       </AuthCard>
@@ -154,6 +160,8 @@ function PasswordRow({
   show,
   onToggle,
   hint,
+  showLabel,
+  hideLabel,
 }: {
   label: string;
   value: string;
@@ -161,6 +169,8 @@ function PasswordRow({
   show: boolean;
   onToggle: () => void;
   hint?: string;
+  showLabel: string;
+  hideLabel: string;
 }) {
   return (
     <label className="flex flex-col gap-2">
@@ -179,7 +189,7 @@ function PasswordRow({
           type="button"
           onClick={onToggle}
           className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground"
-          aria-label={show ? "Ocultar" : "Mostrar"}
+          aria-label={show ? hideLabel : showLabel}
         >
           {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>

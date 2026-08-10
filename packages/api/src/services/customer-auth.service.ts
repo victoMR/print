@@ -46,11 +46,13 @@ export async function registerCustomer(input: {
   acceptedPrivacy: true;
 }): Promise<{ requiresEmailVerification: true; email: string }> {
   const email = input.email.trim().toLowerCase();
-  if (input.password.length < 8) throw new BadRequestError('La contraseña debe tener al menos 8 caracteres');
+  if (input.password.length < 8) {
+    throw new BadRequestError('La contraseña debe tener al menos 8 caracteres', 'PASSWORD_TOO_SHORT_8');
+  }
 
   const existing = await usersRepo.findUserByEmail(email);
   if (existing?.password_hash) {
-    throw new BadRequestError('Ya existe una cuenta con ese correo. Inicia sesión.');
+    throw new BadRequestError('Ya existe una cuenta con ese correo. Inicia sesión.', 'EMAIL_ALREADY_REGISTERED');
   }
 
   const hash = await hashPassword(input.password);
@@ -65,7 +67,7 @@ export async function registerCustomer(input: {
     });
   } catch (err) {
     if (err instanceof Error && err.message === 'EMAIL_ALREADY_REGISTERED') {
-      throw new BadRequestError('Ya existe una cuenta con ese correo. Inicia sesión.');
+      throw new BadRequestError('Ya existe una cuenta con ese correo. Inicia sesión.', 'EMAIL_ALREADY_REGISTERED');
     }
     throw err;
   }
@@ -81,13 +83,16 @@ export async function loginCustomer(
   rememberMe = true,
 ): Promise<{ token: string; user: ReturnType<typeof publicCustomer>; rememberMe: boolean }> {
   const user = await usersRepo.findUserByEmail(email.trim().toLowerCase());
-  if (!user || user.role !== 'customer' || !user.password_hash) throw new AuthError('Correo o contraseña incorrectos');
+  if (!user || user.role !== 'customer' || !user.password_hash) {
+    throw new AuthError('Correo o contraseña incorrectos', 'INVALID_CREDENTIALS');
+  }
   const valid = await verifyPassword(password, user.password_hash);
-  if (!valid) throw new AuthError('Correo o contraseña incorrectos');
+  if (!valid) throw new AuthError('Correo o contraseña incorrectos', 'INVALID_CREDENTIALS');
 
   if (!user.email_verified_at) {
     throw new AuthError(
       'Confirma tu correo antes de iniciar sesión. Revisa tu bandeja de entrada o solicita un nuevo enlace.',
+      'EMAIL_NOT_VERIFIED',
     );
   }
 

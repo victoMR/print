@@ -6,6 +6,186 @@
       "en": "EN"
     }
   },
+  "about": {
+    "metaTitle": "About — Mr. Paps",
+    "metaDescription": "The story behind Mr. Paps: fashion that speaks quietly, garments made with intention, and a genuine commitment to quality.",
+    "hero": {
+      "eyebrow": "ABOUT US",
+      "titleLine1": "A BRAND",
+      "titleLine2": "WITH PRESENCE."
+    },
+    "manifesto": {
+      "eyebrow": "MANIFESTO",
+      "quoteLine1": "\"Design, power & style.",
+      "quoteLine2": "A presence that lasts.\"",
+      "body": "Mr. Paps was born from a conviction: the most powerful fashion doesn't shout. It speaks through details, through the drape of a fabric, through the precision of a finish. We create for those who understand that."
+    },
+    "story": {
+      "eyebrow": "OUR STORY",
+      "titleLine1": "It started with",
+      "titleLine2": "a question.",
+      "paragraph1": "Why does clothing that truly expresses who you are have to be scarce, inaccessible, or generic? That question was the origin of Mr. Paps.",
+      "paragraph2": "We started with a simple premise: signature quality, without the middlemen who raise prices without adding value. Made-to-order production, with selected materials and obsessive attention to every garment's finish.",
+      "paragraph3": "Today we're a brand that blends editorial identity with everyday comfort. Garments that feel good because they're well made — not because a logo says they should.",
+      "quote": "\"The perfect garment is one that goes unnoticed by everyone except the person wearing it.\"",
+      "stat1Value": "100%",
+      "stat1Label": "Made to order",
+      "stat2Value": "US",
+      "stat2Label": "Shipped within the United States"
+    },
+    "values": {
+      "eyebrow": "WHAT DEFINES US",
+      "items": [
+        { "num": "01", "title": "QUIET LUXURY", "body": "Garments that don't need to announce themselves. Real luxury is invisible to those who can't see it — and completely legible to those who can." },
+        { "num": "02", "title": "CONSCIOUS PRODUCTION", "body": "Every piece is made once your order comes in. No mass inventory, no waste. Your purchase has a purpose before it reaches your hands." },
+        { "num": "03", "title": "TIMELESS DESIGN", "body": "We don't chase trends: we observe them, filter them, and create something that lasts. Collections built to outlive a single season." }
+      ]
+    },
+    "process": {
+      "eyebrow": "THE PROCESS",
+      "statValue": "5–10",
+      "statLabelLine1": "days of production and shipping",
+      "statLabelLine2": "for a one-of-a-kind garment",
+      "description": "Every order kicks off its own production chain. Nothing sits in a warehouse: your piece is made specifically for you.",
+      "stepsEyebrow": "HOW IT WORKS",
+      "steps": [
+        { "title": "Choose your piece", "body": "Browse the catalog, pick color, size, and quantity. No minimums, no waiting for restocks." },
+        { "title": "Made just for you", "body": "Your order goes into production the moment it's confirmed. High-resolution printing on premium materials." },
+        { "title": "Packed and shipped", "body": "Your piece is checked, packed, and shipped straight to you. Real-time tracking from day one." }
+      ]
+    },
+    "cta": {
+      "eyebrow": "EXPLORE",
+      "titleLine1": "The collection",
+      "titleLine2": "awaits.",
+      "button": "DISCOVER THE COLLECTION"
+    }
+  },
+  "shippingReturnsMx": {
+    "metaTitle": "Shipping & Returns",
+    "metaDescription": "Mr. Paps shipping and returns policy. Shipped nationwide in Mexico in 5–14 business days.",
+    "title": "Shipping & Returns",
+    "subtitle": "All our products are made to order. Here's what to expect on delivery times and our returns policy.",
+    "shipping": {
+      "title": "Shipping",
+      "coverageLabel": "Coverage:",
+      "coverage": "We ship only within Mexico.",
+      "deliveryLabel": "Delivery time:",
+      "delivery": "Our products are made and printed once we receive your order. Estimated delivery is 5 to 14 business days from payment confirmation, depending on your location.",
+      "costLabel": "Shipping cost:",
+      "cost": "The cost is calculated automatically once you enter your address at checkout, before you pay. We select the cheapest available rate.",
+      "trackingLabel": "Tracking:",
+      "tracking": "Once your order ships, you'll get a tracking number by email to follow the delivery in real time.",
+      "noteLabel": "Please note:",
+      "note": "Delivery times are estimates. Weather, holidays, or carrier congestion may affect them."
+    },
+    "returns": {
+      "title": "Returns & Refunds",
+      "intro": "Since every product is made specifically for your order, we don't accept returns for buyer's remorse. We do stand behind the quality of our products.",
+      "defectsTitle": "Manufacturing defects or damage",
+      "defectsBody": "If your product arrives with a print defect, fabric damage, or the wrong item (size or product), you have 5 business days from delivery to report it.",
+      "defectsSendTo": "Send us photo evidence of the defect to",
+      "defectsOr": "or via",
+      "defectsResolution": ". We'll arrange a free reshipment or a full refund.",
+      "cancelTitle": "Order cancellation",
+      "cancelBody": "You can cancel your order before it enters production. Once production has started, the order cannot be cancelled or modified.",
+      "cancelContact": "To request a cancellation, contact us right away via",
+      "cancelOr": "or by email at"
+    },
+    "warranty": {
+      "title": "Product Warranty",
+      "intro": "All our products carry the minimum mandatory warranty under Mexico's Federal Consumer Protection Law (LFPC):",
+      "printDefects": "Print or manufacturing defects: 6 months from date of purchase",
+      "fabricDefects": "Fabric defects: 6 months from date of purchase",
+      "exclusion": "The warranty does not cover damage from improper use, discoloration from incorrect washing (check the care label), or normal wear and tear."
+    },
+    "questions": {
+      "title": "Questions?",
+      "intro": "We're here to help. Reach us through either of these:",
+      "whatsappLabel": "WhatsApp:",
+      "whatsappCta": "Message us directly",
+      "emailLabel": "Email:"
+    },
+    "backToShop": "← Back to the shop"
+  },
+  "shippingReturnsUs": {
+    "metaTitle": "Shipping & Returns",
+    "metaDescription": "Mr. Paps shipping and returns policy. Shipped within the US in 5–10 business days.",
+    "title": "Shipping & Returns",
+    "subtitle": "All our products are made to order. Here's what to expect on delivery times and our returns policy.",
+    "shipping": {
+      "title": "Shipping",
+      "coverageLabel": "Coverage:",
+      "coverage": "We ship within the United States only, from a US-based fulfillment partner.",
+      "deliveryLabel": "Delivery time:",
+      "delivery": "Your order is produced and printed after checkout. Estimated delivery is 5 to 10 business days from payment confirmation.",
+      "costLabel": "Shipping cost:",
+      "cost": "A flat shipping rate in USD is shown at checkout before you pay.",
+      "trackingLabel": "Tracking:",
+      "tracking": "Once your order ships, you'll get a tracking number by email.",
+      "noteLabel": "Please note:",
+      "note": "Delivery times are estimates. Weather, holidays, or carrier delays may affect them."
+    },
+    "returns": {
+      "title": "Returns & Refunds",
+      "intro": "Since every product is made specifically for your order, we don't accept returns for buyer's remorse. We do stand behind the quality of our products.",
+      "defectsTitle": "Manufacturing defects or damage",
+      "defectsBody": "If your product arrives with a print defect, fabric damage, or the wrong item (size or product), you have 5 days from delivery to report it.",
+      "defectsSendTo": "Send photo evidence of the issue to",
+      "defectsOr": "or via",
+      "defectsResolution": ". We'll arrange a free reshipment or a full refund.",
+      "cancelTitle": "Order cancellation",
+      "cancelBody": "You can cancel your order before it enters production. Once production has started, the order cannot be cancelled or modified.",
+      "cancelContact": "To request a cancellation, contact us right away via",
+      "cancelOr": "or email at"
+    },
+    "warranty": {
+      "title": "Product Warranty",
+      "intro": "All our products come with a manufacturing and print-defect warranty:",
+      "printDefects": "Print or manufacturing defects: 6 months from date of purchase",
+      "fabricDefects": "Fabric defects: 6 months from date of purchase",
+      "exclusion": "The warranty does not cover damage from improper use, discoloration from incorrect washing (check the care label), or normal wear and tear."
+    },
+    "questions": {
+      "title": "Questions?",
+      "intro": "We're here to help. Reach us through either of these:",
+      "whatsappLabel": "WhatsApp:",
+      "whatsappCta": "Message us directly",
+      "emailLabel": "Email:"
+    },
+    "backToShop": "← Back to the shop"
+  },
+  "apiErrors": {
+    "MARKET_MISMATCH": "Your order's currency doesn't match your detected location. Switch to the correct version of the site (/mx or /us) to continue.",
+    "COUNTRY_CURRENCY_MISMATCH": "{expectedCountry, select, US {This store only ships to the United States. Switch to /mx for shipping to Mexico.} other {This store only ships to Mexico. Switch to /us for shipping to the United States.}}",
+    "SHIPPING_MX_ONLY": "The Envia rate quote only applies to shipments within Mexico. Use the /us store for shipping to the United States.",
+    "INVALID_CUSTOMER_SESSION": "Invalid customer session.",
+    "EMAIL_NOT_VERIFIED": "Verify your email before placing an order.",
+    "LEGAL_NOT_ACCEPTED_ACCOUNT": "You must accept the Terms and the Privacy Notice in your account.",
+    "LEGAL_NOT_ACCEPTED": "You must accept the Terms and Conditions and the Privacy Notice to continue.",
+    "TOTALS_MISMATCH": "The totals don't match. Re-quote your order.",
+    "MAX_QUANTITY_EXCEEDED": "Maximum {max} units per item.",
+    "INSUFFICIENT_STOCK": "Only {available} units available of {variantLabel}.",
+    "STALE_CART_ITEM": "Your cart has products that no longer exist in the catalog. Clear your cart and add the items again from the shop.",
+    "CART_PRICE_MISMATCH": "The cart price doesn't match the catalog. Refresh the page.",
+    "VARIANT_NOT_AVAILABLE_IN_USD": "{variantLabel} isn't available in USD. Remove it from your cart.",
+    "PASSWORD_TOO_SHORT_8": "Password must be at least 8 characters.",
+    "EMAIL_ALREADY_REGISTERED": "An account with that email already exists. Sign in instead.",
+    "INVALID_CREDENTIALS": "Incorrect email or password.",
+    "INVALID_TRACKING_CODE": "Code not recognized. Use the tracking code you received at checkout (format MRP-XXXX-XXXX-XXXX with letters and numbers).",
+    "ORDER_NOT_FOUND": "We couldn't find an order with that code and email.",
+    "INVALID_VERIFICATION_LINK": "Invalid verification link.",
+    "VERIFICATION_LINK_INVALID_OR_USED": "Verification link is invalid or already used.",
+    "VERIFICATION_LINK_EXPIRED": "The verification link expired. Request a new one.",
+    "EMAIL_ALREADY_VERIFIED": "This email is already verified. You can sign in.",
+    "SHIPPING_METHOD_EXPIRED": "Shipping method is invalid or expired. Re-quote your order."
+  },
+  "hero": {
+    "imageAlt": "Mr. Paps — A presence that lasts",
+    "headlineLine1": "DESIGN, POWER & STYLE.",
+    "headlineLine2": "A PRESENCE THAT LASTS.",
+    "cta": "DISCOVER THE COLLECTION"
+  },
   "layout": {
     "header": {
       "announcement": {
@@ -51,6 +231,11 @@
     }
   },
   "shop": {
+    "metadata": {
+      "title": "Shop",
+      "description": "Browse t-shirts, hoodies, and more custom print-on-demand products. Shipping within the US.",
+      "ogTitle": "Shop — Mr. Paps"
+    },
     "page": {
       "title": "Collection",
       "filter": "Filter",
@@ -72,7 +257,14 @@
       "addToCart": "Add to cart",
       "shippingNote": "Estimated shipping 5–14 days"
     },
+    "unavailable": {
+      "title": "Product unavailable",
+      "defaultMessage": "This product doesn't have active variants yet (size/price). If you're the administrator, edit it in the admin panel and add variants.",
+      "noVariantsMessage": "This product is in the catalog but has no priced variants. In admin, edit it and add at least one active variant.",
+      "backToShop": "Back to shop"
+    },
     "productDetail": {
+      "galleryAriaLabel": "Product gallery",
       "backToShop": "Back to shop",
       "collection": "Collection",
       "outOfStock": "Out of stock",
@@ -97,8 +289,16 @@
       "careContent": "Machine wash cold. Do not bleach. Iron on low heat if needed. See the inside label for full care instructions."
     }
   },
+  "home": {
+    "metaTitle": "Home",
+    "ogTitle": "Mr. Paps — A Presence That Lasts"
+  },
   "cart": {
     "title": "Cart",
+    "metadata": {
+      "title": "Cart",
+      "description": "Review your cart items before checking out."
+    },
     "empty": {
       "title": "Your cart is empty",
       "subtitle": "Browse the catalog and add some products."
@@ -140,6 +340,10 @@
     }
   },
   "checkout": {
+    "metadata": {
+      "title": "Checkout",
+      "description": "Complete your purchase securely at Mr. Paps."
+    },
     "addressGeo": {
       "statesLoadError": "Couldn't load the states (INEGI).",
       "colonyHint": "Neighborhood and municipality based on SEPOMEX (official postal data).",
@@ -258,8 +462,241 @@
       "errorDescription": "Check your card details or try another payment method.",
       "retryPayment": "Retry payment",
       "withEmail": "Your order has been placed. We've sent the payment confirmation and order details to {email}. Check your spam folder too.",
-      "noEmail": "Your order has been placed. We've sent the payment confirmation to the email you provided at checkout. Check your spam folder too."
+      "noEmail": "Your order has been placed. We've sent the payment confirmation to the email you provided at checkout. Check your spam folder too.",
+      "redirecting": "Redirecting to your order details…",
+      "redirectingAriaLabel": "Redirecting"
     },
-    "clearCartAndShop": "Clear cart and go to the shop"
+    "clearCartAndShop": "Clear cart and go to the shop",
+    "paymentForm": {
+      "billingSummaryLabel": "Billing details (from the shipping step)",
+      "cardErrorFallback": "Check your card details",
+      "paymentErrorFallback": "Error processing payment",
+      "unexpectedError": "Unexpected error while paying",
+      "processing": "Processing payment…",
+      "payNow": "Pay now",
+      "secureNotice": "Secure payment via Stripe · We don't store your card details",
+      "notConfigured": "Online payments aren't set up yet. We'll contact you to arrange payment.",
+      "confirmWithoutOnlinePayment": "Confirm order without online payment",
+      "preparing": "Preparing payment…",
+      "initError": "Couldn't start the payment",
+      "totalToPay": "Total to pay"
+    }
+  },
+  "auth": {
+    "redirectingToAdmin": "Redirecting to the admin panel…",
+    "showPassword": "Show",
+    "hidePassword": "Hide",
+    "resendVerification": "Resend verification link",
+    "login": {
+      "welcomeBack": "Welcome back",
+      "subtitle": "Sign in to see your orders and saved addresses.",
+      "submit": "Sign in",
+      "signingIn": "Signing in…",
+      "rememberMe": "Remember me on this device (30 days)",
+      "firstTime": "First time here?",
+      "createFree": "Create a free account"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Save addresses, check orders, and check out in one click.",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "optional": "optional",
+      "confirmPassword": "Confirm password",
+      "passwordHint": "At least {min} characters",
+      "submit": "Create account",
+      "creating": "Creating account…",
+      "alreadyHaveAccount": "Already have an account?"
+    },
+    "fields": {
+      "email": "Email address",
+      "password": "Password"
+    },
+    "errors": {
+      "emailInvalid": "Enter a valid email address.",
+      "nameRequired": "Full name is required.",
+      "nameTooLong": "Name can't exceed {max} characters.",
+      "passwordTooShort": "Password must be at least {min} characters.",
+      "passwordTooLong": "Password can't exceed {max} characters.",
+      "passwordMismatch": "Passwords don't match.",
+      "phoneTooShort": "If you add a phone number, it must have at least 10 digits.",
+      "legalRequired": "You must accept the Terms and Conditions and the Privacy Notice.",
+      "emailRequired": "Enter your email address.",
+      "passwordRequired": "Enter your password.",
+      "emailNotVerified": "Confirm your email before signing in. Check your inbox or request a new link.",
+      "loginFailed": "Sign-in failed",
+      "registerFailed": "Couldn't create the account"
+    }
+  },
+  "orderDetail": {
+    "paymentConfirmed": "Payment confirmed",
+    "thankYou": "Thank you for your order",
+    "confirmationSentTo": "We sent the payment confirmation and order details to {email}. If you don't see it, check your spam folder.",
+    "trackingCodeLabel": "Tracking code:",
+    "trackingCode": "Tracking code",
+    "back": "Back",
+    "internalRef": "Internal ref. (support only): {orderNumber}",
+    "products": "{count, plural, one {Product (#)} other {Products (#)}}",
+    "shipping": "Shipping",
+    "trackPackage": "Track package",
+    "paymentSummary": "Payment summary",
+    "subtotal": "Subtotal",
+    "tax": "IVA",
+    "taxUS": "Sales tax",
+    "total": "Total",
+    "willNotifyByEmail": "We'll email you when your order status changes.",
+    "viewAllOrders": "View all my orders",
+    "trackAnotherOrder": "Track another order",
+    "keepShopping": "Keep shopping",
+    "loadingOrder": "Loading order…",
+    "couldNotLoad": "Couldn't load the order",
+    "paymentStatus": {
+      "pending": "Payment pending",
+      "paid": "Paid",
+      "failed": "Payment failed",
+      "refunded": "Refunded"
+    },
+    "status": {
+      "pendiente_pago": "Payment pending",
+      "pedido": "Order received",
+      "solicitado_imprenta": "Sent to print",
+      "recibido_imprenta": "Received from print",
+      "enviado": "Shipped",
+      "cancelado": "Cancelled"
+    },
+    "verifyOrder": {
+      "title": "Verify your order",
+      "subtitle": "For security, confirm the tracking code and the email you used to purchase.",
+      "submit": "View order",
+      "retry": "Retry"
+    },
+    "backToOrders": "My orders",
+    "backToTracking": "Tracking"
+  },
+  "tracking": {
+    "title": "Track your order",
+    "subtitle": "Check the status with your tracking code and the email you used to purchase.",
+    "hasAccount": "Have an account?",
+    "login": "Sign in",
+    "loginSuffix": "to see all your orders.",
+    "form": {
+      "submitLabel": "Track order",
+      "queryError": "Couldn't look up the order",
+      "trackingCodeLabel": "Tracking code",
+      "trackingCodeHint": "This is the code with letters and numbers (e.g. MRP-K7NH-9P2W-X7M8), not the internal number like MRP-2026-00006 from your order list.",
+      "emailLabel": "Order email",
+      "querying": "Looking up…"
+    }
+  },
+  "emailVerification": {
+    "loading": "Loading…",
+    "verifying": "Verifying your email…",
+    "linkIncomplete": "Verification link is incomplete.",
+    "verifyErrorFallback": "Couldn't verify the email.",
+    "verifiedTitle": "Email verified!",
+    "verifiedFallbackMessage": "Email verified successfully.",
+    "loginButton": "Sign in",
+    "failedTitle": "Couldn't verify",
+    "requestNewLink": "Request a new link",
+    "goToLogin": "Go to sign in",
+    "pending": {
+      "verifiedRedirectMessage": "Email verified! Taking you to sign in…",
+      "resendSuccess": "Link resent. Check your inbox.",
+      "resendErrorFallback": "Couldn't send the email",
+      "activeAccountMessage": "Your account is now active. Redirecting to sign in…",
+      "confirmEmailTitle": "Confirm your email",
+      "confirmEmailSubtitle": "We sent you a verification link. Open it on any device; this screen will update automatically once you confirm.",
+      "emailLabel": "Email:",
+      "waitingConfirmation": "Waiting for confirmation…",
+      "resendLabel": "Didn't get it? Resend to",
+      "sending": "Sending…",
+      "resendLink": "Resend link",
+      "alreadyVerified": "Already verified?",
+      "login": "Sign in"
+    }
+  },
+  "cookieConsent": {
+    "ariaLabel": "Cookie consent",
+    "message": "We use essential cookies for your cart and session. Can we enable Vercel Analytics to help improve the shop?",
+    "privacyLink": "Privacy notice",
+    "essentialOnly": "Essential only",
+    "acceptAll": "Accept all"
+  },
+  "legalConsent": {
+    "prefix": "I have read and accept the",
+    "terms": "Terms and Conditions",
+    "and": "and the",
+    "privacy": "Privacy Notice"
+  },
+  "notFound": {
+    "metaTitle": "Page not found",
+    "metaDescription": "The page you're looking for doesn't exist or was moved.",
+    "eyebrow": "Not found",
+    "title": "This page doesn't exist",
+    "description": "The link may be broken or the page was removed. Try going home or browsing the shop.",
+    "goHome": "Go home",
+    "viewShop": "View shop"
+  },
+  "errorPage": {
+    "eyebrow": "Error",
+    "title": "Something went wrong",
+    "description": "We couldn't load this page. You can try again or go back home.",
+    "retry": "Retry",
+    "goHome": "Go home"
+  },
+  "account": {
+    "nav": { "profile": "My profile", "orders": "My orders", "addresses": "Addresses" },
+    "loading": "Loading your account…",
+    "title": "My account",
+    "greeting": "Hi, {firstName}",
+    "logout": "Sign out",
+    "logoutShort": "Sign out",
+    "profile": {
+      "title": "My profile",
+      "subtitle": "Update your name and phone number for shipping and notifications.",
+      "saved": "Profile updated successfully.",
+      "emailLabel": "Email",
+      "emailImmutable": "Email can't be changed for security reasons.",
+      "nameLabel": "Full name",
+      "phoneLabel": "Phone",
+      "saving": "Saving…",
+      "save": "Save changes",
+      "saveError": "Couldn't save changes"
+    },
+    "orders": {
+      "title": "My orders",
+      "subtitle": "Track the status of your purchases and open each order's details.",
+      "loading": "Loading orders…",
+      "loadError": "Couldn't load orders",
+      "emptyTitle": "No orders yet",
+      "emptySubtitle": "Once you shop, your orders will show up here with their status and total.",
+      "explore": "Explore products",
+      "itemCount": "{count, plural, one {# item} other {# items}}"
+    },
+    "addresses": {
+      "title": "My addresses",
+      "subtitle": "Save multiple addresses and pick a default one for checkout.",
+      "new": "New address",
+      "edit": "Edit address",
+      "labelHint": "Label (Home, Work…)",
+      "recipientName": "Recipient name",
+      "phone": "Phone",
+      "street": "Street and number",
+      "useAsDefault": "Use as default address",
+      "saving": "Saving…",
+      "save": "Save",
+      "cancel": "Cancel",
+      "loading": "Loading addresses…",
+      "emptyTitle": "No saved addresses",
+      "emptySubtitle": "Add your first address to speed up your next orders.",
+      "add": "Add address",
+      "default": "Default",
+      "setDefault": "Set as default",
+      "delete": "Delete",
+      "confirmDelete": "Delete this address?",
+      "loadError": "Couldn't load addresses",
+      "saveError": "Couldn't save changes",
+      "deleteError": "Couldn't delete address"
+    }
   }
 }

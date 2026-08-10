@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { MapPin, Plus, Loader2 } from "lucide-react";
 import {
   BotyAlert,
@@ -33,7 +34,7 @@ const EMPTY_FORM: {
   zip: string;
   isDefault: boolean;
 } = {
-  label: "Casa",
+  label: "",
   recipientName: "",
   phone: "",
   address1: "",
@@ -46,6 +47,7 @@ const EMPTY_FORM: {
 };
 
 export default function DireccionesPage() {
+  const t = useTranslations("account.addresses");
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -58,7 +60,7 @@ export default function DireccionesPage() {
     try {
       setAddresses(await listAddresses());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar");
+      setError(err instanceof Error ? err.message : t("loadError"));
     } finally {
       setLoading(false);
     }
@@ -103,20 +105,20 @@ export default function DireccionesPage() {
       setEditId(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar");
+      setError(err instanceof Error ? err.message : t("saveError"));
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar esta dirección?")) return;
+    if (!confirm(t("confirmDelete"))) return;
     setBusy(true);
     try {
       await deleteAddress(id);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al eliminar");
+      setError(err instanceof Error ? err.message : t("deleteError"));
     } finally {
       setBusy(false);
     }
@@ -136,13 +138,13 @@ export default function DireccionesPage() {
   return (
     <>
       <BotyPageHeader
-        title="Mis direcciones"
-        description="Guarda varias direcciones y elige una predeterminada para el checkout."
+        title={t("title")}
+        description={t("subtitle")}
         action={
           !showForm ? (
             <BotyButton variant="primary" onClick={openNew} className="gap-2">
               <Plus className="w-4 h-4" />
-              Nueva dirección
+              {t("new")}
             </BotyButton>
           ) : undefined
         }
@@ -153,19 +155,19 @@ export default function DireccionesPage() {
       {loading && (
         <div className="flex items-center gap-2 text-muted-foreground text-sm py-8">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Cargando direcciones…
+          {t("loading")}
         </div>
       )}
 
       {showForm && (
         <BotySurface className="p-6 md:p-8 mb-6">
-          <h3 className="font-serif text-lg mb-4">{editId ? "Editar dirección" : "Nueva dirección"}</h3>
+          <h3 className="font-serif text-lg mb-4">{editId ? t("edit") : t("new")}</h3>
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Etiqueta (Casa, Trabajo…)" value={form.label} onChange={set("label")} />
-              <Field label="Nombre del destinatario" value={form.recipientName} onChange={set("recipientName")} required />
-              <Field label="Teléfono" value={form.phone} onChange={set("phone")} type="tel" required />
-              <Field label="Calle y número" value={form.address1} onChange={set("address1")} required className="sm:col-span-2" />
+              <Field label={t("labelHint")} value={form.label} onChange={set("label")} />
+              <Field label={t("recipientName")} value={form.recipientName} onChange={set("recipientName")} required />
+              <Field label={t("phone")} value={form.phone} onChange={set("phone")} type="tel" required />
+              <Field label={t("street")} value={form.address1} onChange={set("address1")} required className="sm:col-span-2" />
               <div className="sm:col-span-2">
                 <MxAddressGeoFields
                   value={{
@@ -185,14 +187,14 @@ export default function DireccionesPage() {
                 onChange={(e) => set("isDefault")(e.target.checked)}
                 className="rounded border-border"
               />
-              Usar como dirección predeterminada
+              {t("useAsDefault")}
             </label>
             <div className="flex flex-wrap gap-3 pt-2">
               <BotyButton type="submit" variant="primary" disabled={busy}>
-                {busy ? "Guardando…" : "Guardar"}
+                {busy ? t("saving") : t("save")}
               </BotyButton>
               <BotyButton type="button" variant="secondary" onClick={() => setShowForm(false)}>
-                Cancelar
+                {t("cancel")}
               </BotyButton>
             </div>
           </form>
@@ -201,9 +203,9 @@ export default function DireccionesPage() {
 
       {!loading && addresses.length === 0 && !showForm && (
         <BotyEmptyState
-          title="Sin direcciones guardadas"
-          description="Agrega tu primera dirección para agilizar tus próximos pedidos."
-          action={<BotyButton variant="primary" onClick={openNew}>Agregar dirección</BotyButton>}
+          title={t("emptyTitle")}
+          description={t("emptySubtitle")}
+          action={<BotyButton variant="primary" onClick={openNew}>{t("add")}</BotyButton>}
         />
       )}
 
@@ -220,7 +222,7 @@ export default function DireccionesPage() {
                     <p className="font-semibold flex flex-wrap items-center gap-2">
                       {addr.label}
                       {addr.isDefault && (
-                        <BotyBadge className="bg-primary/10 text-primary">Predeterminada</BotyBadge>
+                        <BotyBadge className="bg-primary/10 text-primary">{t("default")}</BotyBadge>
                       )}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -235,14 +237,14 @@ export default function DireccionesPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   {!addr.isDefault && (
                     <BotyButton type="button" variant="secondary" size="sm" disabled={busy} onClick={() => void setDefault(addr)}>
-                      Predeterminar
+                      {t("setDefault")}
                     </BotyButton>
                   )}
                   <BotyButton type="button" variant="secondary" size="sm" onClick={() => openEdit(addr)}>
-                    Editar
+                    {t("edit")}
                   </BotyButton>
                   <BotyButton type="button" variant="danger" size="sm" disabled={busy} onClick={() => void handleDelete(addr.id)}>
-                    Eliminar
+                    {t("delete")}
                   </BotyButton>
                 </div>
               </div>

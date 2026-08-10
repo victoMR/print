@@ -27,43 +27,51 @@ export function normalizeRegisterPayload(form: RegisterFormInput) {
   };
 }
 
+type AuthErrorTranslator = (key: string, values?: Record<string, number>) => string;
+
 /** Validación previa al POST /api/v1/auth/register */
-export function validateRegisterForm(form: RegisterFormInput): string | null {
+export function validateRegisterForm(form: RegisterFormInput, t?: AuthErrorTranslator): string | null {
   const email = form.email.trim().toLowerCase();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return "Ingresa un correo electrónico válido.";
+    return t ? t("emailInvalid") : "Ingresa un correo electrónico válido.";
   }
 
   const fullName = form.fullName.trim();
-  if (!fullName) return "El nombre completo es obligatorio.";
+  if (!fullName) return t ? t("nameRequired") : "El nombre completo es obligatorio.";
   if (fullName.length > CUSTOMER_FULL_NAME_MAX) {
-    return `El nombre no puede superar ${CUSTOMER_FULL_NAME_MAX} caracteres.`;
+    return t
+      ? t("nameTooLong", { max: CUSTOMER_FULL_NAME_MAX })
+      : `El nombre no puede superar ${CUSTOMER_FULL_NAME_MAX} caracteres.`;
   }
 
   if (form.password.length < CUSTOMER_PASSWORD_MIN) {
-    return `La contraseña debe tener al menos ${CUSTOMER_PASSWORD_MIN} caracteres.`;
+    return t
+      ? t("passwordTooShort", { min: CUSTOMER_PASSWORD_MIN })
+      : `La contraseña debe tener al menos ${CUSTOMER_PASSWORD_MIN} caracteres.`;
   }
   if (form.password.length > CUSTOMER_PASSWORD_MAX) {
-    return `La contraseña no puede superar ${CUSTOMER_PASSWORD_MAX} caracteres.`;
+    return t
+      ? t("passwordTooLong", { max: CUSTOMER_PASSWORD_MAX })
+      : `La contraseña no puede superar ${CUSTOMER_PASSWORD_MAX} caracteres.`;
   }
   if (form.password !== form.confirmPassword) {
-    return "Las contraseñas no coinciden.";
+    return t ? t("passwordMismatch") : "Las contraseñas no coinciden.";
   }
 
   const phone = form.phone.trim();
   if (phone && phone.length < 10) {
-    return "Si agregas teléfono, debe tener al menos 10 dígitos.";
+    return t ? t("phoneTooShort") : "Si agregas teléfono, debe tener al menos 10 dígitos.";
   }
 
   if (!form.acceptedLegal) {
-    return "Debes aceptar los Términos y Condiciones y el Aviso de Privacidad.";
+    return t ? t("legalRequired") : "Debes aceptar los Términos y Condiciones y el Aviso de Privacidad.";
   }
 
   return null;
 }
 
-export function validateLoginForm(email: string, password: string): string | null {
-  if (!email.trim()) return "Ingresa tu correo electrónico.";
-  if (!password) return "Ingresa tu contraseña.";
+export function validateLoginForm(email: string, password: string, t?: AuthErrorTranslator): string | null {
+  if (!email.trim()) return t ? t("emailRequired") : "Ingresa tu correo electrónico.";
+  if (!password) return t ? t("passwordRequired") : "Ingresa tu contraseña.";
   return null;
 }

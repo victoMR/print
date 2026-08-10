@@ -4,6 +4,7 @@ import { Link, useRouter } from "@/lib/i18n/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { createDraftOrder, fetchEstimate, finalizeOrderPayment } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/i18n/api-error-message";
 import type { CheckoutRecipient } from "@/lib/api-types";
 import { useCart } from "@/lib/cart-context";
 import { useCustomer } from "@/lib/customer-context";
@@ -63,6 +64,7 @@ const STEP_ORDER: Step[] = ["address", "confirm", "payment"];
 
 export function BotyCheckoutFlow() {
   const t = useTranslations("checkout");
+  const tRoot = useTranslations();
   const { items, inStockItems, outOfStockItems, clearCart, hydrated, removeItem, currency, itemPrice } = useCart();
   const { user } = useCustomer();
   const router = useRouter();
@@ -93,7 +95,7 @@ export function BotyCheckoutFlow() {
 
   const paymentReturnUrl =
     typeof window !== "undefined" && publicOrderId
-      ? `${window.location.origin}${
+      ? `${window.location.origin}/${currency === "USD" ? "us" : "mx"}${
           user
             ? `/cuenta/pedidos/${encodeURIComponent(publicOrderId)}?paid=1`
             : `/pedido/${encodeURIComponent(publicOrderId)}?paid=1`
@@ -297,7 +299,7 @@ export function BotyCheckoutFlow() {
       setTotals(res.data);
       setStep("confirm");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("errors.estimateFailed"));
+      setError(apiErrorMessage(err, tRoot, t("errors.estimateFailed")));
     } finally {
       submittingRef.current = false;
       setBusy(false);
@@ -328,7 +330,7 @@ export function BotyCheckoutFlow() {
       }
       setStep("payment");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("errors.orderCreateFailed"));
+      setError(apiErrorMessage(err, tRoot, t("errors.orderCreateFailed")));
     } finally {
       submittingRef.current = false;
       setBusy(false);

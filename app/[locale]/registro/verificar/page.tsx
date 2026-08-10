@@ -1,10 +1,12 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Mail } from "lucide-react";
 import { fetchEmailVerificationStatus, resendVerificationEmail } from "@/lib/customer-api";
+import { apiErrorMessage } from "@/lib/i18n/api-error-message";
 import { AuthCard, AuthShell } from "@/components/boty/auth-shell";
 import { BotyAlert, BotyButton, BotyInput, BotyLabel } from "@/components/boty/ui-patterns";
 
@@ -12,6 +14,9 @@ const POLL_INTERVAL_MS = 5_000;
 const REDIRECT_DELAY_MS = 2_500;
 
 function VerifyPendingContent() {
+  const t = useTranslations("emailVerification");
+  const tPending = useTranslations("emailVerification.pending");
+  const tRoot = useTranslations();
   const params = useSearchParams();
   const router = useRouter();
   const initialEmail = params.get("email") ?? "";
@@ -40,7 +45,7 @@ function VerifyPendingContent() {
         if (cancelled || !res.data.verified) return;
         setVerified(true);
         setError(null);
-        setMessage("¡Correo verificado! Te llevamos al inicio de sesión…");
+        setMessage(tPending("verifiedRedirectMessage"));
       } catch {
         // Polling silencioso; el usuario puede reenviar si hay problema
       }
@@ -68,10 +73,10 @@ function VerifyPendingContent() {
     setError(null);
     setMessage(null);
     try {
-      const res = await resendVerificationEmail(email.trim().toLowerCase());
-      setMessage(res.message);
+      await resendVerificationEmail(email.trim().toLowerCase());
+      setMessage(tPending("resendSuccess"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo enviar el correo");
+      setError(apiErrorMessage(err, tRoot, tPending("resendErrorFallback")));
     } finally {
       setBusy(false);
     }
@@ -83,9 +88,9 @@ function VerifyPendingContent() {
         <AuthCard>
           <div className="text-center space-y-4 py-6">
             <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-            <h1 className="font-serif text-2xl">¡Correo verificado!</h1>
+            <h1 className="font-serif text-2xl">{t("verifiedTitle")}</h1>
             <p className="text-sm text-muted-foreground">
-              Tu cuenta ya está activa. Redirigiendo al inicio de sesión…
+              {tPending("activeAccountMessage")}
             </p>
             <Loader2 className="w-5 h-5 animate-spin text-primary mx-auto" />
           </div>
@@ -101,22 +106,21 @@ function VerifyPendingContent() {
           <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Mail className="w-7 h-7 text-primary" />
           </div>
-          <h1 className="font-serif text-3xl mb-2">Confirma tu correo</h1>
+          <h1 className="font-serif text-3xl mb-2">{tPending("confirmEmailTitle")}</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Te enviamos un enlace de verificación. Ábrelo en cualquier dispositivo; esta pantalla se
-            actualizará sola cuando confirmes.
+            {tPending("confirmEmailSubtitle")}
           </p>
         </div>
 
         {initialEmail && (
           <p className="text-sm text-center mb-4">
-            Correo: <strong>{initialEmail}</strong>
+            {tPending("emailLabel")} <strong>{initialEmail}</strong>
           </p>
         )}
 
         <p className="text-xs text-center text-muted-foreground mb-6 flex items-center justify-center gap-1.5">
           <Loader2 className="w-3 h-3 animate-spin" />
-          Esperando confirmación…
+          {tPending("waitingConfirmation")}
         </p>
 
         <form onSubmit={(e) => void handleResend(e)} className="space-y-4">
@@ -124,7 +128,7 @@ function VerifyPendingContent() {
           {message && <BotyAlert variant="success">{message}</BotyAlert>}
 
           <label className="flex flex-col gap-2">
-            <BotyLabel>¿No llegó? Reenviar a</BotyLabel>
+            <BotyLabel>{tPending("resendLabel")}</BotyLabel>
             <BotyInput
               required
               type="email"
@@ -135,14 +139,14 @@ function VerifyPendingContent() {
           </label>
 
           <BotyButton type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
-            {busy ? "Enviando…" : "Reenviar enlace"}
+            {busy ? tPending("sending") : tPending("resendLink")}
           </BotyButton>
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-8 pt-6 border-t border-border/50">
-          ¿Ya verificaste?{" "}
+          {tPending("alreadyVerified")}{" "}
           <Link href="/login" className="text-primary font-medium hover:underline">
-            Iniciar sesión
+            {tPending("login")}
           </Link>
         </p>
       </AuthCard>
@@ -152,8 +156,13 @@ function VerifyPendingContent() {
 
 export default function RegistroVerificarPage() {
   return (
-    <Suspense fallback={<p className="text-center py-20 text-muted-foreground text-sm">Cargando…</p>}>
+    <Suspense fallback={<VerifyPendingFallback />}>
       <VerifyPendingContent />
     </Suspense>
   );
+}
+
+function VerifyPendingFallback() {
+  const t = useTranslations("emailVerification");
+  return <p className="text-center py-20 text-muted-foreground text-sm">{t("loading")}</p>;
 }

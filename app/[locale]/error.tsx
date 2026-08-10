@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
 import { useEffect } from "react";
 import { Header } from "@/components/boty/header";
@@ -12,6 +13,8 @@ type ErrorPageProps = {
 };
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
+  const t = useTranslations("errorPage");
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -22,13 +25,13 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
       <div className="flex flex-1 items-center justify-center px-6 py-24">
         <GlassCard strong className="max-w-lg w-full p-10 text-center boty-shadow">
           <span className="mb-4 block text-sm tracking-[0.3em] uppercase text-primary">
-            Error
+            {t("eyebrow")}
           </span>
           <h1 className="font-serif text-3xl md:text-4xl text-foreground mb-4 text-balance">
-            Algo salió mal
+            {t("title")}
           </h1>
           <p className="text-muted-foreground mb-8 leading-relaxed">
-            No pudimos cargar esta página. Puedes intentar de nuevo o volver al inicio.
+            {t("description")}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
@@ -36,13 +39,13 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
               onClick={() => reset()}
               className="w-full sm:w-auto px-8 py-3 rounded-full bg-primary text-primary-foreground text-sm font-medium boty-transition hover:opacity-90"
             >
-              Reintentar
+              {t("retry")}
             </button>
             <Link
               href="/"
               className="w-full sm:w-auto px-8 py-3 rounded-full glass text-sm font-medium text-foreground boty-transition hover:bg-white/20"
             >
-              Ir al inicio
+              {t("goHome")}
             </Link>
           </div>
         </GlassCard>

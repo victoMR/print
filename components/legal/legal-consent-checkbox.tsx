@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ export function LegalConsentCheckbox({
   className,
   id = "legal-consent",
 }: LegalConsentCheckboxProps) {
+  const t = useTranslations("legalConsent");
   return (
     <label
       htmlFor={id}
@@ -37,13 +39,13 @@ export function LegalConsentCheckbox({
         required
       />
       <span className="text-sm text-foreground/90 leading-relaxed">
-        He leído y acepto los{" "}
+        {t("prefix")}{" "}
         <Link href="/terminos" target="_blank" className="text-primary font-medium hover:underline">
-          Términos y Condiciones
+          {t("terms")}
         </Link>{" "}
-        y el{" "}
+        {t("and")}{" "}
         <Link href="/privacidad" target="_blank" className="text-primary font-medium hover:underline">
-          Aviso de Privacidad
+          {t("privacy")}
         </Link>
         .
       </span>

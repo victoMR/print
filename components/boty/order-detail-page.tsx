@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import {
@@ -10,6 +11,7 @@ import {
   trackGuestOrder,
 } from "@/lib/api";
 import type { OrderDetail } from "@/lib/api-types";
+import { apiErrorMessage } from "@/lib/i18n/api-error-message";
 import { getGuestOrderAccess, saveGuestOrderAccess } from "@/lib/order-guest-session";
 import { OrderTrackingForm } from "./order-tracking-form";
 import { OrderDetailSkeleton, OrderDetailView } from "./order-detail-view";
@@ -25,6 +27,9 @@ type OrderDetailPageProps = {
 };
 
 function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) {
+  const t = useTranslations("checkout");
+  const tOrder = useTranslations("orderDetail");
+  const tRoot = useTranslations();
   const params = useSearchParams();
   const paid = params.get("paid") === "1";
   const { clearCart, hydrated } = useCart();
@@ -80,7 +85,7 @@ function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) 
         if (!cancelled) setOrder(res.data);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "No se pudo cargar el pedido");
+          setError(apiErrorMessage(err, tRoot, tOrder("couldNotLoad")));
           setOrder(null);
         }
       } finally {
@@ -105,8 +110,10 @@ function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) 
   const paidSuccessOverlay = showPaidOverlay ? (
     <PaymentOutcomeOverlay
       variant="success"
-      title="¡Pago recibido!"
-      description={paymentSuccessDescription(order?.customer.email)}
+      title={t("paymentOutcome.successTitle")}
+      description={paymentSuccessDescription(order?.customer.email, (key, values) =>
+        t(`paymentOutcome.${key}`, values),
+      )}
     />
   ) : null;
 
@@ -123,15 +130,15 @@ function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) 
     return (
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center">
-          <h1 className="font-serif text-3xl">Verifica tu pedido</h1>
+          <h1 className="font-serif text-3xl">{tOrder("verifyOrder.title")}</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Por seguridad, confirma el código de seguimiento y el correo con el que compraste.
+            {tOrder("verifyOrder.subtitle")}
           </p>
         </div>
         <BotySurface className="p-6">
           <OrderTrackingForm
             initialTrackingCode={publicOrderId}
-            submitLabel="Ver pedido"
+            submitLabel={tOrder("verifyOrder.submit")}
             onSubmit={handleVerify}
           />
         </BotySurface>
@@ -147,7 +154,7 @@ function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) 
           <BotySurface className="p-6">
             <OrderTrackingForm
               initialTrackingCode={publicOrderId}
-              submitLabel="Reintentar"
+              submitLabel={tOrder("verifyOrder.retry")}
               onSubmit={handleVerify}
             />
           </BotySurface>
@@ -166,7 +173,7 @@ function OrderDetailPageInner({ publicOrderId, variant }: OrderDetailPageProps) 
         showThankYou={paid && !showPaidOverlay}
         variant={variant}
         backHref={variant === "account" ? "/cuenta/pedidos" : "/seguimiento"}
-        backLabel={variant === "account" ? "Mis pedidos" : "Seguimiento"}
+        backLabel={variant === "account" ? tOrder("backToOrders") : tOrder("backToTracking")}
       />
     </>
   );

@@ -25,10 +25,10 @@ export async function trackGuestOrder(input: {
   email: string;
 }): Promise<OrderDetailDto> {
   const parsed = parseGuestTrackingInput(input.trackingCode);
-  if (!parsed) throw new BadRequestError(INVALID_CODE_MESSAGE);
+  if (!parsed) throw new BadRequestError(INVALID_CODE_MESSAGE, 'INVALID_TRACKING_CODE');
 
   const order = await findOrderByGuestCodeAndEmail(input.trackingCode, input.email);
-  if (!order) throw new NotFoundError(GUEST_LOOKUP_MESSAGE);
+  if (!order) throw new NotFoundError(GUEST_LOOKUP_MESSAGE, 'ORDER_NOT_FOUND');
   return mapGuestOrderDetail(order);
 }
 
@@ -45,6 +45,6 @@ export async function getCustomerOrderDetail(
   email: string,
 ): Promise<OrderDetailDto> {
   const order = await ordersRepo.getOrderForCustomer(trackingCode, userId, email);
-  if (!order) throw new NotFoundError('Pedido no encontrado');
+  if (!order) throw new NotFoundError('Pedido no encontrado', 'ORDER_NOT_FOUND');
   return getOrderDetail(order.public_id, order);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
 import { ArrowRight, Loader2, Package } from "lucide-react";
 import {
@@ -13,6 +14,8 @@ import {
 } from "@/components/boty/ui-patterns";
 import { listMyOrders, type AccountOrder } from "@/lib/customer-api";
 import { formatCurrency } from "@/lib/utils";
+import { formatOrderDate } from "@/lib/i18n/format-date";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 function orderAmount(order: AccountOrder): string {
   return formatCurrency((order.currency === "USD" ? order.totalUsd : order.totalMxn) ?? "0", order.currency);
@@ -27,6 +30,9 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+  const t = useTranslations("account.orders");
+  const tStatus = useTranslations("orderDetail.status");
+  const language = useLanguage();
   const [orders, setOrders] = useState<AccountOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,21 +40,22 @@ export default function OrdersPage() {
   useEffect(() => {
     listMyOrders()
       .then(setOrders)
-      .catch((err) => setError(err instanceof Error ? err.message : "Error al cargar pedidos"))
+      .catch((err) => setError(err instanceof Error ? err.message : t("loadError")))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable per locale
   }, []);
 
   return (
     <>
       <BotyPageHeader
-        title="Mis pedidos"
-        description="Sigue el estado de tus compras y abre el detalle de cada pedido."
+        title={t("title")}
+        description={t("subtitle")}
       />
 
       {loading && (
         <div className="flex items-center gap-2 text-muted-foreground text-sm py-12 justify-center">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Cargando pedidos…
+          {t("loading")}
         </div>
       )}
 
@@ -56,11 +63,11 @@ export default function OrdersPage() {
 
       {!loading && !error && orders.length === 0 && (
         <BotyEmptyState
-          title="Aún no tienes pedidos"
-          description="Cuando compres en la tienda, aparecerán aquí con su estado y total."
+          title={t("emptyTitle")}
+          description={t("emptySubtitle")}
           action={
             <Link href="/shop">
-              <BotyButton variant="primary">Explorar productos</BotyButton>
+              <BotyButton variant="primary">{t("explore")}</BotyButton>
             </Link>
           }
         />
@@ -80,18 +87,14 @@ export default function OrdersPage() {
                       {order.trackingCode}
                     </p>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      {new Date(order.orderedAt).toLocaleDateString("es-MX", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
+                      {formatOrderDate(order.orderedAt, language, { day: "numeric", month: "long", year: "numeric" })}
                       {" · "}
-                      {order.itemCount} {order.itemCount === 1 ? "pieza" : "piezas"}
+                      {t("itemCount", { count: order.itemCount })}
                     </p>
                   </div>
                   <div className="flex items-center gap-4 ml-auto">
                     <BotyBadge className={STATUS_STYLE[order.status] ?? "bg-muted text-muted-foreground"}>
-                      {order.statusLabel}
+                      {tStatus(order.status)}
                     </BotyBadge>
                     <span className="font-serif text-xl tabular-nums">{orderAmount(order)}</span>
                     <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 boty-transition" />

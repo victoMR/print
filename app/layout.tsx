@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { JsonLd } from "@/components/seo/json-ld";
 import {
-  DEFAULT_DESCRIPTION,
   SITE_NAME,
   SITE_TAGLINE,
   buildDefaultMetadata,
+  defaultDescription,
   getSiteUrl,
   organizationJsonLd,
 } from "@/lib/seo";
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     default: `${SITE_NAME} — ${SITE_TAGLINE}`,
     template: `%s — ${SITE_NAME}`,
   },
-  description: DEFAULT_DESCRIPTION,
+  description: defaultDescription("mx"),
   keywords: ["print", "printful", "México", "POD", "tienda", "ropa personalizada"],
   // /mx and /us are distinct markets, not just translations of the same page —
   // each page under app/[locale]/ should set its own canonical/hreflang via

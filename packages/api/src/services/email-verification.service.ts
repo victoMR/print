@@ -52,13 +52,13 @@ export async function sendEmailVerification(userId: string, email: string, fullN
 export async function verifyEmailByToken(rawToken: string): Promise<{ email: string }> {
   const token = rawToken?.trim();
   if (!token || token.length < 16) {
-    throw new BadRequestError('Enlace de verificación no válido');
+    throw new BadRequestError('Enlace de verificación no válido', 'INVALID_VERIFICATION_LINK');
   }
 
   const hash = hashEmailVerificationToken(token);
   const user = await usersRepo.findUserByEmailVerificationHash(hash);
   if (!user) {
-    throw new NotFoundError('Enlace de verificación inválido o ya utilizado');
+    throw new NotFoundError('Enlace de verificación inválido o ya utilizado', 'VERIFICATION_LINK_INVALID_OR_USED');
   }
 
   if (user.email_verified_at) {
@@ -66,7 +66,7 @@ export async function verifyEmailByToken(rawToken: string): Promise<{ email: str
   }
 
   if (user.email_verification_expires_at && new Date(user.email_verification_expires_at) < new Date()) {
-    throw new BadRequestError('El enlace de verificación expiró. Solicita uno nuevo.');
+    throw new BadRequestError('El enlace de verificación expiró. Solicita uno nuevo.', 'VERIFICATION_LINK_EXPIRED');
   }
 
   await usersRepo.markEmailVerified(user.id);
@@ -92,7 +92,7 @@ export async function resendEmailVerification(email: string): Promise<void> {
     return;
   }
   if (user.email_verified_at) {
-    throw new BadRequestError('Este correo ya está verificado. Puedes iniciar sesión.');
+    throw new BadRequestError('Este correo ya está verificado. Puedes iniciar sesión.', 'EMAIL_ALREADY_VERIFIED');
   }
   await sendEmailVerification(user.id, user.email, user.full_name);
 }

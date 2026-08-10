@@ -14,7 +14,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   }, [error]);
 
   return (
-    <html lang="es">
+    <html lang="en">
       <body
         style={{
           margin: 0,
@@ -46,10 +46,14 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               marginBottom: "1rem",
             }}
           >
-            Error crítico
+            Critical error · Error crítico
           </p>
-          <h1 style={{ fontSize: "1.75rem", margin: "0 0 1rem" }}>Algo salió mal</h1>
+          <h1 style={{ fontSize: "1.75rem", margin: "0 0 1rem" }}>
+            Something went wrong · Algo salió mal
+          </h1>
           <p style={{ color: "#6B6B6B", marginBottom: "2rem", lineHeight: 1.6 }}>
+            An unexpected error occurred. Try reloading the page.
+            <br />
             Ocurrió un error inesperado. Intenta recargar la página.
           </p>
           <button
@@ -66,7 +70,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               cursor: "pointer",
             }}
           >
-            Reintentar
+            Retry · Reintentar
           </button>
         </main>
       </body>

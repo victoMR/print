@@ -44,6 +44,16 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+
+  /** Código estable del error (ver packages/api/src/types/errors.ts) para traducir en el frontend. */
+  get code(): string | undefined {
+    return (this.body as { code?: string } | undefined)?.code;
+  }
+
+  /** Valores dinámicos para interpolar en el mensaje traducido (ej. cantidad disponible). */
+  get details(): Record<string, string | number> | undefined {
+    return (this.body as { details?: Record<string, string | number> } | undefined)?.details;
+  }
 }
 
 export async function apiFetch<T>(

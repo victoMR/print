@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, Search } from "lucide-react";
+import { apiErrorMessage } from "@/lib/i18n/api-error-message";
 
 type OrderTrackingFormProps = {
   initialTrackingCode?: string;
@@ -13,13 +15,16 @@ type OrderTrackingFormProps = {
 export function OrderTrackingForm({
   initialTrackingCode = "",
   initialEmail = "",
-  submitLabel = "Consultar pedido",
+  submitLabel,
   onSubmit,
 }: OrderTrackingFormProps) {
+  const t = useTranslations("tracking.form");
+  const tRoot = useTranslations();
   const [trackingCode, setTrackingCode] = useState(initialTrackingCode);
   const [email, setEmail] = useState(initialEmail);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const resolvedSubmitLabel = submitLabel ?? t("submitLabel");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +33,7 @@ export function OrderTrackingForm({
     try {
       await onSubmit({ trackingCode: trackingCode.trim(), email: email.trim() });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo consultar el pedido");
+      setError(apiErrorMessage(err, tRoot, t("queryError")));
     } finally {
       setBusy(false);
     }
@@ -38,7 +43,7 @@ export function OrderTrackingForm({
     <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
       <div>
         <label htmlFor="tracking-code" className="block text-sm font-medium mb-1.5">
-          Código de seguimiento
+          {t("trackingCodeLabel")}
         </label>
         <input
           id="tracking-code"
@@ -52,14 +57,13 @@ export function OrderTrackingForm({
           className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm font-mono tracking-wide uppercase"
         />
         <p className="text-xs text-muted-foreground mt-1.5">
-          Es el código con letras y números (ej. MRP-K7NH-9P2W-X7M8), no el número interno
-          tipo MRP-2026-00006 de la lista de pedidos.
+          {t("trackingCodeHint")}
         </p>
       </div>
 
       <div>
         <label htmlFor="tracking-email" className="block text-sm font-medium mb-1.5">
-          Correo del pedido
+          {t("emailLabel")}
         </label>
         <input
           id="tracking-email"
@@ -85,12 +89,12 @@ export function OrderTrackingForm({
         {busy ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            Consultando…
+            {t("querying")}
           </>
         ) : (
           <>
             <Search className="w-4 h-4" />
-            {submitLabel}
+            {resolvedSubmitLabel}
           </>
         )}
       </button>

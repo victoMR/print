@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { Check, Loader2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PAYMENT_OUTCOME_VISIBLE_MS } from "@/lib/payment-outcome-timing";
@@ -26,6 +27,7 @@ export function PaymentOutcomeOverlay({
   onAction,
   showRedirectProgress = false,
 }: PaymentOutcomeOverlayProps) {
+  const t = useTranslations("checkout.paymentOutcome");
   const [mounted, setMounted] = useState(false);
   const isSuccess = variant === "success";
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -128,7 +130,7 @@ export function PaymentOutcomeOverlay({
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-label="Redirigiendo"
+                aria-label={t("redirectingAriaLabel")}
               >
                 <div
                   className="h-full bg-primary rounded-full origin-left animate-payment-progress"
@@ -138,7 +140,7 @@ export function PaymentOutcomeOverlay({
             ) : (
               <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" aria-hidden />
             )}
-            <p className="text-xs text-muted-foreground">Redirigiendo a los detalles de tu pedido…</p>
+            <p className="text-xs text-muted-foreground">{t("redirecting")}</p>
           </div>
         )}
       </div>

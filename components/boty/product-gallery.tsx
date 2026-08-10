@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ export function ProductGallery({
   className,
   priority = false,
 }: ProductGalleryProps) {
+  const t = useTranslations("shop.productDetail");
   const gallery = images.filter(Boolean);
   const [activeIndex, setActiveIndex] = useState(0);
   const galleryKey = gallery.join("|");
@@ -64,7 +66,7 @@ export function ProductGallery({
         className="flex flex-col gap-2 overflow-y-auto"
         style={{ width: "72px", maxHeight: "600px" }}
         role="tablist"
-        aria-label="Galería del producto"
+        aria-label={t("galleryAriaLabel")}
       >
         {gallery.map((url, index) => (
           <button

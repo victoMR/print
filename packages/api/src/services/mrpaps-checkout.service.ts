@@ -47,6 +47,8 @@ function assertCountryMatchesCurrency(
       expected === 'US'
         ? 'Esta tienda solo envía a Estados Unidos. Cambia a /mx para envíos a México.'
         : 'Esta tienda solo envía a México. Cambia a /us para envíos a Estados Unidos.',
+      'COUNTRY_CURRENCY_MISMATCH',
+      { expectedCountry: expected },
     );
   }
 }
@@ -102,6 +104,7 @@ export async function getShippingRates(input: MrpapsShippingRatesBody) {
   if (input.address.countryCode !== 'MX') {
     throw new BadRequestError(
       'La cotización Envia solo aplica a envíos dentro de México. Usa la tienda /us para envíos a Estados Unidos.',
+      'SHIPPING_MX_ONLY',
     );
   }
   await catalog.resolveLineItems(input.items);
@@ -158,16 +161,16 @@ export async function createOrder(body: MrpapsCreateOrderBody, verifiedMarket?: 
   if (body.customerUserId) {
     const account = await usersRepo.findUserById(body.customerUserId);
     if (!account || account.role !== 'customer') {
-      throw new BadRequestError('Sesión de cliente no válida');
+      throw new BadRequestError('Sesión de cliente no válida', 'INVALID_CUSTOMER_SESSION');
     }
     if (!account.email_verified_at) {
-      throw new BadRequestError('Verifica tu correo antes de realizar un pedido.');
+      throw new BadRequestError('Verifica tu correo antes de realizar un pedido.', 'EMAIL_NOT_VERIFIED');
     }
     if (!account.terms_accepted_at || !account.privacy_accepted_at) {
-      throw new BadRequestError('Debes aceptar los Términos y el Aviso de Privacidad en tu cuenta.');
+      throw new BadRequestError('Debes aceptar los Términos y el Aviso de Privacidad en tu cuenta.', 'LEGAL_NOT_ACCEPTED_ACCOUNT');
     }
   } else if (!body.acceptedLegal) {
-    throw new BadRequestError('Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para continuar.');
+    throw new BadRequestError('Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para continuar.', 'LEGAL_NOT_ACCEPTED');
   }
 
   const currency: OrderCurrency = body.retailCosts.currency;
@@ -222,7 +225,7 @@ export async function createOrder(body: MrpapsCreateOrderBody, verifiedMarket?: 
     body.retailCosts.tax !== expected.tax ||
     body.retailCosts.total !== expected.total
   ) {
-    throw new BadRequestError('Los totales no coinciden. Vuelve a cotizar el pedido.');
+    throw new BadRequestError('Los totales no coinciden. Vuelve a cotizar el pedido.', 'TOTALS_MISMATCH');
   }
 
   let userId: string | null = null;

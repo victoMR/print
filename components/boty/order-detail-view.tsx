@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
 import {
   Check,
@@ -11,11 +12,18 @@ import {
   Truck,
 } from "lucide-react";
 import type { OrderDetail } from "@/lib/api-types";
-import { ORDER_STATUS_LABELS, type MrpapsOrderStatus } from "@/lib/api-types";
+import type { MrpapsOrderStatus } from "@/lib/api-types";
 import { mxStateLabel } from "@/lib/mx-state-label";
 import { cn, formatCurrency } from "@/lib/utils";
+import { formatOrderDate } from "@/lib/i18n/format-date";
+import { useLanguage } from "@/lib/i18n/language-context";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { BotyBadge, BotySurface } from "@/components/boty/ui-patterns";
+
+const KNOWN_PAYMENT_STATUSES = ["pending", "paid", "failed", "refunded"] as const;
+function isKnownPaymentStatus(value: string): value is (typeof KNOWN_PAYMENT_STATUSES)[number] {
+  return (KNOWN_PAYMENT_STATUSES as readonly string[]).includes(value);
+}
 
 const STATUS_BADGE: Record<MrpapsOrderStatus, string> = {
   pendiente_pago: "bg-amber-500/15 text-amber-900",
@@ -24,13 +32,6 @@ const STATUS_BADGE: Record<MrpapsOrderStatus, string> = {
   recibido_imprenta: "bg-violet-500/15 text-violet-900",
   enviado: "bg-emerald-500/15 text-emerald-800",
   cancelado: "bg-muted text-muted-foreground",
-};
-
-const PAYMENT_LABELS: Record<string, string> = {
-  pending: "Pago pendiente",
-  paid: "Pagado",
-  failed: "Pago fallido",
-  refunded: "Reembolsado",
 };
 
 type OrderDetailViewProps = {
@@ -47,12 +48,15 @@ export function OrderDetailView({
   showThankYou = false,
   variant = "public",
   backHref,
-  backLabel = "Volver",
+  backLabel,
 }: OrderDetailViewProps) {
+  const t = useTranslations("orderDetail");
+  const language = useLanguage();
   const currency = order.currency;
   // La orden ya se cobró en una moneda fija — se muestra esa, no la del navegador actual.
   const amount = (mxn: string | null, usd: string | null): string =>
     formatCurrency((currency === "USD" ? usd : mxn) ?? "0", currency);
+  const resolvedBackLabel = backLabel ?? t("back");
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -61,15 +65,13 @@ export function OrderDetailView({
           <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mb-4 animate-payment-pop">
             <Check className="w-8 h-8 text-emerald-600" strokeWidth={2.5} aria-hidden />
           </div>
-          <p className="text-sm text-primary font-medium">Pago confirmado</p>
-          <h1 className="font-serif text-3xl md:text-4xl mt-2">Gracias por tu compra</h1>
+          <p className="text-sm text-primary font-medium">{t("paymentConfirmed")}</p>
+          <h1 className="font-serif text-3xl md:text-4xl mt-2">{t("thankYou")}</h1>
           <p className="text-muted-foreground text-sm mt-2">
-            Te enviamos la confirmación de pago y los detalles del pedido a{" "}
-            <span className="text-foreground">{order.customer.email}</span>.
-            Si no lo ves, revisa spam o correo no deseado.
+            {t("confirmationSentTo", { email: order.customer.email })}
           </p>
           <p className="text-sm mt-4 bg-muted/50 rounded-2xl px-4 py-3 inline-block">
-            Código de seguimiento:{" "}
+            {t("trackingCodeLabel")}{" "}
             <span className="font-mono font-semibold text-foreground tracking-wide">
               {order.trackingCode}
             </span>
@@ -82,7 +84,7 @@ export function OrderDetailView({
           href={backHref}
           className="inline-flex text-sm text-muted-foreground hover:text-primary boty-transition"
         >
-          ← {backLabel}
+          ← {resolvedBackLabel}
         </Link>
       )}
 
@@ -90,30 +92,29 @@ export function OrderDetailView({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider">
-              Código de seguimiento
+              {t("trackingCode")}
             </p>
             <h2 className="font-serif text-2xl md:text-3xl mt-1 font-mono tracking-wide">
               {order.trackingCode}
             </h2>
             {variant === "account" && (
               <p className="text-xs text-muted-foreground mt-1">
-                Ref. interna (solo soporte): {order.orderNumber}
+                {t("internalRef", { orderNumber: order.orderNumber })}
               </p>
             )}
             <p className="text-xs text-muted-foreground mt-2">
-              {new Date(order.orderedAt).toLocaleString("es-MX", {
-                dateStyle: "long",
-                timeStyle: "short",
-              })}
+              {formatOrderDate(order.orderedAt, language)}
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
             <BotyBadge className={STATUS_BADGE[order.status]}>
-              {ORDER_STATUS_LABELS[order.status]}
+              {t(`status.${order.status}`)}
             </BotyBadge>
             {order.paymentStatus && (
               <span className="text-xs text-muted-foreground">
-                {PAYMENT_LABELS[order.paymentStatus] ?? order.paymentStatus}
+                {isKnownPaymentStatus(order.paymentStatus)
+                  ? t(`paymentStatus.${order.paymentStatus}`)
+                  : order.paymentStatus}
               </span>
             )}
             <p className="font-serif text-2xl text-primary tabular-nums">
@@ -129,7 +130,7 @@ export function OrderDetailView({
         <BotySurface className="p-6">
           <h3 className="font-medium flex items-center gap-2 mb-4">
             <Package className="w-4 h-4 text-primary" />
-            Productos ({order.items.length})
+            {t("products", { count: order.items.length })}
           </h3>
           <ul className="space-y-4">
             {order.items.map((item) => (
@@ -169,7 +170,7 @@ export function OrderDetailView({
           <BotySurface className="p-6">
             <h3 className="font-medium flex items-center gap-2 mb-4">
               <MapPin className="w-4 h-4 text-primary" />
-              Envío
+              {t("shipping")}
             </h3>
             {order.shipping.label && (
               <p className="text-sm font-medium mb-2">{order.shipping.label}</p>
@@ -197,20 +198,23 @@ export function OrderDetailView({
                 className="inline-flex items-center gap-2 mt-4 text-sm text-primary hover:underline"
               >
                 <Truck className="w-4 h-4" />
-                Rastrear paquete
+                {t("trackPackage")}
                 {order.tracking.carrier && ` · ${order.tracking.carrier}`}
               </a>
             )}
           </BotySurface>
 
           <BotySurface className="p-6">
-            <h3 className="font-medium mb-4">Resumen de pago</h3>
+            <h3 className="font-medium mb-4">{t("paymentSummary")}</h3>
             <dl className="space-y-2 text-sm">
-              <Row label="Subtotal" value={amount(order.totals.subtotalMxn, order.totals.subtotalUsd)} />
-              <Row label="Envío" value={amount(order.totals.shippingMxn, order.totals.shippingUsd)} />
-              <Row label="IVA" value={amount(order.totals.taxMxn, order.totals.taxUsd)} />
+              <Row label={t("subtotal")} value={amount(order.totals.subtotalMxn, order.totals.subtotalUsd)} />
+              <Row label={t("shipping")} value={amount(order.totals.shippingMxn, order.totals.shippingUsd)} />
+              <Row
+                label={currency === "USD" ? t("taxUS") : t("tax")}
+                value={amount(order.totals.taxMxn, order.totals.taxUsd)}
+              />
               <div className="border-t border-border/60 pt-3 flex justify-between font-semibold text-base">
-                <dt>Total</dt>
+                <dt>{t("total")}</dt>
                 <dd className="text-primary tabular-nums">{amount(order.totals.totalMxn, order.totals.totalUsd)}</dd>
               </div>
             </dl>
@@ -220,7 +224,7 @@ export function OrderDetailView({
 
       {!showThankYou && (
         <p className="text-center text-xs text-muted-foreground">
-          Te avisaremos por correo cuando tu pedido avance de estado.
+          {t("willNotifyByEmail")}
         </p>
       )}
 
@@ -231,21 +235,21 @@ export function OrderDetailView({
               href="/cuenta/pedidos"
               className="bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary/90 boty-transition"
             >
-              Ver todos mis pedidos
+              {t("viewAllOrders")}
             </Link>
           ) : (
             <Link
               href="/seguimiento"
               className="bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary/90 boty-transition"
             >
-              Consultar otro pedido
+              {t("trackAnotherOrder")}
             </Link>
           )}
           <Link
             href="/shop"
             className="px-6 py-2.5 rounded-full text-sm font-medium border border-border hover:bg-muted boty-transition"
           >
-            Seguir comprando
+            {t("keepShopping")}
           </Link>
         </div>
       )}
@@ -254,10 +258,11 @@ export function OrderDetailView({
 }
 
 export function OrderDetailSkeleton() {
+  const t = useTranslations("orderDetail");
   return (
     <div className="max-w-4xl mx-auto flex flex-col items-center gap-4 py-16">
       <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      <p className="text-sm text-muted-foreground">Cargando pedido…</p>
+      <p className="text-sm text-muted-foreground">{t("loadingOrder")}</p>
     </div>
   );
 }
@@ -269,6 +274,8 @@ function OrderTimeline({
   timeline: OrderDetail["timeline"];
   className?: string;
 }) {
+  const t = useTranslations("orderDetail");
+  const language = useLanguage();
   return (
     <ol className={cn("flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-0", className)}>
       {timeline.map((step, idx) => (
@@ -296,14 +303,11 @@ function OrderTimeline({
           </div>
           <div className="sm:text-center min-w-0">
             <p className={cn("text-sm font-medium", step.current && "text-primary")}>
-              {step.label}
+              {t(`status.${step.status}`)}
             </p>
             {step.at && (
               <p className="text-xs text-muted-foreground mt-0.5">
-                {new Date(step.at).toLocaleDateString("es-MX", {
-                  day: "numeric",
-                  month: "short",
-                })}
+                {formatOrderDate(step.at, language, { day: "numeric", month: "short" })}
               </p>
             )}
           </div>

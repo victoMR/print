@@ -1,14 +1,15 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/lib/i18n/navigation";
 import { User, Package, MapPin, LogOut, ChevronRight, Loader2 } from "lucide-react";
 import { useCustomer } from "@/lib/customer-context";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/cuenta", label: "Mi perfil", icon: User },
-  { href: "/cuenta/pedidos", label: "Mis pedidos", icon: Package },
-  { href: "/cuenta/direcciones", label: "Direcciones", icon: MapPin },
+  { href: "/cuenta", key: "profile", icon: User },
+  { href: "/cuenta/pedidos", key: "orders", icon: Package },
+  { href: "/cuenta/direcciones", key: "addresses", icon: MapPin },
 ] as const;
 
 function initials(name: string) {
@@ -22,6 +23,7 @@ function initials(name: string) {
 
 /** Sidebar y guard de sesión — el Header/Footer viven en app/cuenta/layout.tsx */
 export function AccountShell({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("account");
   const { user, loading, logout } = useCustomer();
   const pathname = usePathname();
   const router = useRouter();
@@ -30,7 +32,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm py-24">
         <Loader2 className="w-4 h-4 animate-spin" />
-        Cargando tu cuenta…
+        {t("loading")}
       </div>
     );
   }
@@ -55,8 +57,8 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
             {initials(user.fullName)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Mi cuenta</p>
-            <p className="font-serif text-xl truncate">Hola, {firstName}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">{t("title")}</p>
+            <p className="font-serif text-xl truncate">{t("greeting", { firstName })}</p>
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           </div>
         </div>
@@ -76,7 +78,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <nav className="flex flex-col gap-1">
-              {NAV.map(({ href, label, icon: Icon }) => {
+              {NAV.map(({ href, key, icon: Icon }) => {
                 const active = pathname === href;
                 return (
                   <Link
@@ -90,7 +92,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
                     )}
                   >
                     <Icon className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 font-medium">{label}</span>
+                    <span className="flex-1 font-medium">{t(`nav.${key}`)}</span>
                     <ChevronRight
                       className={cn(
                         "w-4 h-4 opacity-0 -translate-x-1 group-hover:opacity-50 group-hover:translate-x-0 boty-transition",
@@ -108,14 +110,14 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
               className="flex w-full items-center gap-3 px-4 py-3 rounded-2xl text-sm text-muted-foreground hover:bg-destructive/5 hover:text-destructive boty-transition"
             >
               <LogOut className="w-4 h-4" />
-              Cerrar sesión
+              {t("logout")}
             </button>
           </div>
         </aside>
 
         <div className="min-w-0 space-y-6">
           <nav className="lg:hidden flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-            {NAV.map(({ href, label, icon: Icon }) => (
+            {NAV.map(({ href, key, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
@@ -127,7 +129,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <Icon className="w-3.5 h-3.5" />
-                {label}
+                {t(`nav.${key}`)}
               </Link>
             ))}
             <button
@@ -136,7 +138,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm text-muted-foreground border border-border/60 shrink-0"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Salir
+              {t("logoutShort")}
             </button>
           </nav>
           {children}

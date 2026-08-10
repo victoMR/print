@@ -14,6 +14,7 @@ export class CustomerApiError extends Error {
   constructor(
     message: string,
     public readonly code?: string,
+    public readonly details?: Record<string, string | number>,
   ) {
     super(message);
     this.name = "CustomerApiError";
@@ -22,7 +23,7 @@ export class CustomerApiError extends Error {
 
 async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...CREDENTIALS_OPTS, ...init, cache: "no-store" });
-  const json = (await res.json()) as { error?: string; code?: string } & T;
+  const json = (await res.json()) as { error?: string; code?: string; details?: Record<string, string | number> } & T;
   if (!res.ok) {
     if (res.status === 401) {
       broadcastSession({ type: "customer:logout" });
@@ -30,6 +31,7 @@ async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
     throw new CustomerApiError(
       (json as { error?: string }).error ?? `Error ${res.status}`,
       (json as { code?: string }).code,
+      (json as { details?: Record<string, string | number> }).details,
     );
   }
   return json;

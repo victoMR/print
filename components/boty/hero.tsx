@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
 import Image from "next/image";
 
@@ -11,6 +12,7 @@ const ANIM_MS = 750;
 const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
 
 export function Hero() {
+  const t = useTranslations("hero");
   const [scrollY, setScrollY] = useState(0);
   const [windowH, setWindowH] = useState(0);
   const animatingRef = useRef(false);
@@ -111,7 +113,7 @@ export function Hero() {
         <div className="absolute inset-0 z-0" aria-hidden>
           <Image
             src="/images/hero-photo.png"
-            alt="Mr. Paps — Presencia que permanece"
+            alt={t("imageAlt")}
             fill
             priority
             className="object-cover object-center"
@@ -130,10 +132,10 @@ export function Hero() {
               style={{ animationDelay: "0.3s", animationFillMode: "forwards" }}
             >
               <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl tracking-[0.08em] mb-2">
-                DISEÑO, PODER & ESTILO.
+                {t("headlineLine1")}
               </span>
               <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl tracking-[0.08em] whitespace-nowrap">
-                PRESENCIA QUE PERMANECE.
+                {t("headlineLine2")}
               </span>
             </h1>
 
@@ -145,7 +147,7 @@ export function Hero() {
                 href="/shop"
                 className="inline-block bg-[#5C1A24] text-[#f8f9fa] px-10 py-4 text-[11px] tracking-[0.25em] uppercase font-sans hover:bg-[#4A1520] boty-transition"
               >
-                DESCUBRIR COLECCIÓN
+                {t("cta")}
               </Link>
             </div>
           </div>

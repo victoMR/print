@@ -214,13 +214,20 @@ function assertPurchasableQuantity(
   market: Market,
 ): void {
   if (quantity > MAX_CART_LINE_QUANTITY) {
-    throw new BadRequestError(`Máximo ${MAX_CART_LINE_QUANTITY} unidades por artículo.`);
+    throw new BadRequestError(
+      `Máximo ${MAX_CART_LINE_QUANTITY} unidades por artículo.`,
+      'MAX_QUANTITY_EXCEEDED',
+      { max: MAX_CART_LINE_QUANTITY },
+    );
   }
 
   const stock = stockForMarket(variant, market);
   if (isTrackedStock(variant.is_pod) && quantity > stock) {
+    const label = variantLabel(variant.size_label, variant.color_label);
     throw new BadRequestError(
-      `Solo hay ${stock} unidades disponibles de ${variantLabel(variant.size_label, variant.color_label)}.`,
+      `Solo hay ${stock} unidades disponibles de ${label}.`,
+      'INSUFFICIENT_STOCK',
+      { available: stock, variantLabel: label },
     );
   }
 }
@@ -293,14 +300,14 @@ export async function resolveLineItems(
         { variantId: item.variantId, found: Boolean(variant), status: variant?.status },
         'Carrito con variante inválida o inactiva',
       );
-      throw new BadRequestError(STALE_CART_MESSAGE);
+      throw new BadRequestError(STALE_CART_MESSAGE, 'STALE_CART_ITEM');
     }
 
     assertPurchasableQuantity(variant, item.quantity, market);
 
     const dbPriceMxn = Number(variant.retail_price_mxn).toFixed(2);
     if (item.retailPriceMxn && item.retailPriceMxn !== dbPriceMxn) {
-      throw new BadRequestError('El precio del carrito no coincide con el catálogo. Actualiza la página.');
+      throw new BadRequestError('El precio del carrito no coincide con el catálogo. Actualiza la página.', 'CART_PRICE_MISMATCH');
     }
 
     // El equivalente MXN se conserva siempre para contabilidad/CFDI, aun en
@@ -309,13 +316,16 @@ export async function resolveLineItems(
 
     if (currency === 'USD') {
       if (variant.retail_price_usd === null) {
+        const label = variantLabel(variant.size_label, variant.color_label);
         throw new BadRequestError(
-          `${variantLabel(variant.size_label, variant.color_label)} no está disponible en USD. Quítalo del carrito.`,
+          `${label} no está disponible en USD. Quítalo del carrito.`,
+          'VARIANT_NOT_AVAILABLE_IN_USD',
+          { variantLabel: label },
         );
       }
       const dbPriceUsd = Number(variant.retail_price_usd).toFixed(2);
       if (item.retailPriceUsd && item.retailPriceUsd !== dbPriceUsd) {
-        throw new BadRequestError('El precio del carrito no coincide con el catálogo. Actualiza la página.');
+        throw new BadRequestError('El precio del carrito no coincide con el catálogo. Actualiza la página.', 'CART_PRICE_MISMATCH');
       }
       unitPriceUsd = Number(dbPriceUsd);
     }
