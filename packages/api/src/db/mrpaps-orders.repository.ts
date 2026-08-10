@@ -358,10 +358,12 @@ export async function tryMarkOrderAsPaid(rawPublicId: string): Promise<boolean> 
   const publicId = normalizeTrackingCode(rawPublicId);
   if (!publicId) return false;
 
+  // Solo permite la transición desde un estado genuinamente pendiente: un pedido
+  // 'refunded' (o 'failed') nunca debe poder regresar a 'paid' por esta vía.
   const result = await pool.query(
     `UPDATE mrpaps_orders
      SET payment_status = 'paid', updated_at = NOW()
-     WHERE public_id = $1 AND (payment_status IS NULL OR payment_status <> 'paid')`,
+     WHERE public_id = $1 AND (payment_status IS NULL OR payment_status = 'pending')`,
     [publicId],
   );
   return (result.rowCount ?? 0) > 0;

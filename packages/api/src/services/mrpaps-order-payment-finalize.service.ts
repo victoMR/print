@@ -48,6 +48,17 @@ export async function finalizeOrderPayment(
     'Finalizar pago: inicio',
   );
 
+  if (order.payment_status === 'refunded') {
+    // Un pedido reembolsado nunca debe reprocesarse: el PaymentIntent de Stripe
+    // sigue en estado 'succeeded' tras un reembolso, así que si esta función
+    // continuara de largo terminaría regresando payment_status a 'paid'.
+    return {
+      paymentStatus: 'refunded',
+      emailSent: false,
+      message: 'Pedido reembolsado; no se reprocesa el pago',
+    };
+  }
+
   if (order.payment_status === 'paid') {
     try {
       await sendOrderConfirmationEmail(publicId);
@@ -104,7 +115,10 @@ export async function finalizeOrderPayment(
       { publicOrderId: publicId, intentCurrency: intent.currency, expectedCurrency },
       'Finalizar pago: moneda no coincide',
     );
-    await updateOrderPaymentByPublicId(publicId, { payment_status: 'amount_mismatch' });
+    // 'amount_mismatch' no es un valor válido de payment_status (CHECK constraint
+    // solo permite pending/paid/failed/refunded); se persiste como 'failed' y se
+    // devuelve el detalle específico solo en la respuesta de esta función.
+    await updateOrderPaymentByPublicId(publicId, { payment_status: 'failed' });
     return {
       paymentStatus: 'amount_mismatch',
       emailSent: false,
@@ -119,7 +133,7 @@ export async function finalizeOrderPayment(
       { publicOrderId: publicId, intentAmount: intent.amount, expectedCents },
       'Finalizar pago: monto no coincide',
     );
-    await updateOrderPaymentByPublicId(publicId, { payment_status: 'amount_mismatch' });
+    await updateOrderPaymentByPublicId(publicId, { payment_status: 'failed' });
     return {
       paymentStatus: 'amount_mismatch',
       emailSent: false,
