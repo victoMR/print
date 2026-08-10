@@ -1,7 +1,7 @@
 import { query, queryOne, queryRequired, buildUpdateSet, withTransaction } from '../lib/db-helper.js';
 import { pool } from '../lib/db.js';
 import * as productsRepo from './mrpaps-products.repository.js';
-import { BadRequestError } from '../types/errors.js';
+import { BadRequestError, NotFoundError } from '../types/errors.js';
 import { generateTrackingCode, normalizeTrackingCode } from '../lib/order-tracking-code.js';
 import { marketForCurrency } from '../lib/market.js';
 import type {
@@ -437,7 +437,9 @@ export async function listOrdersAdmin(filters?: {
   let sql = `SELECT * FROM mrpaps_orders`;
 
   if (filters?.paidOnly) {
-    conditions.push(`payment_status = 'paid'`);
+    // Oculta solo carritos abandonados (nunca llegaron a ser un pedido real).
+    // No filtrar por payment_status = 'paid' aquí: un pedido cancelado/reembolsado
+    // sigue siendo un pedido real y el admin debe poder verlo.
     conditions.push(`status <> 'pendiente_pago'`);
   }
 
@@ -520,7 +522,7 @@ export async function updateOrderStatus(
   meta: { note?: string; createdBy?: string },
 ): Promise<MrpapsOrderRow> {
   const existing = await getOrderByPublicId(publicId);
-  if (!existing) throw new Error('Pedido no encontrado');
+  if (!existing) throw new NotFoundError('Pedido no encontrado');
 
   const payment = existing.payment_status;
   const isAbandonCancel =
@@ -531,12 +533,12 @@ export async function updateOrderStatus(
     existing.status === 'pendiente_pago' && toStatus === 'pedido' && payment === 'paid';
 
   if (!isAbandonCancel && !isPaidCancel && !isSystemFulfillment && payment !== 'paid') {
-    throw new Error('Solo se pueden actualizar pedidos pagados');
+    throw new BadRequestError('Solo se pueden actualizar pedidos pagados');
   }
 
   const allowed = ALLOWED_STATUS_TRANSITIONS[existing.status];
   if (!allowed.includes(toStatus)) {
-    throw new Error(
+    throw new BadRequestError(
       `Transición de estado inválida: ${existing.status} → ${toStatus}. ` +
       `Estados permitidos: ${allowed.length > 0 ? allowed.join(', ') : 'ninguno (estado terminal)'}`,
     );

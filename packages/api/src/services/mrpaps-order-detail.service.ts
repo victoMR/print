@@ -262,7 +262,9 @@ export async function getOrderDetail(
 export async function getAdminOrderDetail(publicId: string): Promise<OrderDetailDto> {
   const order = await ordersRepo.getOrderByPublicId(publicId);
   if (!order) throw new NotFoundError('Pedido no encontrado');
-  if (order.status === 'pendiente_pago' || order.payment_status !== 'paid') {
+  // Oculta solo carritos abandonados (nunca llegaron a ser un pedido real);
+  // un pedido cancelado/reembolsado sigue siendo real y debe verse en el admin.
+  if (order.status === 'pendiente_pago') {
     throw new NotFoundError('Pedido no encontrado');
   }
   const events = await ordersRepo.listOrderStatusEvents(order.id);
