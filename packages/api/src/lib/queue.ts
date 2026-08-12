@@ -50,7 +50,12 @@ export async function connectRedis(): Promise<boolean> {
     lazyConnect: true,
     maxRetriesPerRequest: null,
     connectTimeout: 3000,
-    retryStrategy: () => null,
+    // Reconecta con backoff tras un corte de red/reinicio de Redis. Con `() => null`
+    // (config previa) ioredis se rendía para siempre tras la primera desconexión,
+    // dejando getRedisConnection() devolviendo un cliente muerto — cualquier
+    // comando (login admin, brute-force lockout, refresh tokens) fallaba con
+    // "Connection is closed." hasta reiniciar el proceso manualmente.
+    retryStrategy: (times) => Math.min(times * 200, 5000),
   });
 
   try {
